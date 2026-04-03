@@ -171,11 +171,20 @@ service cloud.firestore {
              data.userEmail is string && isValidEmail(data.userEmail);
     }
 
-    function isValidPersonnel(data) {
-      return hasOnlyAllowedFields(['fullName', 'role', 'status', 'createdAt', 'authorId']) &&
-             data.fullName is string && data.fullName.size() > 0 && data.fullName.size() < 100 &&
+    function isValidPersonal(data) {
+      return hasOnlyAllowedFields(['name', 'role', 'status', 'createdAt', 'authorId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.role is string && data.role.size() > 0 && data.role.size() < 100 &&
-             data.status in ['activo', 'inactivo'] &&
+             data.status in ['Activo', 'Inactivo'] &&
+             data.createdAt is string && data.createdAt.size() > 0 && data.createdAt.size() < 50 &&
+             data.authorId is string && data.authorId.size() > 0 && data.authorId.size() < 100;
+    }
+
+    function isValidLocation(data) {
+      return hasOnlyAllowedFields(['name', 'type', 'status', 'createdAt', 'authorId']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.type in ['Origen', 'Destino', 'Origen/Destino'] &&
+             data.status in ['Operativo', 'Mantenimiento', 'Inactivo'] &&
              data.createdAt is string && data.createdAt.size() > 0 && data.createdAt.size() < 50 &&
              data.authorId is string && data.authorId.size() > 0 && data.authorId.size() < 100;
     }
@@ -194,12 +203,13 @@ service cloud.firestore {
     }
 
     function isValidNovedad(data) {
-      return hasOnlyAllowedFields(['title', 'content', 'createdAt', 'authorId', 'authorName']) &&
+      return hasOnlyAllowedFields(['title', 'content', 'createdAt', 'authorId', 'authorName', 'attachments']) &&
              data.title is string && data.title.size() > 0 && data.title.size() < 200 &&
              data.content is string && data.content.size() > 0 && data.content.size() < 5000 &&
              data.createdAt is string && data.createdAt.size() > 0 && data.createdAt.size() < 50 &&
              data.authorId is string && data.authorId.size() > 0 && data.authorId.size() < 100 &&
-             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() < 100;
+             data.authorName is string && data.authorName.size() > 0 && data.authorName.size() < 100 &&
+             (!('attachments' in data) || (data.attachments is list && data.attachments.size() < 20));
     }
 
     function isValidNotification(data) {
@@ -230,7 +240,7 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isValidTask(request.resource.data) && authorIdUnchanged();
       allow update: if isAuthenticated() && isValidTask(request.resource.data) && authorIdNotModified() && (isDocOwner() || isAdmin());
-      allow delete: if isDocOwner() || isAdmin();
+      allow delete: if isAdmin();
     }
 
     match /task_history/{historyId} {
@@ -240,25 +250,32 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    match /personnel/{personnelId} {
+    match /personal/{personalId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidPersonnel(request.resource.data) && authorIdUnchanged();
-      allow update: if isAuthenticated() && isValidPersonnel(request.resource.data) && authorIdNotModified() && (isDocOwner() || isAdmin());
-      allow delete: if isDocOwner() || isAdmin();
+      allow create: if isAuthenticated() && isValidPersonal(request.resource.data) && authorIdUnchanged();
+      allow update: if isAuthenticated() && isValidPersonal(request.resource.data) && authorIdNotModified() && (isDocOwner() || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    match /locations/{locationId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidLocation(request.resource.data) && authorIdUnchanged();
+      allow update: if isAuthenticated() && isValidLocation(request.resource.data) && authorIdNotModified() && (isDocOwner() || isAdmin());
+      allow delete: if isAdmin();
     }
 
     match /visitas/{visitaId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isValidVisita(request.resource.data) && authorIdUnchanged();
       allow update: if isAuthenticated() && isValidVisita(request.resource.data) && authorIdNotModified() && (isDocOwner() || isAdmin());
-      allow delete: if isDocOwner() || isAdmin();
+      allow delete: if isAdmin();
     }
 
     match /novedades/{novedadId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isValidNovedad(request.resource.data) && authorIdUnchanged();
       allow update: if isAuthenticated() && isValidNovedad(request.resource.data) && authorIdNotModified() && (isDocOwner() || isAdmin());
-      allow delete: if isDocOwner() || isAdmin();
+      allow delete: if isAdmin();
     }
 
     match /notifications/{notificationId} {

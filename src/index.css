@@ -25,10 +25,34 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #ffcc00;
+  background: #0055ff;
   border: 4px solid #1a1a1a;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #1a1a1a;
+}
+
+/* Custom CSS for MuiDataGrid actions cell as requested */
+.MuiDataGrid-cell[data-field="actions"] {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.MuiDataGrid-cell[data-field="actions"] button {
+  border: 2px solid #1a1a1a;
+  background-color: #ffffff;
+  color: #1a1a1a;
+  padding: 4px;
+  transition: all 0.2s;
+  box-shadow: 2px 2px 0px 0px rgba(26,26,26,1);
+}
+
+.MuiDataGrid-cell[data-field="actions"] button:hover {
+  background-color: #0055ff;
+  color: #ffffff;
+  transform: translate(1px, 1px);
+  box-shadow: none;
 }

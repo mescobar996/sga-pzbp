@@ -24,7 +24,7 @@ export default function Login() {
         
         <button
           onClick={handleLogin}
-          className="w-full py-4 px-6 bg-[#ffcc00] border-4 border-[#1a1a1a] text-[#1a1a1a] font-black text-xl uppercase tracking-wider hover:bg-[#1a1a1a] hover:text-[#ffcc00] transition-all shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1"
+          className="w-full py-4 px-6 bg-[#0055ff] border-4 border-[#1a1a1a] text-white font-black text-xl uppercase tracking-wider hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-all shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1"
         >
           Ingresar con Google
         </button>

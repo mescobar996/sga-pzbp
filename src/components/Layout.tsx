@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { signOut, User } from 'firebase/auth';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 import { Search, Bell, Settings, User as UserIcon, LogOut, LayoutDashboard, HardHat, ListChecks, BarChart3, Database, PlusSquare, FileText } from 'lucide-react';
 import { toast } from 'sonner';
@@ -20,9 +20,27 @@ export default function Layout({ user }: { user: User }) {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isAdmin, setIsAdmin] = useState(false);
   const sessionStartTime = useRef(new Date().toISOString());
 
   useEffect(() => {
+    // Check if user is admin
+    const checkAdmin = async () => {
+      try {
+        if (user.email === 'matialeescobar96@gmail.com' && user.emailVerified) {
+          setIsAdmin(true);
+          return;
+        }
+        const userDoc = await getDoc(doc(db, 'users', user.uid));
+        if (userDoc.exists() && userDoc.data().role === 'admin') {
+          setIsAdmin(true);
+        }
+      } catch (error) {
+        console.error("Error checking admin status", error);
+      }
+    };
+    checkAdmin();
+
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
@@ -125,7 +143,7 @@ export default function Layout({ user }: { user: User }) {
                       notifications.map(notif => (
                         <div key={notif.id} className="p-4 border-b-2 border-[#1a1a1a]/10 hover:bg-[#f5f0e8] transition-colors">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className={`text-[10px] font-black px-2 py-0.5 border-2 border-[#1a1a1a] uppercase ${notif.type === 'tarea' ? 'bg-[#ffcc00]' : notif.type === 'visita' ? 'bg-[#00cc66] text-white' : 'bg-[#0055ff] text-white'}`}>
+                            <span className={`text-[10px] font-black px-2 py-0.5 border-2 border-[#1a1a1a] uppercase ${notif.type === 'tarea' ? 'bg-[#0055ff] text-white' : notif.type === 'visita' ? 'bg-[#00cc66] text-white' : 'bg-[#0055ff] text-white'}`}>
                               {notif.type}
                             </span>
                             <span className="text-xs font-bold opacity-50">{new Date(notif.createdAt).toLocaleDateString()}</span>
@@ -146,7 +164,7 @@ export default function Layout({ user }: { user: User }) {
               <Settings className="w-5 h-5" />
             </button>
             <div className="flex items-center gap-2 ml-2">
-              <div className="w-10 h-10 border-2 border-[#1a1a1a] overflow-hidden shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] bg-[#ffcc00] flex items-center justify-center">
+              <div className="w-10 h-10 border-2 border-[#1a1a1a] overflow-hidden shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] bg-[#0055ff] flex items-center justify-center">
                 {user.photoURL ? (
                   <img src={user.photoURL} alt="User" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                 ) : (
@@ -171,7 +189,7 @@ export default function Layout({ user }: { user: User }) {
               className={({ isActive }) =>
                 `flex items-center gap-4 p-4 transition-all hover:skew-x-1 ${
                   isActive
-                    ? 'bg-[#ffcc00] text-[#1a1a1a] border-2 border-[#1a1a1a] m-2'
+                    ? 'bg-[#0055ff] text-white border-2 border-[#1a1a1a] m-2'
                     : 'text-[#1a1a1a] border-b-2 border-[#1a1a1a]/10 hover:bg-[#0055ff] hover:text-white'
                 }`
               }
@@ -198,7 +216,7 @@ export default function Layout({ user }: { user: User }) {
 
       {/* Main Content */}
       <main className="ml-64 mt-20 p-8 min-h-screen">
-        <Outlet />
+        <Outlet context={{ user, isAdmin }} />
       </main>
     </div>
   );

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, query, orderBy, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Save, X, MessageSquare, Edit2, Trash2, MapPin, Calendar, Clock, User, FileText, ArrowRight } from 'lucide-react';
+import { Save, X, MessageSquare, Edit2, Trash2, MapPin, Calendar, Clock, User, FileText, ArrowRight, Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { toast } from 'sonner';
+import { useOutletContext } from 'react-router-dom';
 
 enum OperationType {
   CREATE = 'create',
@@ -77,6 +78,7 @@ interface Visita {
 }
 
 export default function Visitas() {
+  const { isAdmin } = useOutletContext<{ isAdmin: boolean }>();
   const [formData, setFormData] = useState({
     origen: '',
     destino: '',
@@ -87,10 +89,21 @@ export default function Visitas() {
   });
 
   const [visitas, setVisitas] = useState<Visita[]>([]);
+  const [locations, setLocations] = useState<{id: string, name: string, type: string}[]>([]);
+  const [personal, setPersonal] = useState<{id: string, name: string}[]>([]);
   const [selectedVisita, setSelectedVisita] = useState<Visita | null>(null);
   const [newCommentText, setNewCommentText] = useState('');
   const [isEditingVisita, setIsEditingVisita] = useState(false);
   const [editingVisitaId, setEditingVisitaId] = useState<string | null>(null);
+  const [selectedResponsables, setSelectedResponsables] = useState<string[]>([]);
+
+  // Filters and Pagination
+  const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [responsableFilter, setResponsableFilter] = useState('todos');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6;
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -106,7 +119,19 @@ export default function Visitas() {
       handleFirestoreError(error, OperationType.GET, 'visitas');
     });
 
-    return () => unsubscribe();
+    const unsubLocations = onSnapshot(query(collection(db, 'locations'), orderBy('name')), (snapshot) => {
+      setLocations(snapshot.docs.map(d => ({ id: d.id, name: d.data().name, type: d.data().type })));
+    });
+
+    const unsubPersonal = onSnapshot(query(collection(db, 'personal'), orderBy('name')), (snapshot) => {
+      setPersonal(snapshot.docs.map(d => ({ id: d.id, name: d.data().name })));
+    });
+
+    return () => {
+      unsubscribe();
+      unsubLocations();
+      unsubPersonal();
+    };
   }, []);
 
   const handleAddComment = async () => {
@@ -153,24 +178,28 @@ export default function Visitas() {
       return;
     }
 
-    const responsableRegex = /^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/;
-    if (!responsableRegex.test(formData.responsable)) {
-      toast.error('El responsable solo puede contener letras y espacios.');
+    if (selectedResponsables.length === 0) {
+      toast.error('Debe seleccionar al menos un responsable.');
       return;
     }
 
     try {
+      const finalFormData = {
+        ...formData,
+        responsable: selectedResponsables.join(' Y ')
+      };
+
       if (isEditingVisita && editingVisitaId) {
         const visitaRef = doc(db, 'visitas', editingVisitaId);
         await updateDoc(visitaRef, {
-          ...formData
+          ...finalFormData
         });
         toast.success('Visita actualizada exitosamente');
         setIsEditingVisita(false);
         setEditingVisitaId(null);
       } else {
         await addDoc(collection(db, 'visitas'), {
-          ...formData,
+          ...finalFormData,
           createdAt: new Date().toISOString(),
           authorId: auth.currentUser.uid,
           comments: []
@@ -187,6 +216,7 @@ export default function Visitas() {
         toast.success('Visita registrada exitosamente');
       }
       setFormData({ origen: '', destino: '', fecha: '', hora: '', responsable: '', observaciones: '' });
+      setSelectedResponsables([]);
     } catch (error) {
       toast.error(isEditingVisita ? 'Error al actualizar la visita' : 'Error al registrar la visita');
       handleFirestoreError(error, isEditingVisita ? OperationType.UPDATE : OperationType.CREATE, 'visitas');
@@ -199,9 +229,10 @@ export default function Visitas() {
       destino: visita.destino,
       fecha: visita.fecha,
       hora: visita.hora,
-      responsable: visita.responsable,
+      responsable: '', // We use selectedResponsables instead
       observaciones: visita.observaciones || ''
     });
+    setSelectedResponsables(visita.responsable ? visita.responsable.split(' Y ') : []);
     setIsEditingVisita(true);
     setEditingVisitaId(visita.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -221,85 +252,160 @@ export default function Visitas() {
     }
   };
 
+  const filteredVisitas = visitas.filter(v => {
+    const matchesSearch = v.origen.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          v.destino.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          (v.observaciones && v.observaciones.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesResponsable = responsableFilter === 'todos' || (v.responsable && v.responsable.split(' Y ').includes(responsableFilter));
+    const matchesDateFrom = !dateFrom || v.fecha >= dateFrom;
+    const matchesDateTo = !dateTo || v.fecha <= dateTo;
+    
+    return matchesSearch && matchesResponsable && matchesDateFrom && matchesDateTo;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(filteredVisitas.length / itemsPerPage));
+  const paginatedVisitas = filteredVisitas.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, dateFrom, dateTo, responsableFilter]);
+
   return (
-    <div className="font-['Inter'] max-w-4xl mx-auto">
-      <h1 className="text-5xl font-black uppercase mb-8 font-['Space_Grotesk'] tracking-tighter">
+    <div className="font-['Inter'] max-w-6xl mx-auto">
+      <h1 className="text-4xl font-black uppercase mb-6 font-['Space_Grotesk'] tracking-tighter">
         {isEditingVisita ? 'Editar Visita' : 'Registro de Visita'}
       </h1>
       
-      <form onSubmit={handleSubmit} className="bg-white border-4 border-[#1a1a1a] shadow-[12px_12px_0px_0px_rgba(26,26,26,1)] p-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+      <form onSubmit={handleSubmit} className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="space-y-2">
-            <label className="block text-sm font-black uppercase tracking-widest">Origen</label>
+            <label className="block text-xs font-black uppercase tracking-widest">Origen</label>
             <input 
               type="text" 
+              list="origenes-list"
               required
               value={formData.origen}
-              onChange={(e) => setFormData({...formData, origen: e.target.value})}
-              className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors"
+              onChange={(e) => setFormData({...formData, origen: e.target.value.toUpperCase()})}
+              className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-sm"
               placeholder="Ej. Sede Central"
             />
+            <datalist id="origenes-list">
+              {locations.filter(l => l.type === 'Origen' || l.type === 'Origen/Destino').map(l => (
+                <option key={l.id} value={l.name.toUpperCase()} />
+              ))}
+            </datalist>
           </div>
           <div className="space-y-2">
-            <label className="block text-sm font-black uppercase tracking-widest">Destino</label>
+            <label className="block text-xs font-black uppercase tracking-widest">Destino</label>
             <input 
               type="text" 
+              list="destinos-list"
               required
               value={formData.destino}
-              onChange={(e) => setFormData({...formData, destino: e.target.value})}
-              className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors"
+              onChange={(e) => setFormData({...formData, destino: e.target.value.toUpperCase()})}
+              className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-sm"
               placeholder="Ej. Zona Portuaria"
             />
+            <datalist id="destinos-list">
+              {locations.filter(l => l.type === 'Destino' || l.type === 'Origen/Destino').map(l => (
+                <option key={l.id} value={l.name.toUpperCase()} />
+              ))}
+            </datalist>
           </div>
           <div className="space-y-2">
-            <label className="block text-sm font-black uppercase tracking-widest">Fecha</label>
+            <label className="block text-xs font-black uppercase tracking-widest">Fecha</label>
             <input 
               type="date" 
               required
               value={formData.fecha}
               onChange={(e) => setFormData({...formData, fecha: e.target.value})}
-              className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors"
+              className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-sm"
             />
           </div>
           <div className="space-y-2">
-            <label className="block text-sm font-black uppercase tracking-widest">Hora</label>
+            <label className="block text-xs font-black uppercase tracking-widest">Hora</label>
             <input 
               type="time" 
               required
               value={formData.hora}
               onChange={(e) => setFormData({...formData, hora: e.target.value})}
-              className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors"
+              className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-sm"
             />
           </div>
           <div className="space-y-2 md:col-span-2">
-            <label className="block text-sm font-black uppercase tracking-widest">Responsable</label>
-            <input 
-              type="text" 
-              required
-              value={formData.responsable}
-              onChange={(e) => {
-                const val = e.target.value;
-                if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(val)) {
-                  setFormData({...formData, responsable: val});
-                }
-              }}
-              className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors"
-              placeholder="Nombre del responsable"
-            />
+            <label className="block text-xs font-black uppercase tracking-widest">Responsables</label>
+            <div className="flex gap-2">
+              <input 
+                type="text" 
+                list="personal-list"
+                value={formData.responsable}
+                onChange={(e) => {
+                  const val = e.target.value.toUpperCase();
+                  if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(val)) {
+                    setFormData({...formData, responsable: val});
+                  }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (formData.responsable && !selectedResponsables.includes(formData.responsable)) {
+                      setSelectedResponsables([...selectedResponsables, formData.responsable]);
+                      setFormData({...formData, responsable: ''});
+                    }
+                  }
+                }}
+                className="flex-1 p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-sm"
+                placeholder="Nombre del responsable (Presiona Enter para agregar)"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (formData.responsable && !selectedResponsables.includes(formData.responsable)) {
+                    setSelectedResponsables([...selectedResponsables, formData.responsable]);
+                    setFormData({...formData, responsable: ''});
+                  }
+                }}
+                className="px-4 py-3 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-[#0055ff] transition-colors text-sm"
+              >
+                Agregar
+              </button>
+            </div>
+            <datalist id="personal-list">
+              {personal.map(p => (
+                <option key={p.id} value={p.name.toUpperCase()} />
+              ))}
+            </datalist>
+            {selectedResponsables.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedResponsables.map(resp => (
+                  <span key={resp} className="inline-flex items-center gap-1 bg-[#0055ff] text-white px-3 py-1 font-bold text-sm uppercase border-2 border-[#1a1a1a]">
+                    {resp}
+                    <button 
+                      type="button" 
+                      onClick={() => setSelectedResponsables(selectedResponsables.filter(r => r !== resp))}
+                      className="hover:text-[#1a1a1a] ml-1"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
           <div className="space-y-2 md:col-span-2">
-            <label className="block text-sm font-black uppercase tracking-widest">Observaciones</label>
+            <label className="block text-xs font-black uppercase tracking-widest">Observaciones</label>
             <textarea 
-              rows={4}
+              rows={3}
               value={formData.observaciones}
-              onChange={(e) => setFormData({...formData, observaciones: e.target.value})}
-              className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold transition-colors resize-none"
+              onChange={(e) => setFormData({...formData, observaciones: e.target.value.toUpperCase()})}
+              className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors resize-none text-sm"
               placeholder="Detalles adicionales..."
             />
           </div>
         </div>
 
-        <div className="flex gap-4 justify-end border-t-4 border-[#1a1a1a] pt-8">
+        <div className="flex gap-4 justify-end border-t-2 border-[#1a1a1a] pt-6">
           <button 
             type="button"
             onClick={() => {
@@ -307,24 +413,75 @@ export default function Visitas() {
               setIsEditingVisita(false);
               setEditingVisitaId(null);
             }}
-            className="px-8 py-4 border-4 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#e63b2e] hover:text-white transition-colors flex items-center gap-2"
+            className="px-6 py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#e63b2e] hover:text-white transition-colors flex items-center gap-2 text-sm"
           >
-            <X className="w-5 h-5" /> Cancelar
+            <X className="w-4 h-4" /> Cancelar
           </button>
           <button 
             type="submit"
-            className="px-8 py-4 border-4 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center gap-2 shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1"
+            className="px-6 py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 text-sm"
           >
-            <Save className="w-5 h-5" /> {isEditingVisita ? 'Actualizar Registro' : 'Guardar Registro'}
+            <Save className="w-4 h-4" /> {isEditingVisita ? 'Actualizar' : 'Guardar'}
           </button>
         </div>
       </form>
 
       {/* Recent Visits List */}
-      <div className="mt-12">
-        <h2 className="text-3xl font-black uppercase mb-6 font-['Space_Grotesk'] tracking-tighter">Visitas Recientes</h2>
+      <div className="mt-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+          <h2 className="text-2xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Registro Histórico</h2>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white border-2 border-[#1a1a1a] p-4 mb-6 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="w-4 h-4 text-[#1a1a1a] opacity-50" />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="BUSCAR..."
+                className="w-full pl-10 p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-xs transition-colors"
+              />
+            </div>
+            <div>
+              <select
+                value={responsableFilter}
+                onChange={(e) => setResponsableFilter(e.target.value)}
+                className="w-full p-3 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-sm transition-colors"
+              >
+                <option value="todos">TODOS LOS RESPONSABLES</option>
+                {Array.from(new Set(visitas.flatMap(v => v.responsable ? v.responsable.split(' Y ') : []))).map(resp => (
+                  <option key={resp} value={resp}>{resp}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full p-3 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-sm transition-colors"
+                title="Fecha Desde"
+              />
+            </div>
+            <div>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-full p-3 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-sm transition-colors"
+                title="Fecha Hasta"
+              />
+            </div>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {visitas.slice(0, 6).map(visita => (
+          {paginatedVisitas.map(visita => (
             <div 
               key={visita.id} 
               onClick={() => setSelectedVisita(visita)}
@@ -349,16 +506,18 @@ export default function Visitas() {
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteVisita(visita.id);
-                    }}
-                    className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
-                    title="Eliminar"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {isAdmin && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteVisita(visita.id);
+                      }}
+                      className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
                 <div className="flex items-center gap-1 text-sm font-bold opacity-70">
                   <MessageSquare className="w-4 h-4" />
@@ -367,10 +526,33 @@ export default function Visitas() {
               </div>
             </div>
           ))}
-          {visitas.length === 0 && (
-            <p className="text-sm font-bold uppercase opacity-50 col-span-2">No hay visitas registradas.</p>
+          {paginatedVisitas.length === 0 && (
+            <p className="text-sm font-bold uppercase opacity-50 col-span-2 text-center py-8">No hay visitas que coincidan con los filtros.</p>
           )}
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-8">
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 border-4 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+            <span className="font-black uppercase tracking-widest">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 border-4 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-6 h-6" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Visita Details & Comments Modal */}
@@ -384,7 +566,7 @@ export default function Visitas() {
                 <h2 className="text-3xl font-black uppercase font-['Space_Grotesk'] tracking-widest mb-2">
                   Detalles de Visita
                 </h2>
-                <div className="flex items-center gap-3 text-[#ffcc00] font-bold uppercase tracking-widest text-sm">
+                <div className="flex items-center gap-3 text-[#0055ff] font-bold uppercase tracking-widest text-sm">
                   <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {selectedVisita.origen}</span>
                   <ArrowRight className="w-4 h-4 text-white" />
                   <span className="flex items-center gap-1"><MapPin className="w-4 h-4" /> {selectedVisita.destino}</span>
@@ -432,7 +614,7 @@ export default function Visitas() {
                     const isMe = comment.authorId === auth.currentUser?.uid;
                     return (
                       <div key={comment.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                        <div className={`max-w-[85%] p-4 border-2 border-[#1a1a1a] ${isMe ? 'bg-[#ffcc00]' : 'bg-[#f5f0e8]'}`}>
+                        <div className={`max-w-[85%] p-4 border-2 border-[#1a1a1a] ${isMe ? 'bg-[#0055ff] text-white' : 'bg-[#f5f0e8]'}`}>
                           <div className="flex justify-between items-center gap-4 mb-2 border-b-2 border-[#1a1a1a]/10 pb-2">
                             <span className="font-black text-xs uppercase tracking-widest">{comment.authorName}</span>
                             <span className="text-[10px] font-bold opacity-60 uppercase">{new Date(comment.createdAt).toLocaleString()}</span>

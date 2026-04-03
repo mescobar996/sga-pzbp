@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, onSnapshot, addDoc, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import { db, auth } from '../firebase';
-import { Plus, Trash2, Edit2, Search, FileText, Download } from 'lucide-react';
+import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { db, auth, storage } from '../firebase';
+import { Plus, Trash2, Edit2, Search, FileText, Download, Upload, X, Paperclip, Image as ImageIcon, FileSpreadsheet, Video, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useOutletContext } from 'react-router-dom';
 
 enum OperationType {
   CREATE = 'create',
@@ -58,6 +60,12 @@ function handleFirestoreError(error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 }
 
+interface Attachment {
+  name: string;
+  url: string;
+  type: string;
+}
+
 interface Novedad {
   id: string;
   title: string;
@@ -65,12 +73,23 @@ interface Novedad {
   createdAt: string;
   authorId: string;
   authorName: string;
+  attachments?: Attachment[];
 }
 
 export default function Novedades() {
+  const { isAdmin } = useOutletContext<{ isAdmin: boolean }>();
   const [novedades, setNovedades] = useState<Novedad[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [appliedFilters, setAppliedFilters] = useState({
+    searchQuery: '',
+    dateFrom: '',
+    dateTo: ''
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -78,6 +97,18 @@ export default function Novedades() {
     title: '',
     content: ''
   });
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [attachmentsToDelete, setAttachmentsToDelete] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  const getFileIcon = (type: string, className: string) => {
+    if (type.startsWith('image/')) return <ImageIcon className={className} />;
+    if (type.startsWith('video/')) return <Video className={className} />;
+    if (type === 'application/pdf') return <FileText className={className} />;
+    if (type.includes('spreadsheet') || type.includes('excel') || type.includes('csv')) return <FileSpreadsheet className={className} />;
+    return <Paperclip className={className} />;
+  };
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -99,13 +130,17 @@ export default function Novedades() {
   }, []);
 
   const openNewModal = () => {
-    setCurrentNovedad({ title: '', content: '' });
+    setCurrentNovedad({ title: '', content: '', attachments: [] });
+    setPendingFiles([]);
+    setAttachmentsToDelete([]);
     setIsEditing(false);
     setIsModalOpen(true);
   };
 
   const openEditModal = (novedad: Novedad) => {
     setCurrentNovedad(novedad);
+    setPendingFiles([]);
+    setAttachmentsToDelete([]);
     setIsEditing(true);
     setIsModalOpen(true);
   };
@@ -114,12 +149,43 @@ export default function Novedades() {
     e.preventDefault();
     if (!currentNovedad.title?.trim() || !currentNovedad.content?.trim() || !auth.currentUser) return;
 
+    setIsUploading(true);
     try {
+      let finalAttachments = currentNovedad.attachments ? [...currentNovedad.attachments] : [];
+
+      // Handle deletions
+      if (attachmentsToDelete.length > 0) {
+        for (const att of attachmentsToDelete) {
+          try {
+            const fileRef = ref(storage, att.url);
+            await deleteObject(fileRef);
+          } catch (error) {
+            console.error('Error deleting file:', error);
+          }
+          finalAttachments = finalAttachments.filter(a => a.url !== att.url);
+        }
+      }
+
+      // Handle new uploads
+      if (pendingFiles.length > 0) {
+        for (const file of pendingFiles) {
+          const fileRef = ref(storage, `novedades/${auth.currentUser.uid}/${Date.now()}_${file.name}`);
+          await uploadBytes(fileRef, file);
+          const url = await getDownloadURL(fileRef);
+          finalAttachments.push({
+            name: file.name,
+            url,
+            type: file.type
+          });
+        }
+      }
+
       if (isEditing && currentNovedad.id) {
         const docRef = doc(db, 'novedades', currentNovedad.id);
         await updateDoc(docRef, {
           title: currentNovedad.title,
-          content: currentNovedad.content
+          content: currentNovedad.content,
+          attachments: finalAttachments
         });
         toast.success('Novedad actualizada');
       } else {
@@ -128,7 +194,8 @@ export default function Novedades() {
           content: currentNovedad.content,
           createdAt: new Date().toISOString(),
           authorId: auth.currentUser.uid,
-          authorName: auth.currentUser.displayName || auth.currentUser.email || 'Usuario'
+          authorName: auth.currentUser.displayName || auth.currentUser.email || 'Usuario',
+          attachments: finalAttachments
         });
 
         await addDoc(collection(db, 'notifications'), {
@@ -144,6 +211,8 @@ export default function Novedades() {
       setIsModalOpen(false);
     } catch (error) {
       handleFirestoreError(error, isEditing ? OperationType.UPDATE : OperationType.CREATE, 'novedades');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -159,16 +228,20 @@ export default function Novedades() {
 
   const generatePDF = () => {
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.width;
     
-    // Add Title
-    doc.setFontSize(20);
-    doc.setFont("helvetica", "bold");
-    doc.text("Reporte de Novedades", 14, 22);
+    // Brutalist Header
+    doc.setFillColor(26, 26, 26); // #1a1a1a
+    doc.rect(0, 0, pageWidth, 40, 'F');
     
-    // Add Subtitle / Date
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.text('REPORTE DE NOVEDADES', 14, 25);
+    
     doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.text(`Generado el: ${new Date().toLocaleString()}`, 14, 30);
+    doc.setTextColor(200, 200, 200);
+    doc.text(`FECHA DE GENERACIÓN: ${new Date().toLocaleDateString()}`, 14, 32);
     
     // Filtered data
     const filtered = novedades.filter(n => 
@@ -182,89 +255,164 @@ export default function Novedades() {
     }
 
     const tableData = filtered.map(n => [
-      new Date(n.createdAt).toLocaleDateString() + ' ' + new Date(n.createdAt).toLocaleTimeString(),
-      n.title,
-      n.authorName,
-      n.content
+      (new Date(n.createdAt).toLocaleDateString() + ' ' + new Date(n.createdAt).toLocaleTimeString()).toUpperCase(),
+      n.title.toUpperCase(),
+      n.authorName.toUpperCase(),
+      n.content.toUpperCase()
     ]);
 
     autoTable(doc, {
-      startY: 40,
-      head: [['Fecha', 'Título', 'Autor', 'Contenido']],
+      startY: 50,
+      head: [['FECHA', 'TÍTULO', 'AUTOR', 'CONTENIDO']],
       body: tableData,
       theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 3 },
-      headStyles: { fillColor: [26, 26, 26], textColor: [255, 255, 255], fontStyle: 'bold' },
+      styles: {
+        font: 'helvetica',
+        fontSize: 9,
+        textColor: [26, 26, 26],
+        lineColor: [26, 26, 26],
+        lineWidth: 0.5,
+        fontStyle: 'bold',
+        cellPadding: 4,
+      },
+      headStyles: {
+        fillColor: [245, 240, 232], // #f5f0e8
+        textColor: [26, 26, 26],
+        fontStyle: 'bold',
+        lineWidth: 0.5,
+        lineColor: [26, 26, 26],
+      },
+      alternateRowStyles: {
+        fillColor: [255, 255, 255],
+      },
       columnStyles: {
-        0: { cellWidth: 30 },
-        1: { cellWidth: 40 },
-        2: { cellWidth: 30 },
+        0: { cellWidth: 35 },
+        1: { cellWidth: 45 },
+        2: { cellWidth: 35 },
         3: { cellWidth: 'auto' }
       },
+      margin: { top: 10 },
     });
 
-    doc.save(`Novedades_${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`NOVEDADES_${new Date().toISOString().split('T')[0]}.pdf`);
     toast.success('Reporte PDF generado');
   };
 
-  const filteredNovedades = novedades.filter(n => 
-    n.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    n.content.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [appliedFilters]);
+
+  const filteredNovedades = novedades.filter(n => {
+    const matchesSearch = n.title.toLowerCase().includes(appliedFilters.searchQuery.toLowerCase()) || 
+                          n.content.toLowerCase().includes(appliedFilters.searchQuery.toLowerCase());
+    
+    let matchesDateFrom = true;
+    if (appliedFilters.dateFrom) {
+      matchesDateFrom = new Date(n.createdAt) >= new Date(appliedFilters.dateFrom + 'T00:00:00');
+    }
+    
+    let matchesDateTo = true;
+    if (appliedFilters.dateTo) {
+      matchesDateTo = new Date(n.createdAt) <= new Date(appliedFilters.dateTo + 'T23:59:59');
+    }
+    
+    return matchesSearch && matchesDateFrom && matchesDateTo;
+  });
+
+  const totalPages = Math.ceil(filteredNovedades.length / itemsPerPage);
+  const paginatedNovedades = filteredNovedades.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
   return (
     <div className="font-['Inter'] max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <h1 className="text-5xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Novedades</h1>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h1 className="text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Novedades</h1>
         <div className="flex gap-4">
           <button 
             onClick={generatePDF}
-            className="px-6 py-4 border-4 border-[#1a1a1a] bg-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-white transition-colors flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
+            className="px-4 py-3 border-2 border-[#1a1a1a] bg-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-white transition-colors flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-sm"
           >
-            <Download className="w-5 h-5" /> Reporte PDF
+            <Download className="w-4 h-4" /> Reporte PDF
           </button>
           <button 
             onClick={openNewModal}
-            className="px-6 py-4 border-4 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
+            className="px-4 py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-sm"
           >
-            <Plus className="w-5 h-5" /> Nueva Novedad
+            <Plus className="w-4 h-4" /> Nueva Novedad
           </button>
         </div>
       </div>
 
-      <div className="mb-8 relative">
-        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-          <Search className="w-6 h-6 text-[#1a1a1a] opacity-50" />
+      <div className="mb-6 bg-white border-2 border-[#1a1a1a] p-4 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="relative md:col-span-1">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search className="w-4 h-4 text-[#1a1a1a] opacity-50" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  setAppliedFilters({ searchQuery, dateFrom, dateTo });
+                }
+              }}
+              placeholder="BUSCAR NOVEDADES..."
+              className="w-full pl-10 p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
+            />
+          </div>
+          <div>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
+              title="Fecha Desde"
+            />
+          </div>
+          <div>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
+              title="Fecha Hasta"
+            />
+          </div>
+          <div>
+            <button 
+              onClick={() => setAppliedFilters({ searchQuery, dateFrom, dateTo })}
+              className="w-full h-full p-2 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center justify-center gap-2 text-xs"
+            >
+              <Filter className="w-4 h-4" /> Filtrar
+            </button>
+          </div>
         </div>
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="BUSCAR NOVEDADES..."
-          className="w-full pl-12 p-4 border-4 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[8px_8px_0px_0px_rgba(26,26,26,1)]"
-        />
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         {loading ? (
-          <div className="text-center p-12 font-black uppercase text-2xl animate-pulse">Cargando novedades...</div>
+          <div className="text-center p-8 font-black uppercase text-xl animate-pulse">Cargando novedades...</div>
         ) : filteredNovedades.length === 0 ? (
-          <div className="text-center p-12 bg-white border-4 border-[#1a1a1a] font-black uppercase text-2xl opacity-50">No hay novedades registradas</div>
+          <div className="text-center p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-xl opacity-50">No hay novedades que coincidan con los filtros</div>
         ) : (
           <AnimatePresence mode="popLayout">
-            {filteredNovedades.map((novedad) => (
+            {paginatedNovedades.map((novedad) => (
               <motion.div 
                 key={novedad.id}
                 layout
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-6 group"
+                className="bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-5 group"
               >
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h3 className="text-2xl font-black uppercase tracking-tight font-['Space_Grotesk'] mb-1">{novedad.title}</h3>
-                    <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-widest opacity-60">
+                    <h3 className="text-xl font-black uppercase tracking-tight font-['Space_Grotesk'] mb-1">{novedad.title}</h3>
+                    <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest opacity-60">
                       <span>{new Date(novedad.createdAt).toLocaleString()}</span>
                       <span>•</span>
                       <span>Por: {novedad.authorName}</span>
@@ -273,44 +421,102 @@ export default function Novedades() {
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
                       onClick={() => openEditModal(novedad)}
-                      className="p-2 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                      className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
                       title="Editar"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 className="w-3.5 h-3.5" />
                     </button>
-                    <button 
-                      onClick={() => handleDelete(novedad.id)}
-                      className="p-2 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
-                      title="Eliminar"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {isAdmin && (
+                      <button 
+                        onClick={() => handleDelete(novedad.id)}
+                        className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
+                        title="Eliminar"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div className="prose prose-sm max-w-none">
-                  <p className="whitespace-pre-wrap font-medium leading-relaxed">{novedad.content}</p>
+                <div className="prose prose-sm max-w-none mb-3">
+                  <p className="whitespace-pre-wrap font-medium leading-relaxed text-sm">{novedad.content}</p>
                 </div>
+                
+                {novedad.attachments && novedad.attachments.length > 0 && (
+                  <div className="mt-4 pt-4 border-t-2 border-[#1a1a1a]/10">
+                    <h4 className="text-xs font-bold uppercase tracking-widest opacity-70 mb-3">Archivos Adjuntos</h4>
+                    <div className="flex flex-wrap gap-4">
+                      {novedad.attachments.map((att, idx) => {
+                        const isImage = att.type.startsWith('image/');
+                        return (
+                          <div 
+                            key={idx} 
+                            onClick={() => isImage ? setPreviewImage(att.url) : window.open(att.url, '_blank')}
+                            className="flex flex-col border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors group w-48 overflow-hidden cursor-pointer"
+                            title={att.name}
+                          >
+                            {isImage ? (
+                              <div className="h-32 w-full border-b-2 border-[#1a1a1a] bg-white overflow-hidden">
+                                <img src={att.url} alt={att.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                              </div>
+                            ) : (
+                              <div className="h-32 w-full border-b-2 border-[#1a1a1a] bg-white flex items-center justify-center text-[#1a1a1a]">
+                                {getFileIcon(att.type, "w-12 h-12 opacity-50 group-hover:opacity-100 transition-opacity")}
+                              </div>
+                            )}
+                            <div className="p-3 flex items-center gap-2">
+                              {getFileIcon(att.type, "w-4 h-4 flex-shrink-0")}
+                              <span className="text-xs font-bold truncate">{att.name}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </motion.div>
             ))}
           </AnimatePresence>
         )}
       </div>
 
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-4 mt-6">
+            <button 
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <span className="font-black uppercase tracking-widest text-sm">
+              Página {currentPage} de {totalPages}
+            </span>
+            <button 
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-          <div className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-6 w-full max-w-3xl flex flex-col my-8">
-            <h2 className="text-3xl font-black uppercase mb-6 font-['Space_Grotesk'] tracking-widest">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto py-10">
+          <div className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-6 w-full max-w-3xl flex flex-col my-8">
+            <h2 className="text-2xl font-black uppercase mb-4 font-['Space_Grotesk'] tracking-widest">
               {isEditing ? 'Editar Novedad' : 'Nueva Novedad'}
             </h2>
             
-            <form onSubmit={handleSave} className="flex flex-col gap-6">
+            <form onSubmit={handleSave} className="flex flex-col gap-4">
               <div>
-                <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Título</label>
+                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Título</label>
                 <input
                   type="text"
                   value={currentNovedad.title || ''}
                   onChange={(e) => setCurrentNovedad({ ...currentNovedad, title: e.target.value })}
-                  className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-xl transition-colors"
+                  className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-lg transition-colors"
                   placeholder="TÍTULO DE LA NOVEDAD..."
                   required
                   autoFocus
@@ -318,32 +524,144 @@ export default function Novedades() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Contenido (Nota)</label>
+                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Contenido (Nota)</label>
                 <textarea
                   value={currentNovedad.content || ''}
                   onChange={(e) => setCurrentNovedad({ ...currentNovedad, content: e.target.value })}
-                  className="w-full h-64 p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium resize-none transition-colors"
+                  className="w-full h-48 p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium resize-none transition-colors text-sm"
                   placeholder="Escribe los detalles de la novedad aquí..."
                   required
                 />
+              </div>
+
+              {/* Attachments Section */}
+              <div className="border-2 border-[#1a1a1a] p-4 bg-white">
+                <div className="flex justify-between items-center mb-3">
+                  <label className="text-xs font-bold uppercase tracking-widest opacity-70">Archivos Adjuntos</label>
+                  <label className="cursor-pointer px-3 py-2 bg-[#1a1a1a] text-white font-bold uppercase text-xs tracking-widest hover:bg-[#333] transition-colors flex items-center gap-2">
+                    <Upload className="w-4 h-4" /> Subir Archivo
+                    <input 
+                      type="file" 
+                      className="hidden" 
+                      multiple
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setPendingFiles([...pendingFiles, ...Array.from(e.target.files)]);
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  {/* Existing Attachments */}
+                  {currentNovedad.attachments?.filter(a => !attachmentsToDelete.includes(a)).map((att, idx) => (
+                    <div key={`att-${idx}`} className="flex items-center justify-between p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
+                      <div className="flex items-center gap-3 truncate max-w-[80%]">
+                        {att.type.startsWith('image/') ? (
+                          <div 
+                            className="w-8 h-8 flex-shrink-0 border border-[#1a1a1a] overflow-hidden bg-white cursor-pointer" 
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setPreviewImage(att.url);
+                            }}
+                          >
+                            <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
+                          </div>
+                        ) : (
+                          getFileIcon(att.type, "w-5 h-5 flex-shrink-0")
+                        )}
+                        <a href={att.url} target="_blank" rel="noopener noreferrer" className="truncate text-sm font-medium hover:underline">
+                          {att.name}
+                        </a>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => setAttachmentsToDelete([...attachmentsToDelete, att])}
+                        className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors"
+                        title="Eliminar archivo"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {/* Pending Attachments */}
+                  {pendingFiles.map((file, idx) => (
+                    <div key={`pending-${idx}`} className="flex items-center justify-between p-2 border-2 border-dashed border-[#1a1a1a] bg-gray-50">
+                      <div className="flex items-center gap-3 truncate max-w-[80%] opacity-70">
+                        {file.type.startsWith('image/') ? (
+                          <div className="w-8 h-8 flex-shrink-0 border border-[#1a1a1a] overflow-hidden bg-white flex items-center justify-center">
+                            <ImageIcon className="w-4 h-4" />
+                          </div>
+                        ) : (
+                          getFileIcon(file.type, "w-5 h-5 flex-shrink-0")
+                        )}
+                        <span className="truncate text-sm font-medium">{file.name} (Pendiente)</span>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => setPendingFiles(pendingFiles.filter((_, i) => i !== idx))}
+                        className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors"
+                        title="Cancelar subida"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {(!currentNovedad.attachments || currentNovedad.attachments.length === 0 || currentNovedad.attachments.length === attachmentsToDelete.length) && pendingFiles.length === 0 && (
+                    <p className="text-xs font-bold uppercase tracking-widest opacity-50 text-center py-4">No hay archivos adjuntos</p>
+                  )}
+                </div>
               </div>
               
               <div className="flex justify-end gap-4 mt-4">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-4 border-4 border-[#1a1a1a] bg-white font-black uppercase tracking-widest hover:bg-gray-100 transition-colors"
+                  className="px-4 py-3 border-2 border-[#1a1a1a] bg-white font-black uppercase tracking-widest hover:bg-gray-100 transition-colors text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-8 py-4 border-4 border-[#1a1a1a] bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#00cc66] transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none flex items-center gap-2"
+                  disabled={isUploading}
+                  className="px-6 py-3 border-2 border-[#1a1a1a] bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#00cc66] transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
                 >
-                  {isEditing ? 'Guardar Cambios' : 'Publicar Novedad'}
+                  {isUploading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Guardando...
+                    </>
+                  ) : (
+                    isEditing ? 'Guardar Cambios' : 'Publicar Novedad'
+                  )}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {previewImage && (
+        <div 
+          className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" 
+          onClick={() => setPreviewImage(null)}
+        >
+          <div className="relative max-w-5xl max-h-[90vh] w-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setPreviewImage(null)}
+              className="absolute -top-12 right-0 p-2 text-white hover:text-[#0055ff] transition-colors"
+            >
+              <X className="w-8 h-8" />
+            </button>
+            <img 
+              src={previewImage} 
+              alt="Preview" 
+              className="max-w-full max-h-[90vh] object-contain border-4 border-white shadow-2xl" 
+            />
           </div>
         </div>
       )}

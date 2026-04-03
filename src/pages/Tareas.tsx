@@ -5,6 +5,7 @@ import { db, auth, storage } from '../firebase';
 import { Plus, Clock, CheckCircle, AlertCircle, Trash2, Search, Edit2, LayoutGrid, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Upload, Paperclip, X, Columns, History, CheckSquare } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
+import { useOutletContext } from 'react-router-dom';
 
 enum OperationType {
   CREATE = 'create',
@@ -105,6 +106,7 @@ interface Task {
 }
 
 export default function Tareas() {
+  const { isAdmin } = useOutletContext<{ isAdmin: boolean }>();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -115,6 +117,12 @@ export default function Tareas() {
   const [historyEvents, setHistoryEvents] = useState<TaskHistoryEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   
+  // Pagination State
+  const [currentPageGrid, setCurrentPageGrid] = useState(1);
+  const itemsPerPageGrid = 6;
+  const [currentPageHistory, setCurrentPageHistory] = useState(1);
+  const itemsPerPageHistory = 10;
+
   // Unified Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -437,7 +445,7 @@ export default function Tareas() {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'alta': return 'bg-[#e63b2e] text-white';
-      case 'media': return 'bg-[#ffcc00] text-[#1a1a1a]';
+      case 'media': return 'bg-[#0055ff] text-white';
       case 'baja': return 'bg-[#00cc66] text-white';
       default: return 'bg-gray-200 text-black';
     }
@@ -446,7 +454,7 @@ export default function Tareas() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completado': return <CheckCircle className="w-6 h-6 text-[#00cc66]" />;
-      case 'en_proceso': return <Clock className="w-6 h-6 text-[#ffcc00]" />;
+      case 'en_proceso': return <Clock className="w-6 h-6 text-[#0055ff]" />;
       default: return <AlertCircle className="w-6 h-6 text-[#e63b2e]" />;
     }
   };
@@ -461,6 +469,17 @@ export default function Tareas() {
     
     return matchesSearch && matchesStatus && matchesPriority && matchesTag;
   });
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPageGrid(1);
+  }, [searchQuery, statusFilter, priorityFilter, tagFilter]);
+
+  const totalPagesGrid = Math.max(1, Math.ceil(filteredTasks.length / itemsPerPageGrid));
+  const paginatedGridTasks = filteredTasks.slice((currentPageGrid - 1) * itemsPerPageGrid, currentPageGrid * itemsPerPageGrid);
+
+  const totalPagesHistory = Math.max(1, Math.ceil(historyEvents.length / itemsPerPageHistory));
+  const paginatedHistory = historyEvents.slice((currentPageHistory - 1) * itemsPerPageHistory, currentPageHistory * itemsPerPageHistory);
 
   const allTags = Array.from(new Set(tasks.flatMap(t => t.tags || []))).sort();
 
@@ -499,61 +518,61 @@ export default function Tareas() {
 
   return (
     <div className="font-['Inter'] max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <h1 className="text-5xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Lista de Tareas</h1>
-        <div className="flex border-4 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] bg-white">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        <h1 className="text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Lista de Tareas</h1>
+        <div className="flex border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] bg-white">
           <button 
             onClick={() => setViewMode('grid')}
-            className={`p-3 flex items-center gap-2 font-bold uppercase transition-colors ${viewMode === 'grid' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
+            className={`p-2 flex items-center gap-2 font-bold uppercase transition-colors text-xs ${viewMode === 'grid' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
           >
-            <LayoutGrid className="w-5 h-5" /> Grid
+            <LayoutGrid className="w-4 h-4" /> Grid
           </button>
-          <div className="w-1 bg-[#1a1a1a]"></div>
+          <div className="w-0.5 bg-[#1a1a1a]"></div>
           <button 
             onClick={() => setViewMode('kanban')}
-            className={`p-3 flex items-center gap-2 font-bold uppercase transition-colors ${viewMode === 'kanban' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
+            className={`p-2 flex items-center gap-2 font-bold uppercase transition-colors text-xs ${viewMode === 'kanban' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
           >
-            <Columns className="w-5 h-5" /> Kanban
+            <Columns className="w-4 h-4" /> Kanban
           </button>
-          <div className="w-1 bg-[#1a1a1a]"></div>
+          <div className="w-0.5 bg-[#1a1a1a]"></div>
           <button 
             onClick={() => setViewMode('calendar')}
-            className={`p-3 flex items-center gap-2 font-bold uppercase transition-colors ${viewMode === 'calendar' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
+            className={`p-2 flex items-center gap-2 font-bold uppercase transition-colors text-xs ${viewMode === 'calendar' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
           >
-            <CalendarIcon className="w-5 h-5" /> Calendario
+            <CalendarIcon className="w-4 h-4" /> Calendario
           </button>
-          <div className="w-1 bg-[#1a1a1a]"></div>
+          <div className="w-0.5 bg-[#1a1a1a]"></div>
           <button 
             onClick={() => setViewMode('history')}
-            className={`p-3 flex items-center gap-2 font-bold uppercase transition-colors ${viewMode === 'history' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
+            className={`p-2 flex items-center gap-2 font-bold uppercase transition-colors text-xs ${viewMode === 'history' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
           >
-            <History className="w-5 h-5" /> Historial
+            <History className="w-4 h-4" /> Historial
           </button>
         </div>
       </div>
       
       {/* Add Task Button */}
-      <div className="mb-12">
+      <div className="mb-8">
         <button 
           onClick={() => openNewTaskModal()}
-          className="w-full md:w-auto px-8 py-4 border-4 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
+          className="w-full md:w-auto px-6 py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-sm"
         >
-          <Plus className="w-6 h-6" /> Añadir Nueva Tarea
+          <Plus className="w-5 h-5" /> Añadir Nueva Tarea
         </button>
       </div>
 
       {/* Search and Filters */}
-      <div className="mb-8 flex flex-col md:flex-row gap-4">
+      <div className="mb-6 flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-            <Search className="w-6 h-6 text-[#1a1a1a] opacity-50" />
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="w-5 h-5 text-[#1a1a1a] opacity-50" />
           </div>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="BUSCAR TAREAS POR TÍTULO O DESCRIPCIÓN..."
-            className="w-full pl-12 p-4 border-4 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[8px_8px_0px_0px_rgba(26,26,26,1)]"
+            className="w-full pl-10 p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] text-sm"
           />
         </div>
         
@@ -561,7 +580,7 @@ export default function Tareas() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="p-4 border-4 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] cursor-pointer"
+            className="p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-sm"
           >
             <option value="todos">Todos los estados</option>
             <option value="pendiente">Pendiente</option>
@@ -572,7 +591,7 @@ export default function Tareas() {
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value as any)}
-            className="p-4 border-4 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] cursor-pointer"
+            className="p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-sm"
           >
             <option value="todos">Todas las prioridades</option>
             <option value="alta">Alta</option>
@@ -583,7 +602,7 @@ export default function Tareas() {
           <select
             value={tagFilter}
             onChange={(e) => setTagFilter(e.target.value)}
-            className="p-4 border-4 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] cursor-pointer"
+            className="p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-sm"
           >
             <option value="todos">Todas las etiquetas</option>
             {allTags.map(tag => (
@@ -595,11 +614,11 @@ export default function Tareas() {
 
       {/* Task List / Calendar View */}
       {viewMode === 'kanban' ? (
-        <div className="flex flex-col md:flex-row gap-6 overflow-x-auto pb-4 min-h-[600px]">
+        <div className="flex flex-col md:flex-row gap-4 overflow-x-auto pb-4 min-h-[600px]">
           {(['pendiente', 'en_proceso', 'completado'] as const).map((status) => (
             <div 
               key={status} 
-              className="flex-1 min-w-[300px] bg-gray-50 border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] flex flex-col"
+              className="flex-1 min-w-[280px] bg-gray-50 border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col"
               onDragOver={(e) => {
                 e.preventDefault();
                 e.currentTarget.classList.add('bg-[#f5f0e8]');
@@ -616,16 +635,16 @@ export default function Tareas() {
                 }
               }}
             >
-              <div className="p-4 border-b-4 border-[#1a1a1a] bg-white flex justify-between items-center">
-                <h3 className="font-black uppercase tracking-widest flex items-center gap-2">
+              <div className="p-3 border-b-2 border-[#1a1a1a] bg-white flex justify-between items-center">
+                <h3 className="font-black uppercase tracking-widest flex items-center gap-2 text-sm">
                   {getStatusIcon(status)}
                   {status.replace('_', ' ')}
                 </h3>
-                <span className="bg-[#1a1a1a] text-white text-xs font-bold px-2 py-1 rounded-full">
+                <span className="bg-[#1a1a1a] text-white text-xs font-bold px-2 py-0.5 rounded-full">
                   {filteredTasks.filter(t => t.status === status).length}
                 </span>
               </div>
-              <div className="p-4 flex-1 flex flex-col gap-4 overflow-y-auto custom-scrollbar">
+              <div className="p-3 flex-1 flex flex-col gap-3 overflow-y-auto custom-scrollbar">
                 {filteredTasks.filter(t => t.status === status).map(task => (
                   <div
                     key={task.id}
@@ -640,22 +659,24 @@ export default function Tareas() {
                     onDragEnd={(e) => {
                       (e.target as HTMLElement).classList.remove('opacity-50');
                     }}
-                    className="p-4 bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-move hover:-translate-y-1 hover:shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] transition-all group"
+                    className="p-3 bg-white border-2 border-[#1a1a1a] shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] cursor-move hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] transition-all group"
                   >
                     <div className="flex justify-between items-start mb-2">
-                      <span className={`px-2 py-1 border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-widest ${getPriorityColor(task.priority)}`}>
+                      <span className={`px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[9px] tracking-widest ${getPriorityColor(task.priority)}`}>
                         {task.priority}
                       </span>
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => openEditTaskModal(task)} className="p-1 hover:bg-[#1a1a1a] hover:text-white transition-colors" title="Editar">
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3.5 h-3.5" />
                         </button>
-                        <button onClick={() => handleDeleteTask(task.id)} className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors" title="Eliminar">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {isAdmin && (
+                          <button onClick={() => handleDeleteTask(task.id)} className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors" title="Eliminar">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <h4 className={`font-black uppercase tracking-tight mb-2 ${task.status === 'completado' ? 'line-through text-gray-500' : ''}`}>
+                    <h4 className={`font-black uppercase tracking-tight mb-2 text-sm ${task.status === 'completado' ? 'line-through text-gray-500' : ''}`}>
                       {task.title}
                     </h4>
                     {task.tags && task.tags.length > 0 && (
@@ -694,34 +715,34 @@ export default function Tareas() {
           ))}
         </div>
       ) : viewMode === 'history' ? (
-        <div className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-6">
-          <h2 className="text-3xl font-black uppercase mb-6 font-['Space_Grotesk'] tracking-widest border-b-4 border-[#1a1a1a] pb-4">
+        <div className="bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-5">
+          <h2 className="text-2xl font-black uppercase mb-4 font-['Space_Grotesk'] tracking-widest border-b-2 border-[#1a1a1a] pb-3">
             Historial de Tareas
           </h2>
-          <div className="flex flex-col gap-4">
-            {historyEvents.length === 0 ? (
-              <div className="text-center p-12 font-black uppercase text-xl opacity-50">
+          <div className="flex flex-col gap-3">
+            {paginatedHistory.length === 0 ? (
+              <div className="text-center p-8 font-black uppercase text-lg opacity-50">
                 No hay eventos en el historial
               </div>
             ) : (
-              historyEvents.map(event => (
-                <div key={event.id} className="p-4 border-2 border-[#1a1a1a] bg-[#f5f0e8] flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-[#1a1a1a] hover:text-white transition-colors group">
-                  <div className="flex items-center gap-4">
-                    <div className={`p-3 border-2 border-[#1a1a1a] group-hover:border-white ${event.action === 'completado' ? 'bg-[#00cc66] text-white' : 'bg-[#e63b2e] text-white'}`}>
-                      {event.action === 'completado' ? <CheckCircle className="w-6 h-6" /> : <Trash2 className="w-6 h-6" />}
+              paginatedHistory.map(event => (
+                <div key={event.id} className="p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] flex flex-col md:flex-row justify-between items-start md:items-center gap-3 hover:bg-[#1a1a1a] hover:text-white transition-colors group">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 border-2 border-[#1a1a1a] group-hover:border-white ${event.action === 'completado' ? 'bg-[#00cc66] text-white' : 'bg-[#e63b2e] text-white'}`}>
+                      {event.action === 'completado' ? <CheckCircle className="w-5 h-5" /> : <Trash2 className="w-5 h-5" />}
                     </div>
                     <div>
-                      <h4 className="font-black uppercase tracking-widest text-lg">{event.taskTitle}</h4>
-                      <p className="text-sm font-bold opacity-70 uppercase tracking-widest">
+                      <h4 className="font-black uppercase tracking-widest text-base">{event.taskTitle}</h4>
+                      <p className="text-xs font-bold opacity-70 uppercase tracking-widest">
                         {event.action === 'completado' ? 'Completada' : 'Eliminada'} por {event.userEmail}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-bold uppercase tracking-widest opacity-70">
+                    <p className="text-xs font-bold uppercase tracking-widest opacity-70">
                       {new Date(event.timestamp).toLocaleDateString()}
                     </p>
-                    <p className="text-xs font-bold uppercase tracking-widest opacity-50">
+                    <p className="text-[10px] font-bold uppercase tracking-widest opacity-50">
                       {new Date(event.timestamp).toLocaleTimeString()}
                     </p>
                   </div>
@@ -729,19 +750,43 @@ export default function Tareas() {
               ))
             )}
           </div>
+          
+          {/* History Pagination */}
+          {totalPagesHistory > 1 && (
+            <div className="flex justify-center items-center gap-3 mt-6">
+              <button 
+                onClick={() => setCurrentPageHistory(p => Math.max(1, p - 1))}
+                disabled={currentPageHistory === 1}
+                className="p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <span className="font-black uppercase tracking-widest text-sm">
+                Página {currentPageHistory} de {totalPagesHistory}
+              </span>
+              <button 
+                onClick={() => setCurrentPageHistory(p => Math.min(totalPagesHistory, p + 1))}
+                disabled={currentPageHistory === totalPagesHistory}
+                className="p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
         </div>
       ) : viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {loading ? (
-          <div className="col-span-full text-center p-12 font-black uppercase text-2xl animate-pulse">Cargando tareas...</div>
-        ) : tasks.length === 0 ? (
-          <div className="col-span-full text-center p-12 bg-white border-4 border-[#1a1a1a] font-black uppercase text-2xl opacity-50">No hay tareas pendientes</div>
-        ) : filteredTasks.length === 0 ? (
-          <div className="col-span-full text-center p-12 bg-white border-4 border-[#1a1a1a] font-black uppercase text-2xl opacity-50">No se encontraron tareas para "{searchQuery}"</div>
-        ) : (
-          <AnimatePresence mode="popLayout">
-            {filteredTasks.map((task) => (
-              <motion.div 
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {loading ? (
+            <div className="col-span-full text-center p-8 font-black uppercase text-xl animate-pulse">Cargando tareas...</div>
+          ) : tasks.length === 0 ? (
+            <div className="col-span-full text-center p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-xl opacity-50">No hay tareas pendientes</div>
+          ) : paginatedGridTasks.length === 0 ? (
+            <div className="col-span-full text-center p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-xl opacity-50">No se encontraron tareas para "{searchQuery}"</div>
+          ) : (
+            <AnimatePresence mode="popLayout">
+              {paginatedGridTasks.map((task) => (
+                <motion.div 
                 key={task.id} 
                 layout
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -753,37 +798,37 @@ export default function Tareas() {
                 exit={{ opacity: 0, scale: 0.9 }}
                 whileHover={task.status !== 'completado' ? { y: -4 } : {}}
                 transition={{ duration: 0.3 }}
-                className="p-6 border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] flex flex-col justify-between group relative"
+                className="p-4 border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col justify-between group relative"
               >
-                <div className="flex justify-between items-start mb-6">
+                <div className="flex justify-between items-start mb-4">
                 <select
                   value={task.priority}
                   onChange={(e) => handleUpdatePriority(task.id, e.target.value as 'alta' | 'media' | 'baja')}
-                  className={`px-2 py-1 border-2 border-[#1a1a1a] font-black uppercase text-xs tracking-widest cursor-pointer focus:outline-none ${getPriorityColor(task.priority)}`}
+                  className={`px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-widest cursor-pointer focus:outline-none ${getPriorityColor(task.priority)}`}
                 >
                   <option value="alta" className="bg-[#e63b2e] text-white">ALTA</option>
-                  <option value="media" className="bg-[#ffcc00] text-[#1a1a1a]">MEDIA</option>
+                  <option value="media" className="bg-[#0055ff] text-white">MEDIA</option>
                   <option value="baja" className="bg-[#00cc66] text-white">BAJA</option>
                 </select>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <select
                     value={task.status}
                     onChange={(e) => handleUpdateStatus(task.id, e.target.value as 'pendiente' | 'en_proceso' | 'completado')}
-                    className="px-2 py-1 border-2 border-[#1a1a1a] font-black uppercase text-xs tracking-widest cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
+                    className="px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-widest cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
                   >
                     <option value="pendiente">PENDIENTE</option>
                     <option value="en_proceso">EN PROCESO</option>
                     <option value="completado">COMPLETADO</option>
                   </select>
-                  <div className="p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
+                  <div className="p-1 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
                     {getStatusIcon(task.status)}
                   </div>
                 </div>
               </div>
               
-              <div className="mb-8 flex-1 flex flex-col">
-                <h3 className={`text-2xl font-black uppercase tracking-tight font-['Space_Grotesk'] line-clamp-2 relative w-fit ${task.status === 'completado' ? 'text-gray-500' : ''}`} title={task.title}>
+              <div className="mb-4 flex-1 flex flex-col">
+                <h3 className={`text-xl font-black uppercase tracking-tight font-['Space_Grotesk'] line-clamp-2 relative w-fit ${task.status === 'completado' ? 'text-gray-500' : ''}`} title={task.title}>
                   {task.title}
                   {task.status === 'completado' && (
                     <motion.div 
@@ -798,7 +843,7 @@ export default function Tareas() {
                 {task.tags && task.tags.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-2">
                     {task.tags.map(tag => (
-                      <span key={tag} className="px-2 py-1 bg-[#f5f0e8] border border-[#1a1a1a] text-[10px] font-bold uppercase tracking-widest">
+                      <span key={tag} className="px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[9px] font-bold uppercase tracking-widest">
                         {tag}
                       </span>
                     ))}
@@ -807,11 +852,11 @@ export default function Tareas() {
                 
                 <button 
                   onClick={() => openEditTaskModal(task)}
-                  className={`mt-4 mb-4 p-3 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors text-left flex justify-between items-center group flex-1 ${task.status === 'completado' ? 'bg-gray-300' : 'bg-[#f5f0e8]'}`}
+                  className={`mt-3 mb-3 p-2 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors text-left flex justify-between items-center group flex-1 ${task.status === 'completado' ? 'bg-gray-300' : 'bg-[#f5f0e8]'}`}
                 >
                   <div className="flex-1 overflow-hidden relative">
                     {task.description ? (
-                      <p className={`text-sm font-medium line-clamp-2 relative w-fit ${task.status === 'completado' ? 'text-gray-600' : ''}`}>
+                      <p className={`text-xs font-medium line-clamp-2 relative w-fit ${task.status === 'completado' ? 'text-gray-600' : ''}`}>
                         {task.description}
                         {task.status === 'completado' && (
                           <motion.div 
@@ -823,7 +868,7 @@ export default function Tareas() {
                         )}
                       </p>
                     ) : (
-                      <span className={`text-sm font-bold uppercase tracking-widest opacity-50 relative w-fit ${task.status === 'completado' ? 'text-gray-600' : ''}`}>
+                      <span className={`text-xs font-bold uppercase tracking-widest opacity-50 relative w-fit ${task.status === 'completado' ? 'text-gray-600' : ''}`}>
                         Añadir Descripción...
                         {task.status === 'completado' && (
                           <motion.div 
@@ -836,20 +881,20 @@ export default function Tareas() {
                       </span>
                     )}
                   </div>
-                  <Edit2 className="w-4 h-4 ml-2 opacity-50 group-hover:opacity-100 flex-shrink-0" />
+                  <Edit2 className="w-3.5 h-3.5 ml-2 opacity-50 group-hover:opacity-100 flex-shrink-0" />
                 </button>
 
-                <div className="mb-4">
-                  <label className="block text-xs font-bold uppercase tracking-widest opacity-60 mb-1">Vencimiento:</label>
+                <div className="mb-3">
+                  <label className="block text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1">Vencimiento:</label>
                   <input
                     type="date"
                     value={task.dueDate || ''}
                     onChange={(e) => handleUpdateDueDate(task.id, e.target.value)}
-                    className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-sm cursor-pointer"
+                    className="w-full p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs cursor-pointer"
                   />
                 </div>
 
-                <p className="text-xs font-bold opacity-60 uppercase tracking-widest mt-auto">
+                <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest mt-auto">
                   Creada: {new Date(task.createdAt).toLocaleDateString()}
                 </p>
                 {task.subtasks && task.subtasks.length > 0 && (
@@ -864,12 +909,12 @@ export default function Tareas() {
                 )}
               </div>
 
-              <div className="flex justify-end gap-2 mt-auto pt-4 border-t-2 border-[#1a1a1a]/10">
+              <div className="flex justify-end gap-2 mt-auto pt-3 border-t-2 border-[#1a1a1a]/10">
                 <label 
-                  className="p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                  className="p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
                   title="Subir archivo rápido"
                 >
-                  <Upload className="w-5 h-5" />
+                  <Upload className="w-4 h-4" />
                   <input 
                     type="file" 
                     className="hidden" 
@@ -882,33 +927,59 @@ export default function Tareas() {
                     }} 
                   />
                 </label>
-                <button 
-                  onClick={() => handleDeleteTask(task.id)}
-                  className="p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors opacity-0 group-hover:opacity-100"
-                  title="Eliminar tarea"
-                >
-                  <Trash2 className="w-5 h-5" />
-                </button>
+                {isAdmin && (
+                  <button 
+                    onClick={() => handleDeleteTask(task.id)}
+                    className="p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                    title="Eliminar tarea"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </motion.div>
           ))}
         </AnimatePresence>
         )}
+        </div>
+
+        {/* Grid Pagination */}
+        {totalPagesGrid > 1 && (
+          <div className="flex justify-center items-center gap-3 mt-6">
+            <button 
+              onClick={() => setCurrentPageGrid(p => Math.max(1, p - 1))}
+              disabled={currentPageGrid === 1}
+              className="p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <span className="font-black uppercase tracking-widest text-sm">
+              Página {currentPageGrid} de {totalPagesGrid}
+            </span>
+            <button 
+              onClick={() => setCurrentPageGrid(p => Math.min(totalPagesGrid, p + 1))}
+              disabled={currentPageGrid === totalPagesGrid}
+              className="p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </div>
+        )}
       </div>
       ) : (
-        <div className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-6 overflow-x-auto">
-          <div className="flex justify-between items-center mb-6 min-w-[600px]">
+        <div className="bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-5 overflow-x-auto">
+          <div className="flex justify-between items-center mb-4 min-w-[600px]">
             <div className="flex gap-2">
-              <button onClick={prevMonth} className="p-2 border-4 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none" title="Mes anterior (Flecha Izquierda)">
-                <ChevronLeft className="w-6 h-6" />
+              <button onClick={prevMonth} className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none" title="Mes anterior (Flecha Izquierda)">
+                <ChevronLeft className="w-5 h-5" />
               </button>
-              <button onClick={goToToday} className="px-4 py-2 border-4 border-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none" title="Ir a hoy (Tecla T)">
+              <button onClick={goToToday} className="px-3 py-1.5 border-2 border-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none text-sm" title="Ir a hoy (Tecla T)">
                 Hoy
               </button>
             </div>
-            <h2 className="text-3xl font-black uppercase tracking-widest font-['Space_Grotesk'] text-center flex-1">{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</h2>
-            <button onClick={nextMonth} className="p-2 border-4 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none" title="Mes siguiente (Flecha Derecha)">
-              <ChevronRight className="w-6 h-6" />
+            <h2 className="text-2xl font-black uppercase tracking-widest font-['Space_Grotesk'] text-center flex-1">{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</h2>
+            <button onClick={nextMonth} className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none" title="Mes siguiente (Flecha Derecha)">
+              <ChevronRight className="w-5 h-5" />
             </button>
           </div>
           <div className="grid grid-cols-7 gap-2 mb-2 min-w-[600px]">
@@ -937,7 +1008,7 @@ export default function Tareas() {
                       handleUpdateDueDate(taskId, dateStr);
                     }
                   }}
-                  className={`min-h-[120px] p-2 border-2 border-[#1a1a1a] flex flex-col relative group ${isToday ? 'bg-[#ffcc00]/20' : 'bg-[#f5f0e8]'}`}
+                  className={`min-h-[120px] p-2 border-2 border-[#1a1a1a] flex flex-col relative group ${isToday ? 'bg-[#0055ff]/20' : 'bg-[#f5f0e8]'}`}
                 >
                   <div className="flex justify-between items-start mb-2">
                     <span className={`font-black text-lg w-8 h-8 flex items-center justify-center ${isToday ? 'bg-[#1a1a1a] text-white rounded-full' : ''}`}>{day}</span>
@@ -990,32 +1061,32 @@ export default function Tareas() {
       {/* Unified Task Modal (Create & Edit) */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto pt-10 pb-10">
-          <div className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-6 w-full max-w-2xl relative">
-            <h2 className="text-3xl font-black uppercase mb-6 font-['Space_Grotesk'] tracking-widest">
+          <div className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-5 w-full max-w-2xl relative">
+            <h2 className="text-2xl font-black uppercase mb-4 font-['Space_Grotesk'] tracking-widest">
               {isEditing ? 'Editar Tarea' : 'Nueva Tarea'}
             </h2>
             
-            <form onSubmit={handleSaveTask} className="flex flex-col gap-6">
+            <form onSubmit={handleSaveTask} className="flex flex-col gap-4">
               <div>
-                <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Título</label>
+                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Título</label>
                 <input
                   type="text"
                   value={currentTask.title || ''}
                   onChange={(e) => setCurrentTask({ ...currentTask, title: e.target.value })}
-                  className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-xl transition-colors"
+                  className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-lg transition-colors"
                   placeholder="TÍTULO DE LA TAREA..."
                   required
                   autoFocus
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Estado</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Estado</label>
                   <select
                     value={currentTask.status || 'pendiente'}
                     onChange={(e) => setCurrentTask({ ...currentTask, status: e.target.value as any })}
-                    className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer"
+                    className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
                   >
                     <option value="pendiente">Pendiente</option>
                     <option value="en_proceso">En Proceso</option>
@@ -1024,11 +1095,11 @@ export default function Tareas() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Prioridad</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Prioridad</label>
                   <select
                     value={currentTask.priority || 'media'}
                     onChange={(e) => setCurrentTask({ ...currentTask, priority: e.target.value as any })}
-                    className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer"
+                    className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
                   >
                     <option value="alta">Alta</option>
                     <option value="media">Media</option>
@@ -1037,21 +1108,21 @@ export default function Tareas() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Vencimiento</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Vencimiento</label>
                   <input
                     type="date"
                     value={currentTask.dueDate || ''}
                     onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
-                    className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer"
+                    className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Recurrencia</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Recurrencia</label>
                   <select
                     value={currentTask.recurrence || 'none'}
                     onChange={(e) => setCurrentTask({ ...currentTask, recurrence: e.target.value as any })}
-                    className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer"
+                    className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
                   >
                     <option value="none">Ninguna</option>
                     <option value="diaria">Diaria</option>
@@ -1061,37 +1132,37 @@ export default function Tareas() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Etiquetas (separadas por comas)</label>
+                  <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Etiquetas (separadas por comas)</label>
                   <input
                     type="text"
                     value={currentTagsInput}
                     onChange={(e) => setCurrentTagsInput(e.target.value)}
-                    className="w-full p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors"
+                    className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-sm"
                     placeholder="EJ: URGENTE, DISEÑO, BUG"
                   />
                 </div>
               </div>
 
               {/* Tabs Navigation */}
-              <div className="flex border-b-4 border-[#1a1a1a] overflow-x-auto custom-scrollbar">
+              <div className="flex border-b-2 border-[#1a1a1a] overflow-x-auto custom-scrollbar">
                 <button
                   type="button"
                   onClick={() => setActiveTab('description')}
-                  className={`px-4 py-3 font-bold uppercase tracking-widest whitespace-nowrap border-r-4 border-[#1a1a1a] transition-colors ${activeTab === 'description' ? 'bg-[#1a1a1a] text-white' : 'bg-[#f5f0e8] hover:bg-gray-200'}`}
+                  className={`px-3 py-2 font-bold uppercase tracking-widest whitespace-nowrap border-r-2 border-[#1a1a1a] transition-colors text-xs ${activeTab === 'description' ? 'bg-[#1a1a1a] text-white' : 'bg-[#f5f0e8] hover:bg-gray-200'}`}
                 >
                   Descripción
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('subtasks')}
-                  className={`px-4 py-3 font-bold uppercase tracking-widest whitespace-nowrap border-r-4 border-[#1a1a1a] transition-colors ${activeTab === 'subtasks' ? 'bg-[#1a1a1a] text-white' : 'bg-[#f5f0e8] hover:bg-gray-200'}`}
+                  className={`px-3 py-2 font-bold uppercase tracking-widest whitespace-nowrap border-r-2 border-[#1a1a1a] transition-colors text-xs ${activeTab === 'subtasks' ? 'bg-[#1a1a1a] text-white' : 'bg-[#f5f0e8] hover:bg-gray-200'}`}
                 >
                   Subtareas {currentTask.subtasks && currentTask.subtasks.length > 0 && `(${currentTask.subtasks.length})`}
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('attachments')}
-                  className={`px-4 py-3 font-bold uppercase tracking-widest whitespace-nowrap border-r-4 border-[#1a1a1a] transition-colors ${activeTab === 'attachments' ? 'bg-[#1a1a1a] text-white' : 'bg-[#f5f0e8] hover:bg-gray-200'}`}
+                  className={`px-3 py-2 font-bold uppercase tracking-widest whitespace-nowrap border-r-2 border-[#1a1a1a] transition-colors text-xs ${activeTab === 'attachments' ? 'bg-[#1a1a1a] text-white' : 'bg-[#f5f0e8] hover:bg-gray-200'}`}
                 >
                   Adjuntos {((currentTask.attachments?.length || 0) - attachmentsToDelete.length + pendingFiles.length) > 0 && `(${((currentTask.attachments?.length || 0) - attachmentsToDelete.length + pendingFiles.length)})`}
                 </button>
@@ -1099,7 +1170,7 @@ export default function Tareas() {
                   <button
                     type="button"
                     onClick={() => setActiveTab('comments')}
-                    className={`px-4 py-3 font-bold uppercase tracking-widest whitespace-nowrap transition-colors ${activeTab === 'comments' ? 'bg-[#1a1a1a] text-white' : 'bg-[#f5f0e8] hover:bg-gray-200'}`}
+                    className={`px-3 py-2 font-bold uppercase tracking-widest whitespace-nowrap transition-colors text-xs ${activeTab === 'comments' ? 'bg-[#1a1a1a] text-white' : 'bg-[#f5f0e8] hover:bg-gray-200'}`}
                   >
                     Comentarios {currentTask.comments && currentTask.comments.length > 0 && `(${currentTask.comments.length})`}
                   </button>
@@ -1107,21 +1178,21 @@ export default function Tareas() {
               </div>
 
               {/* Tab Contents */}
-              <div className="min-h-[250px]">
+              <div className="min-h-[200px]">
                 {activeTab === 'description' && (
                   <div className="animate-in fade-in duration-200">
                     <textarea
                       value={currentTask.description || ''}
                       onChange={(e) => setCurrentTask({ ...currentTask, description: e.target.value })}
-                      className="w-full h-48 p-4 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium resize-none transition-colors"
+                      className="w-full h-40 p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium resize-none transition-colors text-sm"
                       placeholder="Escribe la descripción de la tarea aquí..."
                     />
                   </div>
                 )}
 
                 {activeTab === 'subtasks' && (
-                  <div className="border-4 border-[#1a1a1a] p-4 bg-white animate-in fade-in duration-200">
-                    <div className="flex gap-2 mb-4">
+                  <div className="border-2 border-[#1a1a1a] p-3 bg-white animate-in fade-in duration-200">
+                    <div className="flex gap-2 mb-3">
                       <input
                         type="text"
                         value={newSubtaskTitle}
@@ -1201,11 +1272,11 @@ export default function Tareas() {
                 )}
 
                 {activeTab === 'attachments' && (
-                  <div className="border-4 border-[#1a1a1a] p-4 bg-white animate-in fade-in duration-200">
-                    <div className="flex justify-between items-center mb-4">
-                      <label className="text-sm font-bold uppercase tracking-widest opacity-70">Archivos Adjuntos</label>
-                      <label className="cursor-pointer px-4 py-2 bg-[#1a1a1a] text-white font-bold uppercase text-xs tracking-widest hover:bg-[#333] transition-colors flex items-center gap-2">
-                        <Upload className="w-4 h-4" /> Subir Archivo
+                  <div className="border-2 border-[#1a1a1a] p-3 bg-white animate-in fade-in duration-200">
+                    <div className="flex justify-between items-center mb-3">
+                      <label className="text-xs font-bold uppercase tracking-widest opacity-70">Archivos Adjuntos</label>
+                      <label className="cursor-pointer px-3 py-1.5 bg-[#1a1a1a] text-white font-bold uppercase text-[10px] tracking-widest hover:bg-[#333] transition-colors flex items-center gap-2">
+                        <Upload className="w-3.5 h-3.5" /> Subir Archivo
                         <input 
                           type="file" 
                           className="hidden" 
@@ -1225,8 +1296,8 @@ export default function Tareas() {
                       {currentTask.attachments?.filter(a => !attachmentsToDelete.includes(a)).map((att, idx) => (
                         <div key={`att-${idx}`} className="flex items-center justify-between p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
                           <a href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:underline truncate max-w-[80%]">
-                            <Paperclip className="w-4 h-4 flex-shrink-0" />
-                            <span className="truncate text-sm font-medium">{att.name}</span>
+                            <Paperclip className="w-3.5 h-3.5 flex-shrink-0" />
+                            <span className="truncate text-xs font-medium">{att.name}</span>
                           </a>
                           <button 
                             type="button"
@@ -1265,19 +1336,19 @@ export default function Tareas() {
                 )}
 
                 {activeTab === 'comments' && isEditing && (
-                  <div className="border-4 border-[#1a1a1a] p-4 bg-white animate-in fade-in duration-200">
-                    <div className="flex flex-col gap-4 mb-4 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+                  <div className="border-2 border-[#1a1a1a] p-3 bg-white animate-in fade-in duration-200">
+                    <div className="flex flex-col gap-3 mb-3 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
                       {currentTask.comments?.map((comment) => (
-                        <div key={comment.id} className="p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="font-bold text-sm">{comment.authorName}</span>
-                            <span className="text-xs opacity-70">{new Date(comment.createdAt).toLocaleString()}</span>
+                        <div key={comment.id} className="p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-bold text-xs">{comment.authorName}</span>
+                            <span className="text-[10px] opacity-70">{new Date(comment.createdAt).toLocaleString()}</span>
                           </div>
-                          <p className="text-sm whitespace-pre-wrap">{comment.text}</p>
+                          <p className="text-xs whitespace-pre-wrap">{comment.text}</p>
                         </div>
                       ))}
                       {(!currentTask.comments || currentTask.comments.length === 0) && (
-                        <p className="text-xs font-bold uppercase tracking-widest opacity-50 text-center py-2">No hay comentarios aún</p>
+                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-50 text-center py-2">No hay comentarios aún</p>
                       )}
                     </div>
 
@@ -1305,7 +1376,7 @@ export default function Tareas() {
                             }
                           }
                         }}
-                        className="flex-1 p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium transition-colors text-sm"
+                        className="flex-1 p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium transition-colors text-xs"
                         placeholder="Escribe un comentario..."
                       />
                       <button
@@ -1326,7 +1397,7 @@ export default function Tareas() {
                             setNewCommentText('');
                           }
                         }}
-                        className="px-4 py-2 bg-[#1a1a1a] text-white font-bold uppercase text-sm hover:bg-[#333] transition-colors"
+                        className="px-3 py-1.5 bg-[#1a1a1a] text-white font-bold uppercase text-xs hover:bg-[#333] transition-colors"
                       >
                         Comentar
                       </button>
@@ -1335,22 +1406,22 @@ export default function Tareas() {
                 )}
               </div>
               
-              <div className="flex justify-end gap-4 mt-4">
+              <div className="flex justify-end gap-3 mt-2">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-6 py-4 border-4 border-[#1a1a1a] bg-white font-black uppercase tracking-widest hover:bg-gray-100 transition-colors"
+                  className="px-4 py-2 border-2 border-[#1a1a1a] bg-white font-black uppercase tracking-widest hover:bg-gray-100 transition-colors text-sm"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isUploading}
-                  className="px-8 py-4 border-4 border-[#1a1a1a] bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#00cc66] transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-5 py-2 border-2 border-[#1a1a1a] bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#00cc66] transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 text-sm"
                 >
                   {isUploading ? (
                     <>
-                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                       Guardando...
                     </>
                   ) : (
