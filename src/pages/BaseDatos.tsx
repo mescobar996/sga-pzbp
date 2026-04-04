@@ -1,7 +1,7 @@
-import { Users, MapPin, Server, Edit, Trash2, Download, AlertTriangle, Plus, X } from 'lucide-react';
+import { Users, MapPin, Server, Edit, Trash2, Download, Upload, AlertTriangle, Plus, X, FileJson, FileSpreadsheet } from 'lucide-react';
 import { toast } from 'sonner';
-import { useState, useEffect } from 'react';
-import { collection, getDocs, deleteDoc, doc, onSnapshot, addDoc, updateDoc, query, orderBy } from 'firebase/firestore';
+import { useState, useEffect, useRef } from 'react';
+import { collection, getDocs, deleteDoc, doc, onSnapshot, addDoc, updateDoc, query, orderBy, setDoc } from 'firebase/firestore';
 import { db, auth } from '../firebase';
 import { reauthenticateWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import * as XLSX from 'xlsx';
@@ -28,6 +28,12 @@ export default function BaseDatos() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importCollection, setImportCollection] = useState('tasks');
+  const [importPreview, setImportPreview] = useState<any[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Data states
   const [personnel, setPersonnel] = useState<Personal[]>([]);
@@ -281,6 +287,97 @@ export default function BaseDatos() {
     }
   };
 
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImportFile(file);
+
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    const reader = new FileReader();
+
+    if (ext === 'json') {
+      reader.onload = (event) => {
+        try {
+          const data = JSON.parse(event.target?.result as string);
+          const records = Array.isArray(data) ? data : (data.registros || data.records || data.datos || []);
+          setImportPreview(records);
+          toast.success(`${records.length} registros encontrados en el archivo`);
+        } catch {
+          toast.error('Error al leer el archivo JSON');
+          setImportFile(null);
+        }
+      };
+      reader.readAsText(file);
+    } else if (ext === 'xlsx' || ext === 'xls' || ext === 'csv') {
+      reader.onload = (event) => {
+        try {
+          const workbook = XLSX.read(event.target?.result, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const data = XLSX.utils.sheet_to_json(worksheet);
+          setImportPreview(data);
+          toast.success(`${data.length} registros encontrados en el archivo`);
+        } catch {
+          toast.error('Error al leer el archivo Excel');
+          setImportFile(null);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      toast.error('Formato no soportado. Usá JSON, Excel o CSV');
+      setImportFile(null);
+    }
+  };
+
+  const handleImportData = async () => {
+    if (!importFile || importPreview.length === 0) {
+      toast.error('Seleccioná un archivo con datos');
+      return;
+    }
+    if (!auth.currentUser) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const record of importPreview) {
+        try {
+          const docData = { ...record };
+          // Ensure required fields
+          if (!docData.authorId) docData.authorId = auth.currentUser.uid;
+          if (!docData.createdAt) docData.createdAt = new Date().toISOString();
+
+          // Use document ID if provided, otherwise auto-generate
+          if (docData.id) {
+            await setDoc(doc(db, importCollection, docData.id), docData);
+          } else {
+            await addDoc(collection(db, importCollection), docData);
+          }
+          successCount++;
+        } catch (err) {
+          console.error('Error importing record:', err);
+          errorCount++;
+        }
+      }
+
+      toast.success(`Importación completada: ${successCount} registros importados${errorCount > 0 ? `, ${errorCount} errores` : ''}`);
+      setIsImportModalOpen(false);
+      setImportFile(null);
+      setImportPreview([]);
+      setImportCollection('tasks');
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al importar datos');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleMassDelete = async () => {
     if (deleteConfirmation !== 'CONFIRMAR') {
       toast.error('Debes escribir CONFIRMAR para proceder');
@@ -511,7 +608,13 @@ export default function BaseDatos() {
               <Server className="w-5 h-5" /> Estado y Mantenimiento
             </h2>
             <div className="flex gap-2">
-              <button 
+              <button
+                onClick={() => setIsImportModalOpen(true)}
+                className="px-3 py-1.5 border-2 border-white bg-[#0055ff] text-white font-black uppercase text-xs tracking-widest hover:bg-white hover:text-[#0055ff] transition-colors flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
+              >
+                <Upload className="w-3.5 h-3.5" /> Importar Datos
+              </button>
+              <button
                 onClick={handleExportExcel}
                 disabled={isExporting}
                 className="px-3 py-1.5 border-2 border-white bg-[#00cc66] text-[#1a1a1a] font-black uppercase text-xs tracking-widest hover:bg-white transition-colors flex items-center gap-2 disabled:opacity-50 shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
@@ -681,6 +784,87 @@ export default function BaseDatos() {
                 {editingLocation ? 'Guardar Cambios' : 'Añadir Ubicación'}
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {isImportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-black uppercase font-['Space_Grotesk'] flex items-center gap-2">
+                <Upload className="w-6 h-6" /> Importar Datos
+              </h2>
+              <button onClick={() => { setIsImportModalOpen(false); setImportFile(null); setImportPreview([]); }} className="p-1 hover:bg-[#1a1a1a] hover:text-white transition-colors border-2 border-transparent hover:border-[#1a1a1a]">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            {/* Collection Selector */}
+            <div className="mb-5">
+              <label className="block text-xs font-black uppercase tracking-widest mb-2">Colección de destino</label>
+              <select
+                value={importCollection}
+                onChange={(e) => setImportCollection(e.target.value)}
+                className="w-full p-3 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold uppercase text-sm transition-colors"
+              >
+                <option value="tasks">Tareas Operativas</option>
+                <option value="visitas">Visitas Técnicas</option>
+                <option value="novedades">Novedades</option>
+                <option value="personal">Personal</option>
+                <option value="locations">Ubicaciones</option>
+                <option value="task_history">Historial de Tareas</option>
+                <option value="notifications">Notificaciones</option>
+              </select>
+            </div>
+
+            {/* File Upload */}
+            <div className="mb-5">
+              <label className="block text-xs font-black uppercase tracking-widest mb-2">Archivo de datos</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,.xlsx,.xls,.csv"
+                onChange={handleImportFile}
+                className="w-full p-3 border-4 border-dashed border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold text-sm transition-colors cursor-pointer"
+              />
+              <p className="text-[10px] font-bold opacity-50 mt-2">Formatos soportados: JSON, Excel (.xlsx), CSV</p>
+              {importFile && (
+                <div className="mt-2 p-2 bg-green-50 border-2 border-green-400 text-green-800 text-xs font-bold flex items-center gap-2">
+                  <FileJson className="w-4 h-4" /> {importFile.name} ({importPreview.length} registros)
+                </div>
+              )}
+            </div>
+
+            {/* Preview */}
+            {importPreview.length > 0 && (
+              <div className="mb-5">
+                <label className="block text-xs font-black uppercase tracking-widest mb-2">Vista previa (primeros 3 registros)</label>
+                <div className="border-2 border-[#1a1a1a] bg-[#f5f0e8] p-3 max-h-40 overflow-y-auto">
+                  {importPreview.slice(0, 3).map((record, idx) => (
+                    <div key={idx} className="mb-2 p-2 bg-white border border-[#1a1a1a] text-[10px] font-mono">
+                      <pre className="whitespace-pre-wrap overflow-hidden text-ellipsis">
+                        {JSON.stringify(record, null, 2).slice(0, 200)}...
+                      </pre>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Import Button */}
+            <button
+              onClick={handleImportData}
+              disabled={isImporting || !importFile || importPreview.length === 0}
+              className="w-full py-4 border-4 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest text-sm hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isImporting ? (
+                <><span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span> Importando...</>
+              ) : (
+                <><Upload className="w-4 h-4" /> Importar {importPreview.length} Registros</>
+              )}
+            </button>
           </div>
         </div>
       )}
