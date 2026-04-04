@@ -39,6 +39,13 @@ export default function BaseDatos() {
   const [personnel, setPersonnel] = useState<Personal[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
 
+  // System stats
+  const [systemStats, setSystemStats] = useState({
+    totalRecords: 0,
+    collections: {} as Record<string, number>,
+    lastBackup: new Date().toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+  });
+
   // Modal states
   const [isPersonalModalOpen, setIsPersonalModalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -69,6 +76,30 @@ export default function BaseDatos() {
       snapshot.forEach((doc) => data.push({ id: doc.id, ...doc.data() } as Location));
       setLocations(data);
     }, (error) => handleFirestoreError(error, OperationType.GET, 'locations'));
+
+    // Fetch system stats (all collections)
+    const fetchStats = async () => {
+      const cols = ['tasks', 'visitas', 'novedades', 'personal', 'locations', 'task_history', 'notifications'];
+      const counts: Record<string, number> = {};
+      let total = 0;
+
+      for (const col of cols) {
+        try {
+          const snap = await getDocs(collection(db, col));
+          counts[col] = snap.size;
+          total += snap.size;
+        } catch {
+          counts[col] = 0;
+        }
+      }
+
+      setSystemStats({
+        totalRecords: total,
+        collections: counts,
+        lastBackup: new Date().toLocaleString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+      });
+    };
+    fetchStats();
 
     return () => {
       unsubPersonal();
@@ -626,19 +657,43 @@ export default function BaseDatos() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="p-4 border-2 border-white bg-[#1a1a1a] hover:bg-white hover:text-[#1a1a1a] transition-colors group cursor-pointer">
-              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 mb-1">Base de Datos</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 mb-1">Total Registros</p>
               <p className="text-2xl font-black font-['Space_Grotesk'] flex items-center gap-2">
                 <span className="w-3 h-3 bg-[#00cc66] rounded-full inline-block border-2 border-current"></span>
-                EN LÍNEA
+                {systemStats.totalRecords}
               </p>
             </div>
             <div className="p-4 border-2 border-white bg-[#1a1a1a] hover:bg-white hover:text-[#1a1a1a] transition-colors group cursor-pointer">
-              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 mb-1">Último Respaldo</p>
-              <p className="text-2xl font-black font-['Space_Grotesk']">HOY 04:00</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 mb-1">Última Actividad</p>
+              <p className="text-2xl font-black font-['Space_Grotesk']">{systemStats.lastBackup}</p>
             </div>
             <div className="p-4 border-2 border-white bg-[#1a1a1a] hover:bg-white hover:text-[#1a1a1a] transition-colors group cursor-pointer">
-              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 mb-1">Almacenamiento</p>
-              <p className="text-2xl font-black font-['Space_Grotesk']">45% USO</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 mb-1">Colecciones Activas</p>
+              <p className="text-2xl font-black font-['Space_Grotesk']">
+                {Object.values(systemStats.collections).filter(c => c > 0).length}/7
+              </p>
+            </div>
+          </div>
+
+          {/* Collection Breakdown */}
+          <div className="mb-6 p-4 border-2 border-white/20 bg-[#1a1a1a]">
+            <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-3">Desglose por Colección</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                { label: 'Tareas', key: 'tasks', color: '#3b82f6' },
+                { label: 'Visitas', key: 'visitas', color: '#10b981' },
+                { label: 'Novedades', key: 'novedades', color: '#f59e0b' },
+                { label: 'Personal', key: 'personal', color: '#8b5cf6' },
+                { label: 'Ubicaciones', key: 'locations', color: '#06b6d4' },
+                { label: 'Historial', key: 'task_history', color: '#ec4899' },
+                { label: 'Notificaciones', key: 'notifications', color: '#f43f5e' },
+              ].map(item => (
+                <div key={item.key} className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
+                  <span className="text-[10px] font-bold uppercase opacity-60">{item.label}:</span>
+                  <span className="text-sm font-black">{systemStats.collections[item.key] || 0}</span>
+                </div>
+              ))}
             </div>
           </div>
 
