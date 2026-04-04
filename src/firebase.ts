@@ -16,6 +16,8 @@ const app = initializeApp(firebaseConfig);
 
 // Database ID: ai-studio-b794c53b-a898-4b3b-a5b0-4f8cfb63fa64 (NOT default)
 const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || "ai-studio-b794c53b-a898-4b3b-a5b0-4f8cfb63fa64";
+console.log('[Firebase] Initializing with database ID:', firestoreDatabaseId);
+console.log('[Firebase] Project:', firebaseConfig.projectId);
 export const db = getFirestore(app, firestoreDatabaseId);
 export const auth = getAuth(app);
 export const storage = getStorage(app);
