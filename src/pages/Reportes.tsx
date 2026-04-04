@@ -371,6 +371,7 @@ export default function Reportes() {
         line-height: 1.05;
         letter-spacing: -0.03em;
         margin-bottom: 12px;
+        text-transform: uppercase;
       }
       .cover h1 span { color: #60a5fa; }
       .cover-accent {
@@ -384,6 +385,7 @@ export default function Reportes() {
         font-size: 16px;
         color: #94a3b8;
         margin-bottom: 40px;
+        text-transform: uppercase;
       }
       .stats-grid {
         display: grid;
@@ -419,7 +421,7 @@ export default function Reportes() {
         align-items: center;
       }
       .cover-footer-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; }
-      .cover-footer-value { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-top: 4px; }
+      .cover-footer-value { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-top: 4px; text-transform: uppercase; }
 
       /* KPI Section */
       .section { padding: 40px 60px; }
@@ -446,6 +448,7 @@ export default function Reportes() {
         font-size: 12px;
         color: #64748b;
         margin-top: 2px;
+        text-transform: uppercase;
       }
 
       /* Donut Charts */
@@ -469,8 +472,6 @@ export default function Reportes() {
         color: #334155;
         margin-bottom: 16px;
       }
-
-      /* Progress Bars */
       .progress-grid {
         display: grid;
         grid-template-columns: repeat(2, 1fr);
@@ -489,8 +490,8 @@ export default function Reportes() {
         justify-content: space-between;
         margin-bottom: 6px;
       }
-      .progress-label { font-size: 12px; font-weight: 600; color: #475569; }
-      .progress-value { font-size: 12px; font-weight: 700; color: #0f172a; }
+      .progress-label { font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; }
+      .progress-value { font-size: 12px; font-weight: 700; color: #0f172a; text-transform: uppercase; }
       .progress-track {
         width: 100%;
         height: 8px;
@@ -554,7 +555,7 @@ export default function Reportes() {
       }
       .overdue-icon { font-size: 24px; }
       .overdue-title { font-size: 16px; font-weight: 800; color: #991b1b; text-transform: uppercase; }
-      .overdue-count { font-size: 12px; color: #b91c1c; }
+      .overdue-count { font-size: 12px; color: #b91c1c; text-transform: uppercase; }
       .overdue-table { width: 100%; border-collapse: collapse; }
       .overdue-table th {
         padding: 10px 12px;
@@ -608,6 +609,7 @@ export default function Reportes() {
         font-weight: 600;
         padding: 4px 12px;
         border-radius: 9999px;
+        text-transform: uppercase;
       }
       .data-card {
         background: #fff;
@@ -624,7 +626,7 @@ export default function Reportes() {
         align-items: center;
         margin-bottom: 14px;
       }
-      .data-card-title { font-size: 14px; font-weight: 700; color: #0f172a; }
+      .data-card-title { font-size: 14px; font-weight: 700; color: #0f172a; text-transform: uppercase; }
       .data-card-number {
         font-size: 10px;
         font-weight: 700;
@@ -648,6 +650,7 @@ export default function Reportes() {
         font-weight: 500;
         color: #0f172a;
         margin-top: 2px;
+        text-transform: uppercase;
       }
 
       /* Comments, Subtasks, Attachments */
@@ -665,16 +668,17 @@ export default function Reportes() {
         padding: 10px;
         margin-bottom: 6px;
       }
-      .comment-author { font-size: 10px; font-weight: 600; color: #64748b; }
-      .comment-text { font-size: 11px; color: #475569; margin-top: 4px; }
+      .comment-author { font-size: 10px; font-weight: 600; color: #64748b; text-transform: uppercase; }
+      .comment-text { font-size: 11px; color: #475569; margin-top: 4px; text-transform: uppercase; }
       .subtask-item {
         font-size: 11px;
         padding: 4px 0;
         display: flex;
         align-items: center;
         gap: 6px;
+        text-transform: uppercase;
       }
-      .attachment-item { font-size: 11px; color: #3b82f6; padding: 2px 0; }
+      .attachment-item { font-size: 11px; color: #3b82f6; padding: 2px 0; text-transform: uppercase; }
       .tag-item {
         display: inline-block;
         padding: 2px 8px;
@@ -723,8 +727,8 @@ export default function Reportes() {
         color: #fff;
         text-transform: uppercase;
       }
-      .timeline-detail { font-size: 12px; font-weight: 600; color: #0f172a; }
-      .timeline-date { font-size: 11px; color: #64748b; margin-left: auto; }
+      .timeline-detail { font-size: 12px; font-weight: 600; color: #0f172a; text-transform: uppercase; }
+      .timeline-date { font-size: 11px; color: #64748b; margin-left: auto; text-transform: uppercase; }
 
       /* Rankings */
       .ranking-grid {
@@ -749,8 +753,8 @@ export default function Reportes() {
         font-weight: 800;
         flex-shrink: 0;
       }
-      .ranking-name { flex: 1; font-size: 13px; font-weight: 600; color: #0f172a; }
-      .ranking-count { font-size: 13px; font-weight: 700; }
+      .ranking-name { flex: 1; font-size: 13px; font-weight: 600; color: #0f172a; text-transform: uppercase; }
+      .ranking-count { font-size: 13px; font-weight: 700; text-transform: uppercase; }
 
       /* Footer */
       .report-footer {
@@ -759,8 +763,8 @@ export default function Reportes() {
         padding: 28px 60px;
         text-align: center;
       }
-      .report-footer-brand { font-size: 12px; font-weight: 600; color: #475569; }
-      .report-footer-date { font-size: 10px; color: #94a3b8; margin-top: 4px; }
+      .report-footer-brand { font-size: 12px; font-weight: 600; color: #475569; text-transform: uppercase; }
+      .report-footer-date { font-size: 10px; color: #94a3b8; margin-top: 4px; text-transform: uppercase; }
     </style>
     </head>
     <body>
@@ -1476,119 +1480,189 @@ export default function Reportes() {
   };
 
   return (
-    <div className="font-['Inter'] max-w-6xl mx-auto">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
-        <h1 className="text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Generación de Reportes</h1>
-        {totalRecords > 0 && showPreview && (
-          <div className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-[#0055ff]" />
-            <span className="text-sm font-black">{totalRecords} registros</span>
+    <div className="max-w-7xl mx-auto">
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400">
+                Módulo de Reportes
+              </span>
+            </div>
+            <h1 className="text-3xl lg:text-4xl font-extrabold text-slate-900 tracking-tight uppercase">
+              Generación de Reportes
+            </h1>
           </div>
-        )}
+          {totalRecords > 0 && showPreview && (
+            <div className="flex items-center gap-2 bg-white rounded-xl px-4 py-2.5 shadow-sm border border-slate-200">
+              <BarChart3 className="w-4 h-4 text-blue-500" />
+              <span className="text-sm font-bold text-slate-900">{totalRecords}</span>
+              <span className="text-xs text-slate-500 uppercase">registros</span>
+            </div>
+          )}
+        </div>
       </div>
-      
+
+      {/* Stat Cards */}
+      {showPreview && totalRecords > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {Object.entries(dataCounts).map(([key, count]) => {
+            const accents: Record<string, string> = {
+              visitas: 'bg-emerald-500',
+              tareas: 'bg-blue-500',
+              personal: 'bg-violet-500',
+              novedades: 'bg-amber-500',
+            };
+            const bgLights: Record<string, string> = {
+              visitas: 'bg-emerald-50',
+              tareas: 'bg-blue-50',
+              personal: 'bg-violet-50',
+              novedades: 'bg-amber-50',
+            };
+            return (
+              <div key={key} className="bg-white rounded-xl border border-slate-200 p-5 shadow-sm">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">{sourceLabels[key] || key}</p>
+                    <p className="text-3xl font-extrabold text-slate-900 mt-1">{count}</p>
+                  </div>
+                  <div className={`p-2.5 rounded-xl ${accents[key] || 'bg-slate-500'} text-white`}>
+                    {sourceIcons[key] || <Database className="w-5 h-5" />}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Configuration Panel */}
-        <div className="lg:col-span-1 bg-white border-4 border-[#1a1a1a] p-6 shadow-[8px_8px_0px_0px_rgba(26,26,26,0.3)] h-fit">
-          <h2 className="text-lg font-black uppercase mb-6 font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-2">Configuración</h2>
-          
-          <div className="space-y-5">
-            <div>
-              <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                <Database className="w-4 h-4" /> Fuente de Datos
-              </label>
-              <select 
-                value={dataSource}
-                onChange={(e) => setDataSource(e.target.value)}
-                className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
-              >
-                <option value="todas">Todas las fuentes</option>
-                <option value="visitas">Visitas Técnicas</option>
-                <option value="tareas">Tareas Operativas</option>
-                <option value="personal">Personal Activo</option>
-                <option value="novedades">Novedades</option>
-              </select>
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            {/* Panel Header */}
+            <div className="px-6 py-4 bg-slate-900 border-b border-slate-700">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center">
+                  <Database className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-sm font-bold text-white uppercase tracking-wider">Configuración</h2>
+                  <p className="text-[11px] text-slate-400 uppercase">Personalizá tu reporte</p>
+                </div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="p-6 space-y-5">
+              {/* Data Source */}
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Calendar className="w-3 h-3" /> Desde
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+                  <Database className="w-3.5 h-3.5" /> Fuente de Datos
                 </label>
-                <input 
-                  type="date" 
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs" 
-                />
+                <div className="relative">
+                  <select
+                    value={dataSource}
+                    onChange={(e) => setDataSource(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 py-3 pr-10 text-sm font-medium text-slate-900 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all cursor-pointer uppercase"
+                  >
+                    <option value="todas">Todas las fuentes</option>
+                    <option value="visitas">Visitas Técnicas</option>
+                    <option value="tareas">Tareas Operativas</option>
+                    <option value="personal">Personal Activo</option>
+                    <option value="novedades">Novedades</option>
+                  </select>
+                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </div>
               </div>
+
+              {/* Date Range */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3" /> Desde
+                  </label>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all uppercase"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2 flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3" /> Hasta
+                  </label>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-900 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all uppercase"
+                  />
+                </div>
+              </div>
+
+              {/* Sort */}
               <div>
-                <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Calendar className="w-3 h-3" /> Hasta
-                </label>
-                <input 
-                  type="date" 
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs" 
-                />
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Ordenar por</label>
+                <div className="relative">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full appearance-none rounded-lg border border-slate-200 bg-white px-4 py-3 pr-10 text-sm font-medium text-slate-900 focus:border-blue-400 focus:ring-2 focus:ring-blue-400/20 transition-all cursor-pointer uppercase"
+                  >
+                    <option value="fecha_desc">Fecha (Más reciente)</option>
+                    <option value="fecha_asc">Fecha (Más antiguo)</option>
+                    <option value="prioridad">Prioridad (Alta a Baja)</option>
+                  </select>
+                  <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <label className="block text-xs font-black uppercase tracking-widest mb-2">
-                Ordenar por
-              </label>
-              <select 
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
+              {/* Format */}
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-500 mb-2">Formato</label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setFormat('pdf')}
+                    className={`flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${format === 'pdf' ? 'bg-slate-900 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:text-slate-900'}`}
+                  >
+                    <FileText className="w-4 h-4" /> PDF
+                  </button>
+                  <button
+                    onClick={() => setFormat('excel')}
+                    className={`flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${format === 'excel' ? 'bg-emerald-600 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:text-slate-900'}`}
+                  >
+                    <FileSpreadsheet className="w-4 h-4" /> Excel
+                  </button>
+                  <button
+                    onClick={() => setFormat('json')}
+                    className={`flex-1 py-3 rounded-lg text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-1.5 transition-all ${format === 'json' ? 'bg-violet-600 text-white shadow-md' : 'bg-white text-slate-600 border border-slate-200 hover:border-slate-300 hover:text-slate-900'}`}
+                  >
+                    <FileJson className="w-4 h-4" /> JSON
+                  </button>
+                </div>
+              </div>
+
+              {/* Generate Button */}
+              <button
+                onClick={handleGenerateReport}
+                disabled={isGenerating}
+                className="w-full py-3.5 rounded-lg bg-slate-900 text-white font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2 shadow-md hover:bg-slate-800 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="fecha_desc">Fecha (Más reciente)</option>
-                <option value="fecha_asc">Fecha (Más antiguo)</option>
-                <option value="prioridad">Prioridad (Alta a Baja)</option>
-              </select>
+                <Download className="w-4 h-4" /> {isGenerating ? 'Generando...' : 'Generar Reporte'}
+              </button>
+
+              {/* Preview Button */}
+              <button
+                onClick={loadPreview}
+                disabled={isLoadingPreview}
+                className="w-full py-3 rounded-lg bg-white text-slate-900 border border-slate-200 font-bold uppercase tracking-wider text-xs flex items-center justify-center gap-2 hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm disabled:opacity-50"
+              >
+                <Eye className="w-4 h-4" /> {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
+              </button>
             </div>
-
-            <div>
-              <label className="block text-xs font-black uppercase tracking-widest mb-2">Formato</label>
-              <div className="flex gap-2">
-                <button 
-                  onClick={() => setFormat('pdf')}
-                  className={`flex-1 py-3 border-2 border-[#1a1a1a] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-xs ${format === 'pdf' ? 'bg-[#1a1a1a] text-[#0055ff] shadow-none translate-x-0.5 translate-y-0.5' : 'bg-[#0055ff] text-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none hover:bg-[#1a1a1a] hover:text-[#0055ff]'}`}
-                >
-                  <FileText className="w-4 h-4" /> PDF
-                </button>
-                <button 
-                  onClick={() => setFormat('excel')}
-                  className={`flex-1 py-3 border-2 border-[#1a1a1a] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-xs ${format === 'excel' ? 'bg-[#1a1a1a] text-[#00cc66] shadow-none translate-x-0.5 translate-y-0.5' : 'bg-[#00cc66] text-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none hover:bg-[#1a1a1a] hover:text-[#00cc66]'}`}
-                >
-                  <FileSpreadsheet className="w-4 h-4" /> Excel
-                </button>
-                <button 
-                  onClick={() => setFormat('json')}
-                  className={`flex-1 py-3 border-2 border-[#1a1a1a] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-xs ${format === 'json' ? 'bg-[#1a1a1a] text-[#0055ff] shadow-none translate-x-0.5 translate-y-0.5' : 'bg-[#0055ff] text-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none hover:bg-[#1a1a1a] hover:text-[#0055ff]'}`}
-                >
-                  <FileJson className="w-4 h-4" /> JSON
-                </button>
-              </div>
-            </div>
-
-            <button 
-              onClick={handleGenerateReport}
-              disabled={isGenerating}
-              className="w-full py-3.5 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-white hover:text-[#1a1a1a] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-            >
-              <Download className="w-5 h-5" /> {isGenerating ? 'Generando...' : 'Generar Reporte'}
-            </button>
-
-            <button 
-              onClick={loadPreview}
-              disabled={isLoadingPreview}
-              className="w-full py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#f5f0e8] transition-all flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 text-sm"
-            >
-              <Eye className="w-4 h-4" /> {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
-            </button>
           </div>
         </div>
 
@@ -1598,57 +1672,70 @@ export default function Reportes() {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] p-6"
+              className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
             >
-              <h2 className="text-lg font-black uppercase mb-4 font-['Space_Grotesk'] border-b-2 border-[#1a1a1a] pb-2">Vista Previa de Datos</h2>
-              
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-                {Object.entries(dataCounts).map(([key, count]) => (
-                  <div key={key} className="p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] flex items-center gap-3">
-                    <div className="p-2 bg-[#0055ff] text-white border-2 border-[#1a1a1a]">
-                      {sourceIcons[key] || <Database className="w-4 h-4" />}
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase opacity-60">{key}</p>
-                      <p className="text-xl font-black font-['Space_Grotesk']">{count}</p>
-                    </div>
+              {/* Preview Header */}
+              <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center">
+                    <Eye className="w-4 h-4 text-blue-600" />
                   </div>
-                ))}
+                  <div>
+                    <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Vista Previa</h2>
+                    <p className="text-[11px] text-slate-400 uppercase">Datos cargados correctamente</p>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-8 max-h-[600px] overflow-y-auto pr-2">
+              {/* Data Tables */}
+              <div className="p-6 space-y-8 max-h-[640px] overflow-y-auto">
                 {Object.entries(dataPreview).map(([key, records]) => {
                   const columns = getColumnConfig(key);
                   const hasColumns = columns.length > 0;
+                  const accentColors: Record<string, string> = {
+                    visitas: '#10b981',
+                    tareas: '#3b82f6',
+                    personal: '#8b5cf6',
+                    novedades: '#f59e0b',
+                  };
+                  const bgLights: Record<string, string> = {
+                    visitas: 'bg-emerald-50 text-emerald-600',
+                    tareas: 'bg-blue-50 text-blue-600',
+                    personal: 'bg-violet-50 text-violet-600',
+                    novedades: 'bg-amber-50 text-amber-600',
+                  };
 
                   return (
                     <div key={key}>
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-black uppercase flex items-center gap-2">
-                          {sourceIcons[key] || <Database className="w-4 h-4" />}
-                          {sourceLabels[key] || key.toUpperCase()}
-                        </h3>
-                        <span className="text-xs font-bold opacity-50 bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5">
+                        <div className="flex items-center gap-3">
+                          <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: accentColors[key] || '#64748b' }} />
+                          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-900 flex items-center gap-2">
+                            {sourceIcons[key] || <Database className="w-4 h-4" />}
+                            {sourceLabels[key] || key.toUpperCase()}
+                          </h3>
+                        </div>
+                        <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-lg uppercase ${bgLights[key] || 'bg-slate-50 text-slate-600'}`}>
                           {records.length} registro{records.length !== 1 ? 's' : ''}
                         </span>
                       </div>
 
                       {records.length > 0 ? (
-                        <div className="overflow-x-auto border-2 border-[#1a1a1a]">
+                        <div className="overflow-x-auto rounded-lg border border-slate-200">
                           {hasColumns ? (
                             <table className="w-full text-left border-collapse">
                               <thead>
-                                <tr className="bg-[#1a1a1a] text-white">
-                                  <th className="p-3 text-[10px] font-black uppercase tracking-wider w-10">#</th>
+                                <tr className="bg-slate-900 text-white">
+                                  <th className="p-3 text-[10px] font-bold uppercase tracking-wider w-10 opacity-60">#</th>
                                   {columns.map(col => (
-                                    <th key={col.field} className={`p-3 text-[10px] font-black uppercase tracking-wider ${col.width}`}>{col.label}</th>
+                                    <th key={col.field} className={`p-3 text-[10px] font-bold uppercase tracking-wider ${col.width}`}>{col.label}</th>
                                   ))}
                                 </tr>
                               </thead>
                               <tbody>
                                 {records.slice(0, 8).map((record, idx) => (
-                                  <tr key={idx} className={`border-t border-[#1a1a1a]/10 ${idx % 2 === 0 ? 'bg-[#f5f0e8]' : 'bg-white'} hover:bg-[#0055ff]/5 transition-colors`}>
-                                    <td className="p-3 text-xs font-bold opacity-30">{idx + 1}</td>
+                                  <tr key={idx} className={`border-t border-slate-100 ${idx % 2 === 0 ? 'bg-slate-50/60' : 'bg-white'} hover:bg-blue-50/40 transition-colors`}>
+                                    <td className="p-3 text-xs font-bold text-slate-300">{idx + 1}</td>
                                     {columns.map(col => {
                                       const rawVal = record[col.field];
                                       const displayVal = formatValue(rawVal, col.field);
@@ -1658,15 +1745,15 @@ export default function Reportes() {
                                       return (
                                         <td key={col.field} className="p-3">
                                           {isBadge && typeof rawVal === 'string' && rawVal ? (
-                                            <span className={`inline-block px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border border-[#1a1a1a] ${col.field === 'priority' ? getPriorityBadge(rawVal) : getStatusBadge(rawVal)}`}>
+                                            <span className={`inline-block px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-md ${col.field === 'priority' ? getPriorityBadge(rawVal) : getStatusBadge(rawVal)}`}>
                                               {rawVal.replace('_', ' ')}
                                             </span>
                                           ) : isCount && Array.isArray(rawVal) && rawVal.length > 0 ? (
-                                            <span className="inline-block px-2 py-0.5 text-[10px] font-black tracking-wider border border-[#1a1a1a] bg-[#f5f0e8]">
+                                            <span className="inline-block px-2 py-0.5 text-[10px] font-bold tracking-wider border border-slate-200 bg-white rounded-md uppercase">
                                               {col.field === 'subtasks' ? displayVal : `${rawVal.length}`}
                                             </span>
                                           ) : (
-                                            <span className="text-xs font-medium truncate block max-w-[250px]" title={String(rawVal ?? '')}>
+                                            <span className="text-xs font-medium truncate block max-w-[250px] text-slate-700 uppercase">
                                               {displayVal || '—'}
                                             </span>
                                           )}
@@ -1680,19 +1767,19 @@ export default function Reportes() {
                           ) : (
                             <table className="w-full text-left border-collapse">
                               <thead>
-                                <tr className="bg-[#1a1a1a] text-white">
-                                  <th className="p-3 text-[10px] font-black uppercase tracking-wider w-10">#</th>
+                                <tr className="bg-slate-900 text-white">
+                                  <th className="p-3 text-[10px] font-bold uppercase tracking-wider w-10 opacity-60">#</th>
                                   {Object.keys(records[0]).slice(0, 6).map(header => (
-                                    <th key={header} className="p-3 text-[10px] font-black uppercase tracking-wider min-w-[100px]">{header}</th>
+                                    <th key={header} className="p-3 text-[10px] font-bold uppercase tracking-wider min-w-[100px]">{header}</th>
                                   ))}
                                 </tr>
                               </thead>
                               <tbody>
                                 {records.slice(0, 8).map((record, idx) => (
-                                  <tr key={idx} className={`border-t border-[#1a1a1a]/10 ${idx % 2 === 0 ? 'bg-[#f5f0e8]' : 'bg-white'}`}>
-                                    <td className="p-3 text-xs font-bold opacity-30">{idx + 1}</td>
+                                  <tr key={idx} className={`border-t border-slate-100 ${idx % 2 === 0 ? 'bg-slate-50/60' : 'bg-white'}`}>
+                                    <td className="p-3 text-xs font-bold text-slate-300">{idx + 1}</td>
                                     {Object.values(record).slice(0, 6).map((val: any, i) => (
-                                      <td key={i} className="p-3 text-xs font-medium truncate max-w-[200px]" title={String(val ?? '')}>
+                                      <td key={i} className="p-3 text-xs font-medium truncate max-w-[200px] text-slate-700 uppercase">
                                         {formatValue(val, Object.keys(record)[i])}
                                       </td>
                                     ))}
@@ -1702,13 +1789,15 @@ export default function Reportes() {
                             </table>
                           )}
                           {records.length > 8 && (
-                            <div className="p-3 text-center text-xs font-bold uppercase tracking-wider opacity-50 border-t-2 border-[#1a1a1a]/10 bg-[#f5f0e8]">
+                            <div className="p-3 text-center text-[11px] font-bold uppercase tracking-wider text-slate-400 border-t border-slate-100 bg-slate-50/40">
                               Mostrando 8 de {records.length} registros
                             </div>
                           )}
                         </div>
                       ) : (
-                        <p className="text-xs font-bold uppercase opacity-50 p-6 text-center border-2 border-dashed border-[#1a1a1a]/20 bg-[#f5f0e8]/50">Sin datos</p>
+                        <p className="text-xs font-bold uppercase text-slate-300 p-6 text-center border-2 border-dashed border-slate-200 bg-slate-50/30 rounded-lg">
+                          Sin datos
+                        </p>
                       )}
                     </div>
                   );
@@ -1716,15 +1805,19 @@ export default function Reportes() {
               </div>
             </motion.div>
           ) : (
-            <div className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] p-12 flex flex-col items-center justify-center text-center">
-              <BarChart3 className="w-16 h-16 mb-4 opacity-20" />
-              <h3 className="text-lg font-black uppercase mb-2">Sin Vista Previa</h3>
-              <p className="text-sm font-medium opacity-50 max-w-sm mb-4">Configura los filtros y haz clic en "Vista Previa" para ver los datos antes de generar el reporte.</p>
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-16 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 rounded-2xl bg-slate-50 flex items-center justify-center mb-5">
+                <BarChart3 className="w-7 h-7 text-slate-300" />
+              </div>
+              <h3 className="text-base font-extrabold text-slate-900 uppercase tracking-wider mb-1">Sin Vista Previa</h3>
+              <p className="text-sm text-slate-500 max-w-sm mb-6 leading-relaxed">
+                Configurá los filtros y hacé clic en <span className="font-semibold text-blue-600">"Vista Previa"</span> para ver los datos antes de generar el reporte.
+              </p>
               <button
                 onClick={loadPreview}
-                className="px-6 py-3 bg-[#0055ff] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm hover:bg-[#1a1a1a] hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                className="px-6 py-3 bg-slate-900 text-white rounded-lg font-bold uppercase text-xs tracking-wider flex items-center gap-2 shadow-md hover:bg-slate-800 hover:shadow-lg transition-all"
               >
-                Cargar Vista Previa
+                <Eye className="w-4 h-4" /> Cargar Vista Previa
               </button>
             </div>
           )}
