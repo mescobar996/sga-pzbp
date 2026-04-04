@@ -12,6 +12,7 @@ import Reportes from './pages/Reportes';
 import BaseDatos from './pages/BaseDatos';
 import Novedades from './pages/Novedades';
 import Configuracion from './pages/Configuracion';
+import DebugDB from './pages/DebugDB';
 import Login from './pages/Login';
 import { AnimatePresence, motion } from 'motion/react';
 import { WifiOff } from 'lucide-react';
@@ -32,6 +33,7 @@ function AnimatedRoutes({ user }: { user: User | null }) {
           <Route path="reportes" element={<PageTransition><Reportes /></PageTransition>} />
           <Route path="base-datos" element={<PageTransition><BaseDatos /></PageTransition>} />
           <Route path="configuracion" element={<PageTransition><Configuracion /></PageTransition>} />
+          <Route path="debug-db" element={<PageTransition><DebugDB /></PageTransition>} />
         </Route>
       </Routes>
     </AnimatePresence>
