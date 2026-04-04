@@ -372,7 +372,7 @@ export default function Reportes() {
     <head>
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;700;900&display=swap');
-      * { margin: 0; padding: 0; box-sizing: border-box; }
+      * { margin: 0; padding: 0; box-sizing: border-box; text-transform: uppercase; }
       body { font-family: 'Inter', -apple-system, sans-serif; color: #1a1a1a; line-height: 1.5; background: #fff; }
 
       .cover {
