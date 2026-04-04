@@ -1,4 +1,17 @@
-import { FileText, Download, Calendar, Database, FileSpreadsheet, FileJson, Eye, BarChart3, Users, HardHat, ListChecks, Newspaper } from 'lucide-react';
+import {
+  FileText,
+  Download,
+  Calendar,
+  Database,
+  FileSpreadsheet,
+  FileJson,
+  Eye,
+  BarChart3,
+  Users,
+  HardHat,
+  ListChecks,
+  Newspaper,
+} from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
@@ -21,15 +34,15 @@ export default function Reportes() {
 
   const fetchData = async () => {
     const data: Record<string, any[]> = {};
-    
+
     const fetchCollection = async (colName: string) => {
       const q = query(collection(db, colName));
       const snapshot = await getDocs(q);
-      let docs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      
+      let docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
       if (dateFrom || dateTo) {
         docs = docs.filter((doc: any) => {
-          const docDate = doc.createdAt ? new Date(doc.createdAt) : (doc.fecha ? new Date(doc.fecha) : null);
+          const docDate = doc.createdAt ? new Date(doc.createdAt) : doc.fecha ? new Date(doc.fecha) : null;
           if (!docDate) return true;
           if (dateFrom && new Date(dateFrom + 'T00:00:00') > docDate) return false;
           if (dateTo && new Date(dateTo + 'T23:59:59') < docDate) return false;
@@ -39,18 +52,18 @@ export default function Reportes() {
 
       if (sortBy === 'fecha_desc') {
         docs.sort((a: any, b: any) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : (a.fecha ? new Date(a.fecha).getTime() : 0);
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : (b.fecha ? new Date(b.fecha).getTime() : 0);
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : a.fecha ? new Date(a.fecha).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : b.fecha ? new Date(b.fecha).getTime() : 0;
           return dateB - dateA;
         });
       } else if (sortBy === 'fecha_asc') {
         docs.sort((a: any, b: any) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : (a.fecha ? new Date(a.fecha).getTime() : 0);
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : (b.fecha ? new Date(b.fecha).getTime() : 0);
+          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : a.fecha ? new Date(a.fecha).getTime() : 0;
+          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : b.fecha ? new Date(b.fecha).getTime() : 0;
           return dateA - dateB;
         });
       } else if (sortBy === 'prioridad') {
-        const priorityOrder: Record<string, number> = { 'alta': 1, 'media': 2, 'baja': 3 };
+        const priorityOrder: Record<string, number> = { alta: 1, media: 2, baja: 3 };
         docs.sort((a: any, b: any) => {
           const pA = priorityOrder[a.priority?.toLowerCase()] || 4;
           const pB = priorityOrder[b.priority?.toLowerCase()] || 4;
@@ -89,22 +102,29 @@ export default function Reportes() {
     const totalNovedades = data.novedades?.length || 0;
     const totalRecords = totalVisitas + totalTareas + totalPersonal + totalNovedades;
     const now = new Date().toLocaleString('es-ES');
-    const dateStr = new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const dateStr = new Date().toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
 
     // KPIs
     const tareasPendientes = data.tareas?.filter((t: any) => t.status === 'pendiente').length || 0;
     const tareasEnProceso = data.tareas?.filter((t: any) => t.status === 'en_proceso').length || 0;
     const tareasCompletadas = data.tareas?.filter((t: any) => t.status === 'completado').length || 0;
     const tareasAlta = data.tareas?.filter((t: any) => t.priority === 'alta' && t.status !== 'completado').length || 0;
-    const tareasMedia = data.tareas?.filter((t: any) => t.priority === 'media' && t.status !== 'completado').length || 0;
+    const tareasMedia =
+      data.tareas?.filter((t: any) => t.priority === 'media' && t.status !== 'completado').length || 0;
     const tareasBaja = data.tareas?.filter((t: any) => t.priority === 'baja' && t.status !== 'completado').length || 0;
     const tasaCompletitud = totalTareas > 0 ? Math.round((tareasCompletadas / totalTareas) * 100) : 0;
 
     // Analysis data
-    const overdueTasks = data.tareas?.filter((t: any) => {
-      if (!t.dueDate || t.status === 'completado') return false;
-      return new Date(t.dueDate) < new Date();
-    }) || [];
+    const overdueTasks =
+      data.tareas?.filter((t: any) => {
+        if (!t.dueDate || t.status === 'completado') return false;
+        return new Date(t.dueDate) < new Date();
+      }) || [];
 
     const visitCountByDest: Record<string, number> = {};
     data.visitas?.forEach((v: any) => {
@@ -124,7 +144,7 @@ export default function Reportes() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5);
 
-    const recentActivities: {date: string; type: string; detail: string; color: string}[] = [];
+    const recentActivities: { date: string; type: string; detail: string; color: string }[] = [];
     data.visitas?.slice(0, 3).forEach((v: any) => {
       recentActivities.push({
         date: v.fecha || 'N/A',
@@ -156,46 +176,54 @@ export default function Reportes() {
 
     // Style helpers
     const priorityColor = (p: string) => {
-      if (p === 'alta') return '#ef4444';
-      if (p === 'media') return '#f59e0b';
-      if (p === 'baja') return '#10b981';
+      if (p === 'alta') return '#e63b2e';
+      if (p === 'media') return '#0055ff';
+      if (p === 'baja') return '#00cc66';
       return '#6b7280';
     };
 
     const statusColor = (s: string) => {
-      if (s === 'completado' || s === 'Activo' || s === 'Operativo') return '#10b981';
-      if (s === 'pendiente' || s === 'en_proceso' || s === 'Mantenimiento') return '#3b82f6';
-      if (s === 'eliminado' || s === 'Inactivo') return '#ef4444';
+      if (s === 'completado' || s === 'Activo' || s === 'Operativo') return '#00cc66';
+      if (s === 'pendiente' || s === 'en_proceso' || s === 'Mantenimiento') return '#0055ff';
+      if (s === 'eliminado' || s === 'Inactivo') return '#e63b2e';
       return '#6b7280';
     };
 
     const badge = (text: string, color: string) =>
-      `<span style="display:inline-block;background:${color};color:#fff;padding:3px 10px;font-size:11px;font-weight:600;border-radius:9999px;letter-spacing:0.025em;">${text}</span>`;
+      `<span style="display:inline-block;background:${color};color:#fff;padding:3px 8px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.03em;border:2px solid #1a1a1a;">${text}</span>`;
 
     // Modern donut chart
-    const donutChart = (segments: {label:string;value:number;color:string}[], title: string) => {
+    const donutChart = (segments: { label: string; value: number; color: string }[], title: string) => {
       const total = segments.reduce((a, s) => a + s.value, 0);
-      if (total === 0) return `<div style="text-align:center;padding:20px;color:#6b7280;font-size:13px;">Sin datos</div>`;
+      if (total === 0)
+        return `<div style="text-align:center;padding:20px;color:#6b7280;font-size:13px;">Sin datos</div>`;
       const r = 45;
       const cx = 55;
       const cy = 55;
       const circumference = 2 * Math.PI * r;
       let offset = 0;
-      const circles = segments.filter(s => s.value > 0).map(s => {
-        const pct = s.value / total;
-        const dashLen = pct * circumference;
-        const dashGap = circumference - dashLen;
-        const circle = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="14" stroke-dasharray="${dashLen} ${dashGap}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})" stroke-linecap="round"/>`;
-        offset += dashLen;
-        return circle;
-      }).join('');
-      const legendItems = segments.filter(s => s.value > 0).map(s =>
-        `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+      const circles = segments
+        .filter((s) => s.value > 0)
+        .map((s) => {
+          const pct = s.value / total;
+          const dashLen = pct * circumference;
+          const dashGap = circumference - dashLen;
+          const circle = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${s.color}" stroke-width="14" stroke-dasharray="${dashLen} ${dashGap}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})" stroke-linecap="round"/>`;
+          offset += dashLen;
+          return circle;
+        })
+        .join('');
+      const legendItems = segments
+        .filter((s) => s.value > 0)
+        .map(
+          (s) =>
+            `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
           <div style="width:10px;height:10px;border-radius:50%;background:${s.color};flex-shrink:0;"></div>
           <span style="font-size:13px;color:#374151;font-weight:500;">${s.label}</span>
           <span style="font-size:13px;color:#111827;font-weight:700;margin-left:auto;">${s.value}</span>
-        </div>`
-      ).join('');
+        </div>`,
+        )
+        .join('');
       return `
         <div style="display:flex;gap:24px;align-items:center;">
           <div style="flex-shrink:0;">
@@ -243,19 +271,30 @@ export default function Reportes() {
       </div>`;
 
     // Data card for individual records
-    const dataCard = (title: string, num: number, accent: string, fields: {label:string;value:string}[], extras?: string) => `
+    const dataCard = (
+      title: string,
+      num: number,
+      accent: string,
+      fields: { label: string; value: string }[],
+      extras?: string,
+    ) => `
       <div style="background:#fff;border:1px solid #e5e7eb;border-left:4px solid ${accent};border-radius:8px;padding:16px;margin-bottom:12px;page-break-inside:avoid;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
           <div style="font-size:14px;font-weight:700;color:#111827;">${title}</div>
           <div style="background:${accent}15;color:${accent};padding:2px 10px;border-radius:9999px;font-size:11px;font-weight:700;">#${num}</div>
         </div>
         <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));gap:8px;">
-          ${fields.filter(f => f.value).map(f => `
+          ${fields
+            .filter((f) => f.value)
+            .map(
+              (f) => `
             <div>
               <div style="font-size:10px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;">${f.label}</div>
               <div style="font-size:13px;font-weight:500;color:#111827;margin-top:2px;">${f.value}</div>
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>
         ${extras || ''}
       </div>`;
@@ -265,12 +304,16 @@ export default function Reportes() {
       return `
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
           <div style="font-size:11px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Comentarios (${comments.length})</div>
-          ${comments.map((c: any) => `
+          ${comments
+            .map(
+              (c: any) => `
             <div style="background:#f9fafb;border-radius:6px;padding:10px;margin-bottom:6px;">
               <div style="font-size:11px;font-weight:600;color:#6b7280;">${c.authorName || 'Anónimo'} · ${c.createdAt ? new Date(c.createdAt).toLocaleString('es-ES') : ''}</div>
               <div style="font-size:12px;color:#374151;margin-top:4px;">${c.text || ''}</div>
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>`;
     };
 
@@ -280,11 +323,15 @@ export default function Reportes() {
       return `
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
           <div style="font-size:11px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Subtareas (${done}/${subtasks.length})</div>
-          ${subtasks.map((s: any) => `
+          ${subtasks
+            .map(
+              (s: any) => `
             <div style="font-size:12px;color:${s.completed ? '#10b981' : '#374151'};padding:4px 0;display:flex;align-items:center;gap:6px;">
               <span style="font-size:14px;">${s.completed ? '✓' : '○'}</span> ${s.title || 'Sin título'}
             </div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>`;
     };
 
@@ -293,9 +340,13 @@ export default function Reportes() {
       return `
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid #e5e7eb;">
           <div style="font-size:11px;font-weight:700;color:${accent};text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;">Archivos adjuntos (${attachments.length})</div>
-          ${attachments.map((a: any) => `
+          ${attachments
+            .map(
+              (a: any) => `
             <div style="font-size:12px;color:#3b82f6;padding:2px 0;">📎 ${a.name || 'Archivo'} <span style="color:#6b7280;">(${a.type || 'Desconocido'})</span></div>
-          `).join('')}
+          `,
+            )
+            .join('')}
         </div>`;
     };
 
@@ -303,7 +354,7 @@ export default function Reportes() {
       if (!tags || tags.length === 0) return '';
       return `
         <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px;">
-          ${tags.map(t => `<span style="background:#eff6ff;color:${accent};padding:2px 8px;font-size:10px;font-weight:600;border-radius:9999px;">${t}</span>`).join('')}
+          ${tags.map((t) => `<span style="background:#eff6ff;color:${accent};padding:2px 8px;font-size:10px;font-weight:600;border-radius:9999px;">${t}</span>`).join('')}
         </div>`;
     };
 
@@ -320,736 +371,385 @@ export default function Reportes() {
     <html>
     <head>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;700;900&display=swap');
       * { margin: 0; padding: 0; box-sizing: border-box; }
-      body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b; line-height: 1.6; }
+      body { font-family: 'Inter', -apple-system, sans-serif; color: #1a1a1a; line-height: 1.5; background: #fff; }
 
-      /* Cover Page */
       .cover {
-        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
-        color: #fff;
-        padding: 80px 60px;
+        background: #f5f0e8;
+        color: #1a1a1a;
+        padding: 60px;
         min-height: 700px;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        position: relative;
-        overflow: hidden;
+        border-bottom: 4px solid #1a1a1a;
       }
-      .cover::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -20%;
-        width: 600px;
-        height: 600px;
-        background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
-        border-radius: 50%;
-      }
-      .cover::after {
-        content: '';
-        position: absolute;
-        bottom: -30%;
-        left: -10%;
-        width: 400px;
-        height: 400px;
-        background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%);
-        border-radius: 50%;
-      }
-      .cover-content { position: relative; z-index: 1; max-width: 700px; }
-      .cover-label {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.2em;
+      .cover-content { max-width: 700px; position: relative; z-index: 1; }
+      .cover-badge {
+        display: inline-block;
+        background: #1a1a1a;
+        color: #0055ff;
+        padding: 6px 16px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.15em;
         text-transform: uppercase;
-        color: #60a5fa;
-        margin-bottom: 20px;
+        margin-bottom: 24px;
+        border: 2px solid #1a1a1a;
       }
       .cover h1 {
-        font-size: 48px;
+        font-family: 'Space Grotesk', monospace;
+        font-size: 52px;
         font-weight: 900;
-        line-height: 1.05;
-        letter-spacing: -0.03em;
-        margin-bottom: 12px;
+        line-height: 1;
+        letter-spacing: -0.02em;
+        margin-bottom: 16px;
+        color: #1a1a1a;
       }
-      .cover h1 span { color: #60a5fa; }
-      .cover-accent {
-        width: 80px;
-        height: 4px;
-        background: linear-gradient(90deg, #3b82f6, #10b981);
-        border-radius: 2px;
-        margin: 24px 0;
-      }
+      .cover h1 span { color: #0055ff; }
+      .cover-accent { width: 80px; height: 6px; background: #1a1a1a; margin: 20px 0; }
       .cover-subtitle {
-        font-size: 16px;
-        color: #94a3b8;
-        margin-bottom: 40px;
+        font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 40px;
+        text-transform: uppercase; letter-spacing: 0.05em;
       }
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 16px;
-        margin-bottom: 32px;
-      }
+      .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
       .stat-card {
-        background: rgba(255,255,255,0.06);
-        backdrop-filter: blur(10px);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 20px 16px;
-        text-align: center;
+        background: #fff; border: 3px solid #1a1a1a; padding: 16px 12px; text-align: center;
+        box-shadow: 4px 4px 0px #1a1a1a;
       }
-      .stat-icon { font-size: 24px; margin-bottom: 8px; }
-      .stat-value { font-size: 32px; font-weight: 900; color: #fff; }
-      .stat-label {
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: #94a3b8;
-        margin-top: 4px;
-      }
+      .stat-icon { font-size: 22px; margin-bottom: 6px; }
+      .stat-value { font-family: 'Space Grotesk', monospace; font-size: 32px; font-weight: 900; color: #1a1a1a; }
+      .stat-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #1a1a1a; margin-top: 4px; opacity: 0.6; }
       .cover-footer {
-        background: rgba(255,255,255,0.08);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 12px;
-        padding: 20px 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+        background: #fff; border: 3px solid #1a1a1a; padding: 20px 24px; display: flex;
+        justify-content: space-between; align-items: center; box-shadow: 4px 4px 0px #1a1a1a;
       }
-      .cover-footer-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; }
-      .cover-footer-value { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-top: 4px; }
+      .cover-footer-label { font-size: 9px; color: #1a1a1a; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; opacity: 0.5; }
+      .cover-footer-value { font-family: 'Space Grotesk', monospace; font-size: 14px; font-weight: 700; color: #1a1a1a; margin-top: 4px; }
 
-      /* KPI Section */
-      .section { padding: 40px 60px; }
-      .section-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 28px;
-      }
-      .section-accent {
-        width: 6px;
-        height: 36px;
-        background: linear-gradient(180deg, #3b82f6, #1d4ed8);
-        border-radius: 3px;
-      }
-      .section-title {
-        font-size: 18px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #0f172a;
-      }
-      .section-subtitle {
-        font-size: 12px;
-        color: #64748b;
-        margin-top: 2px;
-      }
+      .section { padding: 36px 60px; }
+      .section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+      .section-accent { width: 8px; height: 32px; background: #1a1a1a; }
+      .section-title { font-family: 'Space Grotesk', monospace; font-size: 18px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.03em; color: #1a1a1a; }
+      .section-subtitle { font-size: 11px; color: #1a1a1a; margin-top: 2px; opacity: 0.5; font-weight: 600; }
 
-      /* Donut Charts */
-      .donut-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-        margin-bottom: 24px;
-      }
-      .donut-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 24px;
-      }
-      .donut-title {
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #334155;
-        margin-bottom: 16px;
-      }
+      .donut-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 20px; }
+      .donut-card { background: #fff; border: 3px solid #1a1a1a; padding: 20px; box-shadow: 4px 4px 0px #1a1a1a; }
+      .donut-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #1a1a1a; margin-bottom: 14px; }
 
-      /* Progress Bars */
-      .progress-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-      }
-      .progress-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 24px;
-      }
-      .progress-item { margin-bottom: 14px; }
+      .progress-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+      .progress-card { background: #fff; border: 3px solid #1a1a1a; padding: 20px; box-shadow: 4px 4px 0px #1a1a1a; }
+      .progress-item { margin-bottom: 12px; }
       .progress-item:last-child { margin-bottom: 0; }
-      .progress-header {
-        display: flex;
-        justify-content: space-between;
-        margin-bottom: 6px;
-      }
-      .progress-label { font-size: 12px; font-weight: 600; color: #475569; }
-      .progress-value { font-size: 12px; font-weight: 700; color: #0f172a; }
-      .progress-track {
-        width: 100%;
-        height: 8px;
-        background: #f1f5f9;
-        border-radius: 4px;
-        overflow: hidden;
-      }
-      .progress-fill {
-        height: 100%;
-        border-radius: 4px;
-        transition: width 0.3s;
-      }
+      .progress-header { display: flex; justify-content: space-between; margin-bottom: 4px; }
+      .progress-label { font-size: 11px; font-weight: 700; color: #1a1a1a; text-transform: uppercase; }
+      .progress-value { font-size: 11px; font-weight: 900; color: #1a1a1a; font-family: 'Space Grotesk', monospace; }
+      .progress-track { width: 100%; height: 10px; background: #f5f0e8; border: 2px solid #1a1a1a; overflow: hidden; }
+      .progress-fill { height: 100%; }
 
-      /* Completion Rate */
-      .completion-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 12px;
-        padding: 24px;
-        text-align: center;
-      }
-      .completion-value {
-        font-size: 56px;
-        font-weight: 900;
-        margin: 12px 0;
-      }
-      .completion-track {
-        width: 100%;
-        height: 12px;
-        background: #f1f5f9;
-        border-radius: 6px;
-        overflow: hidden;
-        margin: 12px 0;
-      }
-      .completion-fill {
-        height: 100%;
-        border-radius: 6px;
-      }
-      .completion-stats {
-        display: flex;
-        justify-content: space-between;
-        font-size: 11px;
-        color: #64748b;
-      }
-      .completion-stats strong { font-weight: 700; }
+      .completion-card { background: #fff; border: 3px solid #1a1a1a; padding: 20px; text-align: center; box-shadow: 4px 4px 0px #1a1a1a; }
+      .completion-value { font-family: 'Space Grotesk', monospace; font-size: 52px; font-weight: 900; margin: 10px 0; }
+      .completion-track { width: 100%; height: 14px; background: #f5f0e8; border: 2px solid #1a1a1a; overflow: hidden; margin: 10px 0; }
+      .completion-fill { height: 100%; }
+      .completion-stats { display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; color: #1a1a1a; text-transform: uppercase; }
 
-      /* Overdue Tasks */
-      .overdue-card {
-        background: #fef2f2;
-        border: 1px solid #fecaca;
-        border-left: 4px solid #ef4444;
-        border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 24px;
-      }
-      .overdue-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 16px;
-      }
-      .overdue-icon { font-size: 24px; }
-      .overdue-title { font-size: 16px; font-weight: 800; color: #991b1b; text-transform: uppercase; }
-      .overdue-count { font-size: 12px; color: #b91c1c; }
-      .overdue-table { width: 100%; border-collapse: collapse; }
-      .overdue-table th {
-        padding: 10px 12px;
-        font-size: 10px;
-        font-weight: 700;
-        color: #991b1b;
-        text-align: left;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        background: #fee2e2;
-        border-bottom: 1px solid #fecaca;
-      }
-      .overdue-table td {
-        padding: 10px 12px;
-        font-size: 12px;
-        border-bottom: 1px solid #fee2e2;
-      }
+      .overdue-card { background: #fff; border: 3px solid #e63b2e; padding: 20px; box-shadow: 4px 4px 0px #1a1a1a; margin-bottom: 20px; }
+      .overdue-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+      .overdue-icon { font-size: 22px; }
+      .overdue-title { font-family: 'Space Grotesk', monospace; font-size: 16px; font-weight: 900; color: #e63b2e; text-transform: uppercase; }
+      .overdue-count { font-size: 11px; color: #e63b2e; font-weight: 600; }
+      .overdue-table { width: 100%; border-collapse: collapse; border: 2px solid #1a1a1a; }
+      .overdue-table th { padding: 10px 12px; font-size: 9px; font-weight: 700; color: #fff; text-align: left; text-transform: uppercase; letter-spacing: 0.05em; background: #1a1a1a; border: 1px solid #1a1a1a; }
+      .overdue-table td { padding: 8px 12px; font-size: 11px; border: 1px solid #e5e5e5; }
+      .overdue-table tr:nth-child(even) { background: #f5f0e8; }
 
-      /* Badges */
-      .badge {
-        display: inline-block;
-        padding: 3px 10px;
-        font-size: 10px;
-        font-weight: 700;
-        border-radius: 9999px;
-        letter-spacing: 0.025em;
-        color: #fff;
-      }
+      .badge { display: inline-block; padding: 3px 8px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #fff; border: 2px solid #1a1a1a; }
 
-      /* Data Cards */
-      .section-divider {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 20px;
-      }
-      .section-divider-accent {
-        width: 6px;
-        height: 24px;
-        border-radius: 3px;
-      }
-      .section-divider-title {
-        font-size: 16px;
-        font-weight: 800;
-        text-transform: uppercase;
-        color: #0f172a;
-      }
-      .section-divider-count {
-        margin-left: auto;
-        font-size: 11px;
-        font-weight: 600;
-        padding: 4px 12px;
-        border-radius: 9999px;
-      }
-      .data-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-left: 4px solid;
-        border-radius: 10px;
-        padding: 18px;
-        margin-bottom: 12px;
-        page-break-inside: avoid;
-      }
-      .data-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 14px;
-      }
-      .data-card-title { font-size: 14px; font-weight: 700; color: #0f172a; }
-      .data-card-number {
-        font-size: 10px;
-        font-weight: 700;
-        padding: 2px 10px;
-        border-radius: 9999px;
-      }
-      .data-card-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-        gap: 10px;
-      }
-      .data-card-field-label {
-        font-size: 9px;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #64748b;
-      }
-      .data-card-field-value {
-        font-size: 12px;
-        font-weight: 500;
-        color: #0f172a;
-        margin-top: 2px;
-      }
+      .section-divider { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; padding-bottom: 12px; border-bottom: 3px solid #1a1a1a; }
+      .section-divider-accent { width: 8px; height: 24px; background: #1a1a1a; }
+      .section-divider-title { font-family: 'Space Grotesk', monospace; font-size: 16px; font-weight: 900; text-transform: uppercase; color: #1a1a1a; }
+      .section-divider-count { margin-left: auto; font-size: 10px; font-weight: 700; padding: 4px 12px; background: #fff; border: 2px solid #1a1a1a; box-shadow: 2px 2px 0px #1a1a1a; }
+      .data-card { background: #fff; border: 3px solid #1a1a1a; border-left: 6px solid; padding: 16px; margin-bottom: 10px; page-break-inside: avoid; box-shadow: 3px 3px 0px #1a1a1a; }
+      .data-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+      .data-card-title { font-size: 13px; font-weight: 700; color: #1a1a1a; }
+      .data-card-number { font-family: 'Space Grotesk', monospace; font-size: 10px; font-weight: 700; padding: 2px 8px; background: #f5f0e8; border: 2px solid #1a1a1a; }
+      .data-card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+      .data-card-field-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #1a1a1a; opacity: 0.5; }
+      .data-card-field-value { font-size: 11px; font-weight: 500; color: #1a1a1a; margin-top: 2px; }
 
-      /* Comments, Subtasks, Attachments */
-      .data-card-extras { margin-top: 14px; padding-top: 14px; border-top: 1px solid #e2e8f0; }
-      .extras-title {
-        font-size: 10px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        margin-bottom: 8px;
-      }
-      .comment-item {
-        background: #f8fafc;
-        border-radius: 6px;
-        padding: 10px;
-        margin-bottom: 6px;
-      }
-      .comment-author { font-size: 10px; font-weight: 600; color: #64748b; }
-      .comment-text { font-size: 11px; color: #475569; margin-top: 4px; }
-      .subtask-item {
-        font-size: 11px;
-        padding: 4px 0;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .attachment-item { font-size: 11px; color: #3b82f6; padding: 2px 0; }
-      .tag-item {
-        display: inline-block;
-        padding: 2px 8px;
-        font-size: 9px;
-        font-weight: 600;
-        border-radius: 9999px;
-        margin: 2px;
-      }
+      .data-card-extras { margin-top: 12px; padding-top: 12px; border-top: 2px solid #1a1a1a; }
+      .extras-title { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+      .comment-item { background: #f5f0e8; border: 2px solid #1a1a1a; padding: 8px; margin-bottom: 4px; }
+      .comment-author { font-size: 9px; font-weight: 700; color: #1a1a1a; opacity: 0.6; }
+      .comment-text { font-size: 10px; color: #1a1a1a; margin-top: 2px; }
+      .subtask-item { font-size: 10px; padding: 3px 0; display: flex; align-items: center; gap: 4px; font-weight: 500; }
+      .attachment-item { font-size: 10px; color: #0055ff; padding: 2px 0; font-weight: 600; }
+      .tag-item { display: inline-block; padding: 2px 6px; font-size: 8px; font-weight: 700; background: #f5f0e8; border: 2px solid #1a1a1a; margin: 2px; text-transform: uppercase; }
 
-      /* Timeline */
-      .timeline { position: relative; padding-left: 24px; }
-      .timeline::before {
-        content: '';
-        position: absolute;
-        left: 6px;
-        top: 0;
-        bottom: 0;
-        width: 2px;
-        background: #e2e8f0;
-      }
-      .timeline-item {
-        position: relative;
-        padding: 10px 0 10px 16px;
-      }
-      .timeline-dot {
-        position: absolute;
-        left: -20px;
-        top: 14px;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        border: 2px solid #fff;
-        box-shadow: 0 0 0 2px;
-      }
-      .timeline-content {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-      }
-      .timeline-type {
-        font-size: 9px;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 9999px;
-        color: #fff;
-        text-transform: uppercase;
-      }
-      .timeline-detail { font-size: 12px; font-weight: 600; color: #0f172a; }
-      .timeline-date { font-size: 11px; color: #64748b; margin-left: auto; }
+      .timeline { position: relative; padding-left: 20px; }
+      .timeline::before { content: ''; position: absolute; left: 5px; top: 0; bottom: 0; width: 3px; background: #1a1a1a; }
+      .timeline-item { position: relative; padding: 8px 0 8px 14px; }
+      .timeline-dot { position: absolute; left: -18px; top: 12px; width: 10px; height: 10px; border: 2px solid #1a1a1a; background: #fff; }
+      .timeline-content { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+      .timeline-type { font-size: 8px; font-weight: 700; padding: 2px 6px; color: #fff; text-transform: uppercase; border: 2px solid #1a1a1a; }
+      .timeline-detail { font-size: 11px; font-weight: 600; color: #1a1a1a; }
+      .timeline-date { font-size: 10px; color: #1a1a1a; opacity: 0.5; margin-left: auto; font-weight: 600; }
 
-      /* Rankings */
-      .ranking-grid {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 24px;
-      }
-      .ranking-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 0;
-      }
-      .ranking-number {
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 11px;
-        font-weight: 800;
-        flex-shrink: 0;
-      }
-      .ranking-name { flex: 1; font-size: 13px; font-weight: 600; color: #0f172a; }
-      .ranking-count { font-size: 13px; font-weight: 700; }
+      .ranking-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+      .ranking-item { display: flex; align-items: center; gap: 8px; padding: 8px 0; }
+      .ranking-number { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 900; flex-shrink: 0; border: 2px solid #1a1a1a; font-family: 'Space Grotesk', monospace; }
+      .ranking-name { flex: 1; font-size: 12px; font-weight: 600; color: #1a1a1a; }
+      .ranking-count { font-size: 12px; font-weight: 700; font-family: 'Space Grotesk', monospace; }
 
-      /* Footer */
-      .report-footer {
-        background: #f8fafc;
-        border-top: 1px solid #e2e8f0;
-        padding: 28px 60px;
-        text-align: center;
-      }
-      .report-footer-brand { font-size: 12px; font-weight: 600; color: #475569; }
-      .report-footer-date { font-size: 10px; color: #94a3b8; margin-top: 4px; }
+      .report-footer { background: #f5f0e8; border-top: 3px solid #1a1a1a; padding: 24px 60px; text-align: center; }
+      .report-footer-brand { font-family: 'Space Grotesk', monospace; font-size: 11px; font-weight: 700; color: #1a1a1a; text-transform: uppercase; letter-spacing: 0.05em; }
+      .report-footer-date { font-size: 9px; color: #1a1a1a; opacity: 0.5; margin-top: 4px; font-weight: 600; }
     </style>
     </head>
     <body>
     <div style="width:100%;">
-      <!-- COVER PAGE -->
       <div class="cover">
         <div class="cover-content">
-          <div class="cover-label">Sistema de Gestión de Actividades</div>
+          <div class="cover-badge">Sistema de Gestión de Actividades</div>
           <h1>REPORTE<br/><span>COMPLETO</span></h1>
           <div class="cover-accent"></div>
           <p class="cover-subtitle">Prefectura Naval Argentina — SGA PZBP</p>
-
           <div class="stats-grid">
-            <div class="stat-card">
-              <div class="stat-icon">📍</div>
-              <div class="stat-value">${totalVisitas}</div>
-              <div class="stat-label">Visitas</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">✅</div>
-              <div class="stat-value">${totalTareas}</div>
-              <div class="stat-label">Tareas</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">👥</div>
-              <div class="stat-value">${totalPersonal}</div>
-              <div class="stat-label">Personal</div>
-            </div>
-            <div class="stat-card">
-              <div class="stat-icon">📰</div>
-              <div class="stat-value">${totalNovedades}</div>
-              <div class="stat-label">Novedades</div>
-            </div>
+            <div class="stat-card"><div class="stat-icon">📍</div><div class="stat-value">${totalVisitas}</div><div class="stat-label">Visitas</div></div>
+            <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value">${totalTareas}</div><div class="stat-label">Tareas</div></div>
+            <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">${totalPersonal}</div><div class="stat-label">Personal</div></div>
+            <div class="stat-card"><div class="stat-icon">📰</div><div class="stat-value">${totalNovedades}</div><div class="stat-label">Novedades</div></div>
           </div>
-
           <div class="cover-footer">
-            <div>
-              <div class="cover-footer-label">Total de registros</div>
-              <div class="cover-footer-value" style="font-size:28px;">${totalRecords}</div>
-            </div>
-            <div style="text-align:right;">
-              <div class="cover-footer-label">Fecha de generación</div>
-              <div class="cover-footer-value">${dateStr}</div>
-              <div style="font-size:11px;color:#64748b;margin-top:2px;">${now}</div>
-            </div>
+            <div><div class="cover-footer-label">Total de registros</div><div class="cover-footer-value" style="font-size:26px;">${totalRecords}</div></div>
+            <div style="text-align:right;"><div class="cover-footer-label">Fecha de generación</div><div class="cover-footer-value">${dateStr}</div><div style="font-size:10px;color:#1a1a1a;opacity:0.5;margin-top:2px;">${now}</div></div>
           </div>
         </div>
       </div>
 
-      <!-- KPIs DASHBOARD -->
-      ${totalRecords > 0 ? `
+      ${
+        totalRecords > 0
+          ? `
       <div class="section">
         <div class="section-header">
           <div class="section-accent"></div>
-          <div>
-            <div class="section-title">Indicadores Clave</div>
-            <div class="section-subtitle">Resumen general del sistema</div>
-          </div>
+          <div><div class="section-title">Indicadores Clave</div><div class="section-subtitle">Resumen general del sistema</div></div>
         </div>
-
-        <!-- Donut Charts -->
         <div class="donut-grid">
-          <div class="donut-card">
-            <div class="donut-title">Estado de Tareas</div>
-            ${donutChart([
-              { label: 'Pendientes', value: tareasPendientes, color: '#3b82f6' },
-              { label: 'En proceso', value: tareasEnProceso, color: '#f59e0b' },
-              { label: 'Completadas', value: tareasCompletadas, color: '#10b981' },
-            ], 'Estado de Tareas')}
+          <div class="donut-card"><div class="donut-title">Estado de Tareas</div>
+            ${donutChart(
+              [
+                { label: 'Pendientes', value: tareasPendientes, color: '#0055ff' },
+                { label: 'En proceso', value: tareasEnProceso, color: '#f59e0b' },
+                { label: 'Completadas', value: tareasCompletadas, color: '#00cc66' },
+              ],
+              'Estado de Tareas',
+            )}
           </div>
-          <div class="donut-card">
-            <div class="donut-title">Prioridad Activa</div>
-            ${donutChart([
-              { label: 'Alta', value: tareasAlta, color: '#ef4444' },
-              { label: 'Media', value: tareasMedia, color: '#f59e0b' },
-              { label: 'Baja', value: tareasBaja, color: '#10b981' },
-            ], 'Prioridad Activa')}
+          <div class="donut-card"><div class="donut-title">Prioridad Activa</div>
+            ${donutChart(
+              [
+                { label: 'Alta', value: tareasAlta, color: '#e63b2e' },
+                { label: 'Media', value: tareasMedia, color: '#0055ff' },
+                { label: 'Baja', value: tareasBaja, color: '#00cc66' },
+              ],
+              'Prioridad Activa',
+            )}
           </div>
         </div>
-
-        <!-- Progress bars + Completion rate -->
         <div class="progress-grid">
-          <div class="progress-card">
-            <div class="donut-title">Distribución por Fuente</div>
-            ${progressBar('Visitas', totalVisitas, totalRecords, '#10b981')}
-            ${progressBar('Tareas', totalTareas, totalRecords, '#3b82f6')}
+          <div class="progress-card"><div class="donut-title">Distribución por Fuente</div>
+            ${progressBar('Visitas', totalVisitas, totalRecords, '#00cc66')}
+            ${progressBar('Tareas', totalTareas, totalRecords, '#0055ff')}
             ${progressBar('Personal', totalPersonal, totalRecords, '#8b5cf6')}
             ${progressBar('Novedades', totalNovedades, totalRecords, '#f59e0b')}
           </div>
-          <div class="completion-card">
-            <div class="donut-title">Tasa de Completitud</div>
-            <div class="completion-value" style="color:${tasaCompletitud >= 70 ? '#10b981' : tasaCompletitud >= 40 ? '#f59e0b' : '#ef4444'};">${tasaCompletitud}%</div>
-            <div class="completion-track">
-              <div class="completion-fill" style="width:${tasaCompletitud}%;background:${tasaCompletitud >= 70 ? '#10b981' : tasaCompletitud >= 40 ? '#f59e0b' : '#ef4444'};"></div>
-            </div>
+          <div class="completion-card"><div class="donut-title">Tasa de Completitud</div>
+            <div class="completion-value" style="color:${tasaCompletitud >= 70 ? '#00cc66' : tasaCompletitud >= 40 ? '#f59e0b' : '#e63b2e'};">${tasaCompletitud}%</div>
+            <div class="completion-track"><div class="completion-fill" style="width:${tasaCompletitud}%;background:${tasaCompletitud >= 70 ? '#00cc66' : tasaCompletitud >= 40 ? '#f59e0b' : '#e63b2e'};"></div></div>
             <div class="completion-stats">
-              <span>Pendientes: <strong style="color:#3b82f6;">${tareasPendientes}</strong></span>
+              <span>Pendientes: <strong style="color:#0055ff;">${tareasPendientes}</strong></span>
               <span>En proceso: <strong style="color:#f59e0b;">${tareasEnProceso}</strong></span>
-              <span>Completadas: <strong style="color:#10b981;">${tareasCompletadas}</strong></span>
+              <span>Completadas: <strong style="color:#00cc66;">${tareasCompletadas}</strong></span>
             </div>
           </div>
         </div>
-      </div>` : ''}
+      </div>`
+          : ''
+      }
 
-      <!-- OVERDUE TASKS -->
-      ${overdueTasks.length > 0 ? `
+      ${
+        overdueTasks.length > 0
+          ? `
       <div class="section" style="padding-top:0;">
         <div class="overdue-card">
           <div class="overdue-header">
             <span class="overdue-icon">⚠️</span>
-            <div>
-              <div class="overdue-title">Tareas Vencidas</div>
-              <div class="overdue-count">${overdueTasks.length} tarea${overdueTasks.length > 1 ? 's' : ''} pendiente${overdueTasks.length > 1 ? 's' : ''} de plazo</div>
-            </div>
+            <div><div class="overdue-title">Tareas Vencidas</div><div class="overdue-count">${overdueTasks.length} tarea${overdueTasks.length > 1 ? 's' : ''} pendiente${overdueTasks.length > 1 ? 's' : ''} de plazo</div></div>
           </div>
-          <table class="overdue-table">
-            <thead>
-              <tr>
-                <th>Tarea</th>
-                <th>Vencimiento</th>
-                <th>Prioridad</th>
-                <th>Estado</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${overdueTasks.map((t: any) => `
-              <tr>
-                <td style="font-weight:600;">${t.title || 'Sin título'}</td>
-                <td style="color:#ef4444;font-weight:600;">${t.dueDate || 'N/A'}</td>
-                <td>${badge(((t.priority || 'N/A') as string).toUpperCase(), priorityColor(t.priority))}</td>
-                <td>${badge(((t.status || 'N/A') as string).toUpperCase().replace('_', ' '), statusColor(t.status))}</td>
-              </tr>`).join('')}
-            </tbody>
+          <table class="overdue-table"><thead><tr><th>Tarea</th><th>Vencimiento</th><th>Prioridad</th><th>Estado</th></tr></thead>
+            <tbody>${overdueTasks.map((t: any) => `<tr><td style="font-weight:600;">${t.title || 'Sin título'}</td><td style="color:#e63b2e;font-weight:600;">${t.dueDate || 'N/A'}</td><td>${badge(((t.priority || 'N/A') as string).toUpperCase(), priorityColor(t.priority))}</td><td>${badge(((t.status || 'N/A') as string).toUpperCase().replace('_', ' '), statusColor(t.status))}</td></tr>`).join('')}</tbody>
           </table>
         </div>
-      </div>` : ''}
+      </div>`
+          : ''
+      }
 
-      <!-- VISIT ANALYSIS -->
-      ${(topDestinations.length > 0 || topResponsables.length > 0) ? `
+      ${
+        topDestinations.length > 0 || topResponsables.length > 0
+          ? `
       <div class="section" style="padding-top:0;">
-        <div class="section-header">
-          <div class="section-accent"></div>
-          <div>
-            <div class="section-title">Análisis de Visitas</div>
-          </div>
-        </div>
+        <div class="section-header"><div class="section-accent"></div><div><div class="section-title">Análisis de Visitas</div></div></div>
         <div class="ranking-grid">
-          ${topDestinations.length > 0 ? `
-          <div>
-            <div class="donut-title">Destinos más frecuentes</div>
-            ${topDestinations.map(([dest, count], i) => `
-            <div class="ranking-item" style="${i < topDestinations.length - 1 ? 'border-bottom:1px solid #f1f5f9;' : ''}">
-              <div class="ranking-number" style="background:#eff6ff;color:#3b82f6;">${i+1}</div>
-              <div class="ranking-name">${dest}</div>
-              <div class="ranking-count" style="color:#3b82f6;">${count} visita${count > 1 ? 's' : ''}</div>
-            </div>`).join('')}
-          </div>` : ''}
-          ${topResponsables.length > 0 ? `
-          <div>
-            <div class="donut-title">Top responsables</div>
-            ${topResponsables.map(([resp, count], i) => `
-            <div class="ranking-item" style="${i < topResponsables.length - 1 ? 'border-bottom:1px solid #f1f5f9;' : ''}">
-              <div class="ranking-number" style="background:#f0fdf4;color:#10b981;">${i+1}</div>
-              <div class="ranking-name">${resp}</div>
-              <div class="ranking-count" style="color:#10b981;">${count} visita${count > 1 ? 's' : ''}</div>
-            </div>`).join('')}
-          </div>` : ''}
+          ${
+            topDestinations.length > 0
+              ? `<div><div class="donut-title">Destinos más frecuentes</div>
+            ${topDestinations.map(([dest, count], i) => `<div class="ranking-item" style="${i < topDestinations.length - 1 ? 'border-bottom:2px solid #f5f0e8;' : ''}"><div class="ranking-number" style="background:#fff;color:#0055ff;">${i + 1}</div><div class="ranking-name">${dest}</div><div class="ranking-count" style="color:#0055ff;">${count} visita${count > 1 ? 's' : ''}</div></div>`).join('')}
+          </div>`
+              : ''
+          }
+          ${
+            topResponsables.length > 0
+              ? `<div><div class="donut-title">Top responsables</div>
+            ${topResponsables.map(([resp, count], i) => `<div class="ranking-item" style="${i < topResponsables.length - 1 ? 'border-bottom:2px solid #f5f0e8;' : ''}"><div class="ranking-number" style="background:#fff;color:#00cc66;">${i + 1}</div><div class="ranking-name">${resp}</div><div class="ranking-count" style="color:#00cc66;">${count} visita${count > 1 ? 's' : ''}</div></div>`).join('')}
+          </div>`
+              : ''
+          }
         </div>
-      </div>` : ''}
+      </div>`
+          : ''
+      }
 
-      <!-- RECENT ACTIVITY -->
-      ${recentActivities.length > 0 ? `
+      ${
+        recentActivities.length > 0
+          ? `
       <div class="section" style="padding-top:0;">
-        <div class="section-header">
-          <div class="section-accent" style="background:linear-gradient(180deg, #10b981, #059669);"></div>
-          <div>
-            <div class="section-title">Actividad Reciente</div>
-          </div>
-        </div>
+        <div class="section-header"><div class="section-accent" style="background:#00cc66;"></div><div><div class="section-title">Actividad Reciente</div></div></div>
         <div class="timeline">
-          ${recentActivities.slice(0, 8).map((act, i) => `
-          <div class="timeline-item" style="${i < 7 ? 'border-bottom:1px solid #f1f5f9;' : ''}">
-            <div class="timeline-dot" style="background:${act.color};box-shadow:0 0 0 3px ${act.color}33;"></div>
-            <div class="timeline-content">
-              <span class="timeline-type" style="background:${act.color};">${act.type}</span>
-              <span class="timeline-detail">${act.detail}</span>
-              <span class="timeline-date">${act.date}</span>
-            </div>
-          </div>`).join('')}
+          ${recentActivities
+            .slice(0, 8)
+            .map(
+              (act, i) =>
+                `<div class="timeline-item" style="${i < 7 ? 'border-bottom:2px solid #f5f0e8;' : ''}"><div class="timeline-dot" style="background:${act.color};"></div><div class="timeline-content"><span class="timeline-type" style="background:${act.color};">${act.type}</span><span class="timeline-detail">${act.detail}</span><span class="timeline-date">${act.date}</span></div></div>`,
+            )
+            .join('')}
         </div>
-      </div>` : ''}
+      </div>`
+          : ''
+      }
 
-      <!-- VISITAS TÉCNICAS -->
-      ${totalVisitas > 0 ? `
+      ${
+        totalVisitas > 0
+          ? `
       <div class="section" style="padding-top:0;">
-        <div class="section-divider">
-          <div class="section-divider-accent" style="background:#10b981;"></div>
-          <div class="section-divider-title">Visitas Técnicas</div>
-          <div class="section-divider-count" style="background:#f0fdf4;color:#10b981;">${totalVisitas} registros</div>
-        </div>
-        ${data.visitas.map((v: any, idx: number) => dataCard(
-          `${v.origen || 'N/A'} → ${v.destino || 'N/A'}`,
-          idx + 1,
-          '#10b981',
-          [
-            { label: 'Fecha', value: v.fecha || 'N/A' },
-            { label: 'Hora', value: v.hora || 'N/A' },
-            { label: 'Responsable', value: v.responsable || 'N/A' },
-            { label: 'Origen', value: v.origen || 'N/A' },
-            { label: 'Destino', value: v.destino || 'N/A' },
-            { label: 'Observaciones', value: v.observaciones || '—' },
-          ],
-          commentsBlock(v.comments, '#10b981')
-        )).join('')}
-      </div>` : ''}
+        <div class="section-divider"><div class="section-divider-accent" style="background:#00cc66;"></div><div class="section-divider-title">Visitas Técnicas</div><div class="section-divider-count">${totalVisitas} registros</div></div>
+        ${data.visitas
+          .map((v: any, idx: number) =>
+            dataCard(
+              `${v.origen || 'N/A'} → ${v.destino || 'N/A'}`,
+              idx + 1,
+              '#00cc66',
+              [
+                { label: 'Fecha', value: v.fecha || 'N/A' },
+                { label: 'Hora', value: v.hora || 'N/A' },
+                { label: 'Responsable', value: v.responsable || 'N/A' },
+                { label: 'Origen', value: v.origen || 'N/A' },
+                { label: 'Destino', value: v.destino || 'N/A' },
+                { label: 'Observaciones', value: v.observaciones || '—' },
+              ],
+              commentsBlock(v.comments, '#00cc66'),
+            ),
+          )
+          .join('')}
+      </div>`
+          : ''
+      }
 
-      <!-- TAREAS OPERATIVAS -->
-      ${totalTareas > 0 ? `
+      ${
+        totalTareas > 0
+          ? `
       <div class="section" style="padding-top:0;">
-        <div class="section-divider">
-          <div class="section-divider-accent" style="background:#3b82f6;"></div>
-          <div class="section-divider-title">Tareas Operativas</div>
-          <div class="section-divider-count" style="background:#eff6ff;color:#3b82f6;">${totalTareas} registros</div>
-        </div>
-        ${data.tareas.map((t: any, idx: number) => {
-          const accent = t.priority === 'alta' ? '#ef4444' : t.priority === 'media' ? '#f59e0b' : '#10b981';
-          return dataCard(
-            t.title || 'Sin título',
-            idx + 1,
-            accent,
-            [
-              { label: 'Prioridad', value: badge(((t.priority || 'N/A') as string).toUpperCase(), priorityColor(t.priority)) },
-              { label: 'Estado', value: badge(((t.status || 'N/A') as string).toUpperCase().replace('_', ' '), statusColor(t.status)) },
-              { label: 'Vencimiento', value: t.dueDate || 'No definida' },
-              { label: 'Creada', value: t.createdAt ? new Date(t.createdAt).toLocaleString('es-ES') : 'N/A' },
-              { label: 'Recurrencia', value: (t.recurrence && t.recurrence !== 'none' ? t.recurrence : '—').toUpperCase() },
-              { label: 'Descripción', value: t.description || '—' },
-            ],
-            tagsBlock(t.tags || [], accent) + subtasksBlock(t.subtasks, accent) + commentsBlock(t.comments, accent) + attachmentsBlock(t.attachments, accent)
-          );
-        }).join('')}
-      </div>` : ''}
+        <div class="section-divider"><div class="section-divider-accent" style="background:#0055ff;"></div><div class="section-divider-title">Tareas Operativas</div><div class="section-divider-count">${totalTareas} registros</div></div>
+        ${data.tareas
+          .map((t: any, idx: number) => {
+            const accent = t.priority === 'alta' ? '#e63b2e' : t.priority === 'media' ? '#0055ff' : '#00cc66';
+            return dataCard(
+              t.title || 'Sin título',
+              idx + 1,
+              accent,
+              [
+                {
+                  label: 'Prioridad',
+                  value: badge(((t.priority || 'N/A') as string).toUpperCase(), priorityColor(t.priority)),
+                },
+                {
+                  label: 'Estado',
+                  value: badge(((t.status || 'N/A') as string).toUpperCase().replace('_', ' '), statusColor(t.status)),
+                },
+                { label: 'Vencimiento', value: t.dueDate || 'No definida' },
+                { label: 'Creada', value: t.createdAt ? new Date(t.createdAt).toLocaleString('es-ES') : 'N/A' },
+                {
+                  label: 'Recurrencia',
+                  value: (t.recurrence && t.recurrence !== 'none' ? t.recurrence : '—').toUpperCase(),
+                },
+                { label: 'Descripción', value: t.description || '—' },
+              ],
+              tagsBlock(t.tags || [], accent) +
+                subtasksBlock(t.subtasks, accent) +
+                commentsBlock(t.comments, accent) +
+                attachmentsBlock(t.attachments, accent),
+            );
+          })
+          .join('')}
+      </div>`
+          : ''
+      }
 
-      <!-- PERSONAL ACTIVO -->
-      ${totalPersonal > 0 ? `
+      ${
+        totalPersonal > 0
+          ? `
       <div class="section" style="padding-top:0;">
-        <div class="section-divider">
-          <div class="section-divider-accent" style="background:#8b5cf6;"></div>
-          <div class="section-divider-title">Personal Activo</div>
-          <div class="section-divider-count" style="background:#f5f3ff;color:#8b5cf6;">${totalPersonal} registros</div>
-        </div>
-        ${data.personal.map((p: any, idx: number) => {
-          const accent = p.status === 'Activo' ? '#10b981' : '#ef4444';
-          return dataCard(
-            p.name || 'Sin nombre',
-            idx + 1,
-            accent,
-            [
+        <div class="section-divider"><div class="section-divider-accent" style="background:#8b5cf6;"></div><div class="section-divider-title">Personal Activo</div><div class="section-divider-count">${totalPersonal} registros</div></div>
+        ${data.personal
+          .map((p: any, idx: number) => {
+            const accent = p.status === 'Activo' ? '#00cc66' : '#e63b2e';
+            return dataCard(p.name || 'Sin nombre', idx + 1, accent, [
               { label: 'Nombre', value: p.name || 'N/A' },
               { label: 'Rol', value: p.role || 'N/A' },
               { label: 'Estado', value: badge((p.status || 'N/A').toUpperCase(), statusColor(p.status)) },
-            ]
-          );
-        }).join('')}
-      </div>` : ''}
+            ]);
+          })
+          .join('')}
+      </div>`
+          : ''
+      }
 
-      <!-- NOVEDADES -->
-      ${totalNovedades > 0 ? `
+      ${
+        totalNovedades > 0
+          ? `
       <div class="section" style="padding-top:0;">
-        <div class="section-divider">
-          <div class="section-divider-accent" style="background:#f59e0b;"></div>
-          <div class="section-divider-title">Novedades</div>
-          <div class="section-divider-count" style="background:#fffbeb;color:#f59e0b;">${totalNovedades} registros</div>
-        </div>
-        ${data.novedades.map((n: any, idx: number) => dataCard(
-          n.title || 'Sin título',
-          idx + 1,
-          '#f59e0b',
-          [
-            { label: 'Fecha', value: n.createdAt ? new Date(n.createdAt).toLocaleString('es-ES') : 'N/A' },
-            { label: 'Autor', value: n.authorName || 'N/A' },
-            { label: 'Título', value: n.title || 'Sin título' },
-            { label: 'Contenido', value: n.content || '—' },
-          ],
-          attachmentsBlock(n.attachments, '#f59e0b')
-        )).join('')}
-      </div>` : ''}
+        <div class="section-divider"><div class="section-divider-accent" style="background:#f59e0b;"></div><div class="section-divider-title">Novedades</div><div class="section-divider-count">${totalNovedades} registros</div></div>
+        ${data.novedades
+          .map((n: any, idx: number) =>
+            dataCard(
+              n.title || 'Sin título',
+              idx + 1,
+              '#f59e0b',
+              [
+                { label: 'Fecha', value: n.createdAt ? new Date(n.createdAt).toLocaleString('es-ES') : 'N/A' },
+                { label: 'Autor', value: n.authorName || 'N/A' },
+                { label: 'Título', value: n.title || 'Sin título' },
+                { label: 'Contenido', value: n.content || '—' },
+              ],
+              attachmentsBlock(n.attachments, '#f59e0b'),
+            ),
+          )
+          .join('')}
+      </div>`
+          : ''
+      }
 
-      <!-- FOOTER -->
       <div class="report-footer">
         <div class="report-footer-brand">SGA PZBP — Prefectura Naval Argentina</div>
         <div class="report-footer-date">Generado el ${now}</div>
@@ -1061,7 +761,8 @@ export default function Reportes() {
     // Create visible overlay with preview
     const overlay = document.createElement('div');
     overlay.id = 'pdf-overlay';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#f9fafb;z-index:99999;overflow-y:auto;font-family:system-ui,-apple-system,sans-serif;';
+    overlay.style.cssText =
+      'position:fixed;top:0;left:0;width:100%;height:100%;background:#f9fafb;z-index:99999;overflow-y:auto;font-family:system-ui,-apple-system,sans-serif;';
     overlay.innerHTML = `
       <div style="position:sticky;top:0;z-index:10;background:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
         <div>
@@ -1157,7 +858,10 @@ export default function Reportes() {
   const generateExcel = (data: Record<string, any[]>) => {
     const workbook = XLSX.utils.book_new();
 
-    const sheetConfigs: Record<string, { columns: { key: string; header: string; width: number }[]; color: { header: string; altRow: string } }> = {
+    const sheetConfigs: Record<
+      string,
+      { columns: { key: string; header: string; width: number }[]; color: { header: string; altRow: string } }
+    > = {
       visitas: {
         columns: [
           { key: 'fecha', header: 'Fecha', width: 14 },
@@ -1167,7 +871,7 @@ export default function Reportes() {
           { key: 'responsable', header: 'Responsable', width: 24 },
           { key: 'observaciones', header: 'Observaciones', width: 40 },
         ],
-        color: { header: '10b981', altRow: 'f0fdf4' },
+        color: { header: '00cc66', altRow: 'f0fdf4' },
       },
       tareas: {
         columns: [
@@ -1178,7 +882,7 @@ export default function Reportes() {
           { key: 'description', header: 'Descripción', width: 40 },
           { key: 'recurrence', header: 'Recurrencia', width: 16 },
         ],
-        color: { header: '3b82f6', altRow: 'eff6ff' },
+        color: { header: '0055ff', altRow: 'eff6ff' },
       },
       personal: {
         columns: [
@@ -1206,29 +910,68 @@ export default function Reportes() {
       novedades: 'NOVEDADES',
     };
 
-    Object.keys(data).forEach(key => {
+    const totalVisitas = data.visitas?.length || 0;
+    const totalTareas = data.tareas?.length || 0;
+    const totalPersonal = data.personal?.length || 0;
+    const totalNovedades = data.novedades?.length || 0;
+    const totalRecords = totalVisitas + totalTareas + totalPersonal + totalNovedades;
+    const tareasCompletadas = data.tareas?.filter((t: any) => t.status === 'completado').length || 0;
+    const tasaCompletitud = totalTareas > 0 ? Math.round((tareasCompletadas / totalTareas) * 100) : 0;
+    const tareasVencidas =
+      data.tareas?.filter((t: any) => {
+        if (!t.dueDate || t.status === 'completado') return false;
+        return new Date(t.dueDate) < new Date();
+      }).length || 0;
+
+    const resumenData = [
+      { A: 'REPORTE SGA PZBP — PREFECTURA NAVAL ARGENTINA' },
+      {},
+      { A: 'RESUMEN GENERAL' },
+      { A: `Fecha de generación:`, B: new Date().toLocaleString('es-ES') },
+      {
+        A: `Filtro de datos:`,
+        B: dataSource === 'todas' ? 'Todas las fuentes' : sheetLabels[dataSource] || dataSource,
+      },
+      { A: `Período:`, B: `${dateFrom || 'Sin límite'} — ${dateTo || 'Sin límite'}` },
+      {},
+      { A: 'TOTAL DE REGISTROS', B: totalRecords },
+      {},
+      { A: 'Visitas Técnicas', B: totalVisitas },
+      { A: 'Tareas Operativas', B: totalTareas },
+      { A: 'Personal Activo', B: totalPersonal },
+      { A: 'Novedades', B: totalNovedades },
+      {},
+      { A: 'INDICADORES' },
+      { A: 'Tasa de completitud', B: `${tasaCompletitud}%` },
+      { A: 'Tareas completadas', B: tareasCompletadas },
+      { A: 'Tareas vencidas', B: tareasVencidas },
+    ];
+
+    const resumenWs = XLSX.utils.json_to_sheet(resumenData, { skipHeader: true });
+    resumenWs['!cols'] = [{ wch: 28 }, { wch: 40 }];
+    resumenWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }];
+    XLSX.utils.book_append_sheet(workbook, resumenWs, 'RESUMEN');
+
+    Object.keys(data).forEach((key) => {
       const records = data[key];
       const config = sheetConfigs[key];
       if (!config) return;
 
       const worksheetData: any[] = [];
 
-      // Title row
       worksheetData.push({ A: sheetLabels[key] || key.toUpperCase() });
       worksheetData.push({ A: `Generado: ${new Date().toLocaleString('es-ES')}` });
       worksheetData.push({ A: `Total de registros: ${records.length}` });
-      worksheetData.push({}); // spacer
+      worksheetData.push({});
 
       if (records.length > 0) {
-        // Header row
         const headerRow: Record<string, string> = {};
         config.columns.forEach((col, idx) => {
           headerRow[String.fromCharCode(65 + idx)] = col.header;
         });
         worksheetData.push(headerRow);
 
-        // Data rows
-        records.forEach((record, rowIdx) => {
+        records.forEach((record) => {
           const row: Record<string, any> = {};
           config.columns.forEach((col, idx) => {
             const cellRef = String.fromCharCode(65 + idx);
@@ -1237,7 +980,11 @@ export default function Reportes() {
             if (typeof val === 'object') {
               if (Array.isArray(val)) {
                 if (col.key === 'createdAt' || col.key === 'timestamp') {
-                  try { val = new Date(val[0]).toLocaleString('es-ES'); } catch { val = JSON.stringify(val).slice(0, 40); }
+                  try {
+                    val = new Date(val[0]).toLocaleString('es-ES');
+                  } catch {
+                    val = JSON.stringify(val).slice(0, 40);
+                  }
                 } else {
                   val = `${val.length} elemento(s)`;
                 }
@@ -1249,7 +996,9 @@ export default function Reportes() {
               try {
                 const d = new Date(val);
                 if (!isNaN(d.getTime())) val = d.toLocaleString('es-ES');
-              } catch { /* fall through */ }
+              } catch {
+                /* fall through */
+              }
             }
             row[cellRef] = String(val).slice(0, 100);
           });
@@ -1261,17 +1010,19 @@ export default function Reportes() {
 
       const worksheet = XLSX.utils.json_to_sheet(worksheetData, { skipHeader: true });
 
-      // Set column widths
-      const wscols = config.columns.map(col => ({ wch: col.width }));
+      const wscols = config.columns.map((col) => ({ wch: col.width }));
       worksheet['!cols'] = wscols;
 
-      // Merge title cells
       worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: config.columns.length - 1 } }];
+
+      worksheet['!autofilter'] = {
+        ref: `A${5}:${String.fromCharCode(64 + config.columns.length)}${5 + records.length}`,
+      };
 
       XLSX.utils.book_append_sheet(workbook, worksheet, sheetLabels[key] || key.toUpperCase());
     });
 
-    if (workbook.SheetNames.length === 0) {
+    if (workbook.SheetNames.length === 1) {
       const worksheet = XLSX.utils.json_to_sheet([{ message: 'Sin datos para los filtros seleccionados' }]);
       XLSX.utils.book_append_sheet(workbook, worksheet, 'REPORTE');
     }
@@ -1280,12 +1031,39 @@ export default function Reportes() {
   };
 
   const generateJSON = (data: Record<string, any[]>) => {
+    const totalVisitas = data.visitas?.length || 0;
+    const totalTareas = data.tareas?.length || 0;
+    const totalPersonal = data.personal?.length || 0;
+    const totalNovedades = data.novedades?.length || 0;
+    const totalRecords = totalVisitas + totalTareas + totalPersonal + totalNovedades;
+    const tareasPendientes = data.tareas?.filter((t: any) => t.status === 'pendiente').length || 0;
+    const tareasEnProceso = data.tareas?.filter((t: any) => t.status === 'en_proceso').length || 0;
+    const tareasCompletadas = data.tareas?.filter((t: any) => t.status === 'completado').length || 0;
+    const tareasAlta = data.tareas?.filter((t: any) => t.priority === 'alta' && t.status !== 'completado').length || 0;
+    const tareasMedia =
+      data.tareas?.filter((t: any) => t.priority === 'media' && t.status !== 'completado').length || 0;
+    const tareasBaja = data.tareas?.filter((t: any) => t.priority === 'baja' && t.status !== 'completado').length || 0;
+    const tasaCompletitud = totalTareas > 0 ? Math.round((tareasCompletadas / totalTareas) * 100) : 0;
+    const tareasVencidas =
+      data.tareas?.filter((t: any) => {
+        if (!t.dueDate || t.status === 'completado') return false;
+        return new Date(t.dueDate) < new Date();
+      }).length || 0;
+
     const reportMetadata = {
+      version: '2.0.0',
       titulo: 'REPORTE COMPLETO',
       sistema: 'Sistema de Gestión de Actividades',
       organizacion: 'Prefectura Naval Argentina — SGA PZBP',
       fechaGeneracion: new Date().toISOString(),
-      fechaLegible: new Date().toLocaleString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      fechaLegible: new Date().toLocaleString('es-ES', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
       filtros: {
         fuenteDeDatos: dataSource,
         desde: dateFrom || 'Sin límite',
@@ -1293,11 +1071,21 @@ export default function Reportes() {
         ordenarPor: sortBy,
       },
       resumen: {
-        totalRegistros: Object.values(data).reduce((sum, arr) => sum + arr.length, 0),
-        visitas: data.visitas?.length || 0,
-        tareas: data.tareas?.length || 0,
-        personal: data.personal?.length || 0,
-        novedades: data.novedades?.length || 0,
+        totalRegistros: totalRecords,
+        visitas: totalVisitas,
+        tareas: totalTareas,
+        personal: totalPersonal,
+        novedades: totalNovedades,
+      },
+      kpis: {
+        tasaCompletitud: `${tasaCompletitud}%`,
+        tareasPendientes,
+        tareasEnProceso,
+        tareasCompletadas,
+        tareasVencidas,
+        prioridadAlta: tareasAlta,
+        prioridadMedia: tareasMedia,
+        prioridadBaja: tareasBaja,
       },
     };
 
@@ -1308,7 +1096,7 @@ export default function Reportes() {
           key,
           {
             total: records.length,
-            registros: records.map(record => {
+            registros: records.map((record) => {
               const cleaned: Record<string, any> = {};
               Object.entries(record).forEach(([k, v]) => {
                 if (v === null || v === undefined) {
@@ -1322,7 +1110,7 @@ export default function Reportes() {
               return cleaned;
             }),
           },
-        ])
+        ]),
       ),
       generadoPor: 'SGO PZBP - Sistema de Reportes',
     };
@@ -1342,12 +1130,12 @@ export default function Reportes() {
   const handleGenerateReport = async () => {
     setIsGenerating(true);
     toast.loading('Generando reporte...', { id: 'report-gen' });
-    
+
     try {
       const data = await fetchData();
-      
+
       let hasData = false;
-      Object.values(data).forEach(arr => {
+      Object.values(data).forEach((arr) => {
         if (arr.length > 0) hasData = true;
       });
 
@@ -1374,10 +1162,13 @@ export default function Reportes() {
     }
   };
 
-  const dataCounts = Object.entries(dataPreview).reduce((acc, [key, value]) => {
-    acc[key] = value.length;
-    return acc;
-  }, {} as Record<string, number>);
+  const dataCounts = Object.entries(dataPreview).reduce(
+    (acc, [key, value]) => {
+      acc[key] = value.length;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const totalRecords = Object.values(dataCounts).reduce((a, b) => a + b, 0);
 
@@ -1409,7 +1200,11 @@ export default function Reportes() {
         return `${val.length} elemento(s)`;
       }
       if (key === 'createdAt' || key === 'timestamp') {
-        try { return new Date(val).toLocaleString('es-ES'); } catch { return String(val).slice(0, 30); }
+        try {
+          return new Date(val).toLocaleString('es-ES');
+        } catch {
+          return String(val).slice(0, 30);
+        }
       }
       return JSON.stringify(val).slice(0, 40);
     }
@@ -1417,7 +1212,9 @@ export default function Reportes() {
       try {
         const d = new Date(val);
         if (!isNaN(d.getTime())) return d.toLocaleString('es-ES');
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
     return String(val);
   };
@@ -1478,7 +1275,9 @@ export default function Reportes() {
   return (
     <div className="font-['Inter'] max-w-6xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
-        <h1 className="text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Generación de Reportes</h1>
+        <h1 className="text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">
+          Generación de Reportes
+        </h1>
         {totalRecords > 0 && showPreview && (
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-[#0055ff]" />
@@ -1486,18 +1285,20 @@ export default function Reportes() {
           </div>
         )}
       </div>
-      
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Configuration Panel */}
         <div className="lg:col-span-1 bg-white border-4 border-[#1a1a1a] p-6 shadow-[8px_8px_0px_0px_rgba(26,26,26,0.3)] h-fit">
-          <h2 className="text-lg font-black uppercase mb-6 font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-2">Configuración</h2>
-          
+          <h2 className="text-lg font-black uppercase mb-6 font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-2">
+            Configuración
+          </h2>
+
           <div className="space-y-5">
             <div>
               <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
                 <Database className="w-4 h-4" /> Fuente de Datos
               </label>
-              <select 
+              <select
                 value={dataSource}
                 onChange={(e) => setDataSource(e.target.value)}
                 className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
@@ -1515,31 +1316,29 @@ export default function Reportes() {
                 <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
                   <Calendar className="w-3 h-3" /> Desde
                 </label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs" 
+                  className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
                 />
               </div>
               <div>
                 <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
                   <Calendar className="w-3 h-3" /> Hasta
                 </label>
-                <input 
-                  type="date" 
+                <input
+                  type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs" 
+                  className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-black uppercase tracking-widest mb-2">
-                Ordenar por
-              </label>
-              <select 
+              <label className="block text-xs font-black uppercase tracking-widest mb-2">Ordenar por</label>
+              <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
@@ -1553,19 +1352,19 @@ export default function Reportes() {
             <div>
               <label className="block text-xs font-black uppercase tracking-widest mb-2">Formato</label>
               <div className="flex gap-2">
-                <button 
+                <button
                   onClick={() => setFormat('pdf')}
                   className={`flex-1 py-3 border-2 border-[#1a1a1a] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-xs ${format === 'pdf' ? 'bg-[#1a1a1a] text-[#0055ff] shadow-none translate-x-0.5 translate-y-0.5' : 'bg-[#0055ff] text-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none hover:bg-[#1a1a1a] hover:text-[#0055ff]'}`}
                 >
                   <FileText className="w-4 h-4" /> PDF
                 </button>
-                <button 
+                <button
                   onClick={() => setFormat('excel')}
                   className={`flex-1 py-3 border-2 border-[#1a1a1a] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-xs ${format === 'excel' ? 'bg-[#1a1a1a] text-[#00cc66] shadow-none translate-x-0.5 translate-y-0.5' : 'bg-[#00cc66] text-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none hover:bg-[#1a1a1a] hover:text-[#00cc66]'}`}
                 >
                   <FileSpreadsheet className="w-4 h-4" /> Excel
                 </button>
-                <button 
+                <button
                   onClick={() => setFormat('json')}
                   className={`flex-1 py-3 border-2 border-[#1a1a1a] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-xs ${format === 'json' ? 'bg-[#1a1a1a] text-[#0055ff] shadow-none translate-x-0.5 translate-y-0.5' : 'bg-[#0055ff] text-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none hover:bg-[#1a1a1a] hover:text-[#0055ff]'}`}
                 >
@@ -1574,7 +1373,7 @@ export default function Reportes() {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={handleGenerateReport}
               disabled={isGenerating}
               className="w-full py-3.5 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-white hover:text-[#1a1a1a] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed text-sm"
@@ -1582,7 +1381,7 @@ export default function Reportes() {
               <Download className="w-5 h-5" /> {isGenerating ? 'Generando...' : 'Generar Reporte'}
             </button>
 
-            <button 
+            <button
               onClick={loadPreview}
               disabled={isLoadingPreview}
               className="w-full py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#f5f0e8] transition-all flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 text-sm"
@@ -1600,8 +1399,10 @@ export default function Reportes() {
               animate={{ opacity: 1, y: 0 }}
               className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] p-6"
             >
-              <h2 className="text-lg font-black uppercase mb-4 font-['Space_Grotesk'] border-b-2 border-[#1a1a1a] pb-2">Vista Previa de Datos</h2>
-              
+              <h2 className="text-lg font-black uppercase mb-4 font-['Space_Grotesk'] border-b-2 border-[#1a1a1a] pb-2">
+                Vista Previa de Datos
+              </h2>
+
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
                 {Object.entries(dataCounts).map(([key, count]) => (
                   <div key={key} className="p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] flex items-center gap-3">
@@ -1640,25 +1441,38 @@ export default function Reportes() {
                               <thead>
                                 <tr className="bg-[#1a1a1a] text-white">
                                   <th className="p-3 text-[10px] font-black uppercase tracking-wider w-10">#</th>
-                                  {columns.map(col => (
-                                    <th key={col.field} className={`p-3 text-[10px] font-black uppercase tracking-wider ${col.width}`}>{col.label}</th>
+                                  {columns.map((col) => (
+                                    <th
+                                      key={col.field}
+                                      className={`p-3 text-[10px] font-black uppercase tracking-wider ${col.width}`}
+                                    >
+                                      {col.label}
+                                    </th>
                                   ))}
                                 </tr>
                               </thead>
                               <tbody>
                                 {records.slice(0, 8).map((record, idx) => (
-                                  <tr key={idx} className={`border-t border-[#1a1a1a]/10 ${idx % 2 === 0 ? 'bg-[#f5f0e8]' : 'bg-white'} hover:bg-[#0055ff]/5 transition-colors`}>
+                                  <tr
+                                    key={idx}
+                                    className={`border-t border-[#1a1a1a]/10 ${idx % 2 === 0 ? 'bg-[#f5f0e8]' : 'bg-white'} hover:bg-[#0055ff]/5 transition-colors`}
+                                  >
                                     <td className="p-3 text-xs font-bold opacity-30">{idx + 1}</td>
-                                    {columns.map(col => {
+                                    {columns.map((col) => {
                                       const rawVal = record[col.field];
                                       const displayVal = formatValue(rawVal, col.field);
                                       const isBadge = col.field === 'priority' || col.field === 'status';
-                                      const isCount = col.field === 'comments' || col.field === 'subtasks' || col.field === 'attachments';
+                                      const isCount =
+                                        col.field === 'comments' ||
+                                        col.field === 'subtasks' ||
+                                        col.field === 'attachments';
 
                                       return (
                                         <td key={col.field} className="p-3">
                                           {isBadge && typeof rawVal === 'string' && rawVal ? (
-                                            <span className={`inline-block px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border border-[#1a1a1a] ${col.field === 'priority' ? getPriorityBadge(rawVal) : getStatusBadge(rawVal)}`}>
+                                            <span
+                                              className={`inline-block px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border border-[#1a1a1a] ${col.field === 'priority' ? getPriorityBadge(rawVal) : getStatusBadge(rawVal)}`}
+                                            >
                                               {rawVal.replace('_', ' ')}
                                             </span>
                                           ) : isCount && Array.isArray(rawVal) && rawVal.length > 0 ? (
@@ -1666,7 +1480,10 @@ export default function Reportes() {
                                               {col.field === 'subtasks' ? displayVal : `${rawVal.length}`}
                                             </span>
                                           ) : (
-                                            <span className="text-xs font-medium truncate block max-w-[250px]" title={String(rawVal ?? '')}>
+                                            <span
+                                              className="text-xs font-medium truncate block max-w-[250px]"
+                                              title={String(rawVal ?? '')}
+                                            >
                                               {displayVal || '—'}
                                             </span>
                                           )}
@@ -1682,20 +1499,36 @@ export default function Reportes() {
                               <thead>
                                 <tr className="bg-[#1a1a1a] text-white">
                                   <th className="p-3 text-[10px] font-black uppercase tracking-wider w-10">#</th>
-                                  {Object.keys(records[0]).slice(0, 6).map(header => (
-                                    <th key={header} className="p-3 text-[10px] font-black uppercase tracking-wider min-w-[100px]">{header}</th>
-                                  ))}
+                                  {Object.keys(records[0])
+                                    .slice(0, 6)
+                                    .map((header) => (
+                                      <th
+                                        key={header}
+                                        className="p-3 text-[10px] font-black uppercase tracking-wider min-w-[100px]"
+                                      >
+                                        {header}
+                                      </th>
+                                    ))}
                                 </tr>
                               </thead>
                               <tbody>
                                 {records.slice(0, 8).map((record, idx) => (
-                                  <tr key={idx} className={`border-t border-[#1a1a1a]/10 ${idx % 2 === 0 ? 'bg-[#f5f0e8]' : 'bg-white'}`}>
+                                  <tr
+                                    key={idx}
+                                    className={`border-t border-[#1a1a1a]/10 ${idx % 2 === 0 ? 'bg-[#f5f0e8]' : 'bg-white'}`}
+                                  >
                                     <td className="p-3 text-xs font-bold opacity-30">{idx + 1}</td>
-                                    {Object.values(record).slice(0, 6).map((val: any, i) => (
-                                      <td key={i} className="p-3 text-xs font-medium truncate max-w-[200px]" title={String(val ?? '')}>
-                                        {formatValue(val, Object.keys(record)[i])}
-                                      </td>
-                                    ))}
+                                    {Object.values(record)
+                                      .slice(0, 6)
+                                      .map((val: any, i) => (
+                                        <td
+                                          key={i}
+                                          className="p-3 text-xs font-medium truncate max-w-[200px]"
+                                          title={String(val ?? '')}
+                                        >
+                                          {formatValue(val, Object.keys(record)[i])}
+                                        </td>
+                                      ))}
                                   </tr>
                                 ))}
                               </tbody>
@@ -1708,7 +1541,9 @@ export default function Reportes() {
                           )}
                         </div>
                       ) : (
-                        <p className="text-xs font-bold uppercase opacity-50 p-6 text-center border-2 border-dashed border-[#1a1a1a]/20 bg-[#f5f0e8]/50">Sin datos</p>
+                        <p className="text-xs font-bold uppercase opacity-50 p-6 text-center border-2 border-dashed border-[#1a1a1a]/20 bg-[#f5f0e8]/50">
+                          Sin datos
+                        </p>
                       )}
                     </div>
                   );
@@ -1719,7 +1554,9 @@ export default function Reportes() {
             <div className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] p-12 flex flex-col items-center justify-center text-center">
               <BarChart3 className="w-16 h-16 mb-4 opacity-20" />
               <h3 className="text-lg font-black uppercase mb-2">Sin Vista Previa</h3>
-              <p className="text-sm font-medium opacity-50 max-w-sm mb-4">Configura los filtros y haz clic en "Vista Previa" para ver los datos antes de generar el reporte.</p>
+              <p className="text-sm font-medium opacity-50 max-w-sm mb-4">
+                Configura los filtros y haz clic en "Vista Previa" para ver los datos antes de generar el reporte.
+              </p>
               <button
                 onClick={loadPreview}
                 className="px-6 py-3 bg-[#0055ff] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm hover:bg-[#1a1a1a] hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
