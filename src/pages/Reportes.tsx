@@ -316,31 +316,495 @@ export default function Reportes() {
       </div>`;
 
     const htmlContent = `
-    <div style="width:100%;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#111827;line-height:1.5;">
+    <!DOCTYPE html>
+    <html>
+    <head>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1e293b; line-height: 1.6; }
+
+      /* Cover Page */
+      .cover {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        color: #fff;
+        padding: 80px 60px;
+        min-height: 700px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .cover::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%);
+        border-radius: 50%;
+      }
+      .cover::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: -10%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%);
+        border-radius: 50%;
+      }
+      .cover-content { position: relative; z-index: 1; max-width: 700px; }
+      .cover-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+        color: #60a5fa;
+        margin-bottom: 20px;
+      }
+      .cover h1 {
+        font-size: 48px;
+        font-weight: 900;
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+        margin-bottom: 12px;
+      }
+      .cover h1 span { color: #60a5fa; }
+      .cover-accent {
+        width: 80px;
+        height: 4px;
+        background: linear-gradient(90deg, #3b82f6, #10b981);
+        border-radius: 2px;
+        margin: 24px 0;
+      }
+      .cover-subtitle {
+        font-size: 16px;
+        color: #94a3b8;
+        margin-bottom: 40px;
+      }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 32px;
+      }
+      .stat-card {
+        background: rgba(255,255,255,0.06);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 20px 16px;
+        text-align: center;
+      }
+      .stat-icon { font-size: 24px; margin-bottom: 8px; }
+      .stat-value { font-size: 32px; font-weight: 900; color: #fff; }
+      .stat-label {
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #94a3b8;
+        margin-top: 4px;
+      }
+      .cover-footer {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .cover-footer-label { font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 0.1em; }
+      .cover-footer-value { font-size: 14px; font-weight: 600; color: #e2e8f0; margin-top: 4px; }
+
+      /* KPI Section */
+      .section { padding: 40px 60px; }
+      .section-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 28px;
+      }
+      .section-accent {
+        width: 6px;
+        height: 36px;
+        background: linear-gradient(180deg, #3b82f6, #1d4ed8);
+        border-radius: 3px;
+      }
+      .section-title {
+        font-size: 18px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #0f172a;
+      }
+      .section-subtitle {
+        font-size: 12px;
+        color: #64748b;
+        margin-top: 2px;
+      }
+
+      /* Donut Charts */
+      .donut-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+        margin-bottom: 24px;
+      }
+      .donut-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 24px;
+      }
+      .donut-title {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #334155;
+        margin-bottom: 16px;
+      }
+
+      /* Progress Bars */
+      .progress-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 20px;
+      }
+      .progress-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 24px;
+      }
+      .progress-item { margin-bottom: 14px; }
+      .progress-item:last-child { margin-bottom: 0; }
+      .progress-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+      .progress-label { font-size: 12px; font-weight: 600; color: #475569; }
+      .progress-value { font-size: 12px; font-weight: 700; color: #0f172a; }
+      .progress-track {
+        width: 100%;
+        height: 8px;
+        background: #f1f5f9;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.3s;
+      }
+
+      /* Completion Rate */
+      .completion-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 24px;
+        text-align: center;
+      }
+      .completion-value {
+        font-size: 56px;
+        font-weight: 900;
+        margin: 12px 0;
+      }
+      .completion-track {
+        width: 100%;
+        height: 12px;
+        background: #f1f5f9;
+        border-radius: 6px;
+        overflow: hidden;
+        margin: 12px 0;
+      }
+      .completion-fill {
+        height: 100%;
+        border-radius: 6px;
+      }
+      .completion-stats {
+        display: flex;
+        justify-content: space-between;
+        font-size: 11px;
+        color: #64748b;
+      }
+      .completion-stats strong { font-weight: 700; }
+
+      /* Overdue Tasks */
+      .overdue-card {
+        background: #fef2f2;
+        border: 1px solid #fecaca;
+        border-left: 4px solid #ef4444;
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+      }
+      .overdue-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .overdue-icon { font-size: 24px; }
+      .overdue-title { font-size: 16px; font-weight: 800; color: #991b1b; text-transform: uppercase; }
+      .overdue-count { font-size: 12px; color: #b91c1c; }
+      .overdue-table { width: 100%; border-collapse: collapse; }
+      .overdue-table th {
+        padding: 10px 12px;
+        font-size: 10px;
+        font-weight: 700;
+        color: #991b1b;
+        text-align: left;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: #fee2e2;
+        border-bottom: 1px solid #fecaca;
+      }
+      .overdue-table td {
+        padding: 10px 12px;
+        font-size: 12px;
+        border-bottom: 1px solid #fee2e2;
+      }
+
+      /* Badges */
+      .badge {
+        display: inline-block;
+        padding: 3px 10px;
+        font-size: 10px;
+        font-weight: 700;
+        border-radius: 9999px;
+        letter-spacing: 0.025em;
+        color: #fff;
+      }
+
+      /* Data Cards */
+      .section-divider {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .section-divider-accent {
+        width: 6px;
+        height: 24px;
+        border-radius: 3px;
+      }
+      .section-divider-title {
+        font-size: 16px;
+        font-weight: 800;
+        text-transform: uppercase;
+        color: #0f172a;
+      }
+      .section-divider-count {
+        margin-left: auto;
+        font-size: 11px;
+        font-weight: 600;
+        padding: 4px 12px;
+        border-radius: 9999px;
+      }
+      .data-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-left: 4px solid;
+        border-radius: 10px;
+        padding: 18px;
+        margin-bottom: 12px;
+        page-break-inside: avoid;
+      }
+      .data-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+      .data-card-title { font-size: 14px; font-weight: 700; color: #0f172a; }
+      .data-card-number {
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 10px;
+        border-radius: 9999px;
+      }
+      .data-card-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 10px;
+      }
+      .data-card-field-label {
+        font-size: 9px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #64748b;
+      }
+      .data-card-field-value {
+        font-size: 12px;
+        font-weight: 500;
+        color: #0f172a;
+        margin-top: 2px;
+      }
+
+      /* Comments, Subtasks, Attachments */
+      .data-card-extras { margin-top: 14px; padding-top: 14px; border-top: 1px solid #e2e8f0; }
+      .extras-title {
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 8px;
+      }
+      .comment-item {
+        background: #f8fafc;
+        border-radius: 6px;
+        padding: 10px;
+        margin-bottom: 6px;
+      }
+      .comment-author { font-size: 10px; font-weight: 600; color: #64748b; }
+      .comment-text { font-size: 11px; color: #475569; margin-top: 4px; }
+      .subtask-item {
+        font-size: 11px;
+        padding: 4px 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .attachment-item { font-size: 11px; color: #3b82f6; padding: 2px 0; }
+      .tag-item {
+        display: inline-block;
+        padding: 2px 8px;
+        font-size: 9px;
+        font-weight: 600;
+        border-radius: 9999px;
+        margin: 2px;
+      }
+
+      /* Timeline */
+      .timeline { position: relative; padding-left: 24px; }
+      .timeline::before {
+        content: '';
+        position: absolute;
+        left: 6px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e2e8f0;
+      }
+      .timeline-item {
+        position: relative;
+        padding: 10px 0 10px 16px;
+      }
+      .timeline-dot {
+        position: absolute;
+        left: -20px;
+        top: 14px;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px;
+      }
+      .timeline-content {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .timeline-type {
+        font-size: 9px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 9999px;
+        color: #fff;
+        text-transform: uppercase;
+      }
+      .timeline-detail { font-size: 12px; font-weight: 600; color: #0f172a; }
+      .timeline-date { font-size: 11px; color: #64748b; margin-left: auto; }
+
+      /* Rankings */
+      .ranking-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+      }
+      .ranking-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+      }
+      .ranking-number {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 11px;
+        font-weight: 800;
+        flex-shrink: 0;
+      }
+      .ranking-name { flex: 1; font-size: 13px; font-weight: 600; color: #0f172a; }
+      .ranking-count { font-size: 13px; font-weight: 700; }
+
+      /* Footer */
+      .report-footer {
+        background: #f8fafc;
+        border-top: 1px solid #e2e8f0;
+        padding: 28px 60px;
+        text-align: center;
+      }
+      .report-footer-brand { font-size: 12px; font-weight: 600; color: #475569; }
+      .report-footer-date { font-size: 10px; color: #94a3b8; margin-top: 4px; }
+    </style>
+    </head>
+    <body>
+    <div style="width:100%;">
       <!-- COVER PAGE -->
-      <div style="background:linear-gradient(135deg, #1e3a5f 0%, #0f2439 100%);color:#fff;padding:60px 40px;min-height:500px;display:flex;flex-direction:column;justify-content:center;">
-        <div style="max-width:700px;margin:0 auto;width:100%;">
-          <div style="font-size:12px;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;color:#93c5fd;margin-bottom:16px;">Sistema de Gestión de Actividades</div>
-          <h1 style="font-size:42px;font-weight:900;margin:0 0 8px 0;line-height:1.1;letter-spacing:-0.02em;">REPORTE<br/>COMPLETO</h1>
-          <div style="width:60px;height:4px;background:linear-gradient(90deg, #3b82f6, #10b981);border-radius:9999px;margin:20px 0;"></div>
-          <p style="font-size:16px;color:#93c5fd;margin:0 0 32px 0;">Prefectura Naval Argentina — SGA PZBP</p>
-          
-          <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;">
-            ${statCard('Visitas', totalVisitas, '📍', '#60a5fa')}
-            ${statCard('Tareas', totalTareas, '✅', '#34d399')}
-            ${statCard('Personal', totalPersonal, '👥', '#a78bfa')}
-            ${statCard('Novedades', totalNovedades, '📰', '#fbbf24')}
+      <div class="cover">
+        <div class="cover-content">
+          <div class="cover-label">Sistema de Gestión de Actividades</div>
+          <h1>REPORTE<br/><span>COMPLETO</span></h1>
+          <div class="cover-accent"></div>
+          <p class="cover-subtitle">Prefectura Naval Argentina — SGA PZBP</p>
+
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon">📍</div>
+              <div class="stat-value">${totalVisitas}</div>
+              <div class="stat-label">Visitas</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">✅</div>
+              <div class="stat-value">${totalTareas}</div>
+              <div class="stat-label">Tareas</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">👥</div>
+              <div class="stat-value">${totalPersonal}</div>
+              <div class="stat-label">Personal</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">📰</div>
+              <div class="stat-value">${totalNovedades}</div>
+              <div class="stat-label">Novedades</div>
+            </div>
           </div>
-          
-          <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border-radius:10px;padding:16px;display:flex;justify-content:space-between;align-items:center;">
+
+          <div class="cover-footer">
             <div>
-              <div style="font-size:11px;color:#93c5fd;text-transform:uppercase;letter-spacing:0.1em;">Total de registros</div>
-              <div style="font-size:32px;font-weight:900;">${totalRecords}</div>
+              <div class="cover-footer-label">Total de registros</div>
+              <div class="cover-footer-value" style="font-size:28px;">${totalRecords}</div>
             </div>
             <div style="text-align:right;">
-              <div style="font-size:11px;color:#93c5fd;text-transform:uppercase;letter-spacing:0.1em;">Fecha de generación</div>
-              <div style="font-size:14px;font-weight:600;margin-top:4px;">${dateStr}</div>
-              <div style="font-size:12px;color:#93c5fd;margin-top:2px;">${now}</div>
+              <div class="cover-footer-label">Fecha de generación</div>
+              <div class="cover-footer-value">${dateStr}</div>
+              <div style="font-size:11px;color:#64748b;margin-top:2px;">${now}</div>
             </div>
           </div>
         </div>
@@ -348,25 +812,27 @@ export default function Reportes() {
 
       <!-- KPIs DASHBOARD -->
       ${totalRecords > 0 ? `
-      <div style="padding:32px 40px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-          <div style="width:8px;height:32px;background:linear-gradient(180deg, #3b82f6, #1d4ed8);border-radius:9999px;"></div>
+      <div class="section">
+        <div class="section-header">
+          <div class="section-accent"></div>
           <div>
-            <div style="font-size:20px;font-weight:800;color:#111827;text-transform:uppercase;letter-spacing:0.05em;">Indicadores Clave</div>
-            <div style="font-size:13px;color:#6b7280;">Resumen general del sistema</div>
+            <div class="section-title">Indicadores Clave</div>
+            <div class="section-subtitle">Resumen general del sistema</div>
           </div>
         </div>
 
         <!-- Donut Charts -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:20px;margin-bottom:24px;">
-          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">
+        <div class="donut-grid">
+          <div class="donut-card">
+            <div class="donut-title">Estado de Tareas</div>
             ${donutChart([
               { label: 'Pendientes', value: tareasPendientes, color: '#3b82f6' },
               { label: 'En proceso', value: tareasEnProceso, color: '#f59e0b' },
               { label: 'Completadas', value: tareasCompletadas, color: '#10b981' },
             ], 'Estado de Tareas')}
           </div>
-          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">
+          <div class="donut-card">
+            <div class="donut-title">Prioridad Activa</div>
             ${donutChart([
               { label: 'Alta', value: tareasAlta, color: '#ef4444' },
               { label: 'Media', value: tareasMedia, color: '#f59e0b' },
@@ -376,21 +842,21 @@ export default function Reportes() {
         </div>
 
         <!-- Progress bars + Completion rate -->
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:20px;">
-          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">
-            <div style="font-size:13px;font-weight:700;color:#111827;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:16px;">Distribución por Fuente</div>
+        <div class="progress-grid">
+          <div class="progress-card">
+            <div class="donut-title">Distribución por Fuente</div>
             ${progressBar('Visitas', totalVisitas, totalRecords, '#10b981')}
             ${progressBar('Tareas', totalTareas, totalRecords, '#3b82f6')}
             ${progressBar('Personal', totalPersonal, totalRecords, '#8b5cf6')}
             ${progressBar('Novedades', totalNovedades, totalRecords, '#f59e0b')}
           </div>
-          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;text-align:center;">
-            <div style="font-size:13px;font-weight:700;color:#111827;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Tasa de Completitud</div>
-            <div style="font-size:56px;font-weight:900;color:${tasaCompletitud >= 70 ? '#10b981' : tasaCompletitud >= 40 ? '#f59e0b' : '#ef4444'};">${tasaCompletitud}%</div>
-            <div style="width:100%;height:12px;background:#e5e7eb;border-radius:9999px;overflow:hidden;margin:12px 0;">
-              <div style="width:${tasaCompletitud}%;height:100%;background:${tasaCompletitud >= 70 ? '#10b981' : tasaCompletitud >= 40 ? '#f59e0b' : '#ef4444'};border-radius:9999px;"></div>
+          <div class="completion-card">
+            <div class="donut-title">Tasa de Completitud</div>
+            <div class="completion-value" style="color:${tasaCompletitud >= 70 ? '#10b981' : tasaCompletitud >= 40 ? '#f59e0b' : '#ef4444'};">${tasaCompletitud}%</div>
+            <div class="completion-track">
+              <div class="completion-fill" style="width:${tasaCompletitud}%;background:${tasaCompletitud >= 70 ? '#10b981' : tasaCompletitud >= 40 ? '#f59e0b' : '#ef4444'};"></div>
             </div>
-            <div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7280;">
+            <div class="completion-stats">
               <span>Pendientes: <strong style="color:#3b82f6;">${tareasPendientes}</strong></span>
               <span>En proceso: <strong style="color:#f59e0b;">${tareasEnProceso}</strong></span>
               <span>Completadas: <strong style="color:#10b981;">${tareasCompletadas}</strong></span>
@@ -401,31 +867,31 @@ export default function Reportes() {
 
       <!-- OVERDUE TASKS -->
       ${overdueTasks.length > 0 ? `
-      <div style="padding:0 40px 32px 40px;">
-        <div style="background:#fef2f2;border:1px solid #fecaca;border-left:4px solid #ef4444;border-radius:12px;padding:20px;">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
-            <span style="font-size:24px;">⚠️</span>
+      <div class="section" style="padding-top:0;">
+        <div class="overdue-card">
+          <div class="overdue-header">
+            <span class="overdue-icon">⚠️</span>
             <div>
-              <div style="font-size:16px;font-weight:800;color:#991b1b;text-transform:uppercase;">Tareas Vencidas</div>
-              <div style="font-size:12px;color:#b91c1c;">${overdueTasks.length} tarea${overdueTasks.length > 1 ? 's' : ''} pendiente${overdueTasks.length > 1 ? 's' : ''} de plazo</div>
+              <div class="overdue-title">Tareas Vencidas</div>
+              <div class="overdue-count">${overdueTasks.length} tarea${overdueTasks.length > 1 ? 's' : ''} pendiente${overdueTasks.length > 1 ? 's' : ''} de plazo</div>
             </div>
           </div>
-          <table style="width:100%;border-collapse:collapse;">
+          <table class="overdue-table">
             <thead>
-              <tr style="background:#fee2e2;">
-                <th style="padding:10px 12px;font-size:11px;font-weight:700;color:#991b1b;text-align:left;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid #fecaca;">Tarea</th>
-                <th style="padding:10px 12px;font-size:11px;font-weight:700;color:#991b1b;text-align:left;text-transform:uppercase;letter-spacing:0.05em;">Vencimiento</th>
-                <th style="padding:10px 12px;font-size:11px;font-weight:700;color:#991b1b;text-align:left;text-transform:uppercase;letter-spacing:0.05em;">Prioridad</th>
-                <th style="padding:10px 12px;font-size:11px;font-weight:700;color:#991b1b;text-align:left;text-transform:uppercase;letter-spacing:0.05em;">Estado</th>
+              <tr>
+                <th>Tarea</th>
+                <th>Vencimiento</th>
+                <th>Prioridad</th>
+                <th>Estado</th>
               </tr>
             </thead>
             <tbody>
               ${overdueTasks.map((t: any) => `
-              <tr style="border-bottom:1px solid #fee2e2;">
-                <td style="padding:10px 12px;font-size:13px;font-weight:600;color:#111827;">${t.title || 'Sin título'}</td>
-                <td style="padding:10px 12px;font-size:13px;color:#ef4444;font-weight:600;">${t.dueDate || 'N/A'}</td>
-                <td style="padding:10px 12px;">${badge(((t.priority || 'N/A') as string).toUpperCase(), priorityColor(t.priority))}</td>
-                <td style="padding:10px 12px;">${badge(((t.status || 'N/A') as string).toUpperCase().replace('_', ' '), statusColor(t.status))}</td>
+              <tr>
+                <td style="font-weight:600;">${t.title || 'Sin título'}</td>
+                <td style="color:#ef4444;font-weight:600;">${t.dueDate || 'N/A'}</td>
+                <td>${badge(((t.priority || 'N/A') as string).toUpperCase(), priorityColor(t.priority))}</td>
+                <td>${badge(((t.status || 'N/A') as string).toUpperCase().replace('_', ' '), statusColor(t.status))}</td>
               </tr>`).join('')}
             </tbody>
           </table>
@@ -434,67 +900,66 @@ export default function Reportes() {
 
       <!-- VISIT ANALYSIS -->
       ${(topDestinations.length > 0 || topResponsables.length > 0) ? `
-      <div style="padding:0 40px 32px 40px;">
-        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-            <div style="width:8px;height:24px;background:linear-gradient(180deg, #3b82f6, #1d4ed8);border-radius:9999px;"></div>
-            <div style="font-size:16px;font-weight:800;color:#111827;text-transform:uppercase;">Análisis de Visitas</div>
+      <div class="section" style="padding-top:0;">
+        <div class="section-header">
+          <div class="section-accent"></div>
+          <div>
+            <div class="section-title">Análisis de Visitas</div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(250px, 1fr));gap:20px;">
-            ${topDestinations.length > 0 ? `
-            <div>
-              <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Destinos más frecuentes</div>
-              ${topDestinations.map(([dest, count], i) => `
-              <div style="display:flex;align-items:center;gap:10px;padding:8px 0;${i < topDestinations.length - 1 ? 'border-bottom:1px solid #f3f4f6;' : ''}">
-                <div style="width:24px;height:24px;background:#eff6ff;color:#3b82f6;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">${i+1}</div>
-                <div style="flex:1;font-size:13px;font-weight:600;color:#111827;">${dest}</div>
-                <div style="font-size:13px;font-weight:700;color:#3b82f6;">${count} visita${count > 1 ? 's' : ''}</div>
-              </div>`).join('')}
-            </div>` : ''}
-            ${topResponsables.length > 0 ? `
-            <div>
-              <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;">Top responsables</div>
-              ${topResponsables.map(([resp, count], i) => `
-              <div style="display:flex;align-items:center;gap:10px;padding:8px 0;${i < topResponsables.length - 1 ? 'border-bottom:1px solid #f3f4f6;' : ''}">
-                <div style="width:24px;height:24px;background:#f0fdf4;color:#10b981;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;">${i+1}</div>
-                <div style="flex:1;font-size:13px;font-weight:600;color:#111827;">${resp}</div>
-                <div style="font-size:13px;font-weight:700;color:#10b981;">${count} visita${count > 1 ? 's' : ''}</div>
-              </div>`).join('')}
-            </div>` : ''}
-          </div>
+        </div>
+        <div class="ranking-grid">
+          ${topDestinations.length > 0 ? `
+          <div>
+            <div class="donut-title">Destinos más frecuentes</div>
+            ${topDestinations.map(([dest, count], i) => `
+            <div class="ranking-item" style="${i < topDestinations.length - 1 ? 'border-bottom:1px solid #f1f5f9;' : ''}">
+              <div class="ranking-number" style="background:#eff6ff;color:#3b82f6;">${i+1}</div>
+              <div class="ranking-name">${dest}</div>
+              <div class="ranking-count" style="color:#3b82f6;">${count} visita${count > 1 ? 's' : ''}</div>
+            </div>`).join('')}
+          </div>` : ''}
+          ${topResponsables.length > 0 ? `
+          <div>
+            <div class="donut-title">Top responsables</div>
+            ${topResponsables.map(([resp, count], i) => `
+            <div class="ranking-item" style="${i < topResponsables.length - 1 ? 'border-bottom:1px solid #f1f5f9;' : ''}">
+              <div class="ranking-number" style="background:#f0fdf4;color:#10b981;">${i+1}</div>
+              <div class="ranking-name">${resp}</div>
+              <div class="ranking-count" style="color:#10b981;">${count} visita${count > 1 ? 's' : ''}</div>
+            </div>`).join('')}
+          </div>` : ''}
         </div>
       </div>` : ''}
 
       <!-- RECENT ACTIVITY -->
       ${recentActivities.length > 0 ? `
-      <div style="padding:0 40px 32px 40px;">
-        <div style="background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:20px;">
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-            <div style="width:8px;height:24px;background:linear-gradient(180deg, #10b981, #059669);border-radius:9999px;"></div>
-            <div style="font-size:16px;font-weight:800;color:#111827;text-transform:uppercase;">Actividad Reciente</div>
+      <div class="section" style="padding-top:0;">
+        <div class="section-header">
+          <div class="section-accent" style="background:linear-gradient(180deg, #10b981, #059669);"></div>
+          <div>
+            <div class="section-title">Actividad Reciente</div>
           </div>
-          <div style="position:relative;padding-left:20px;">
-            <div style="position:absolute;left:5px;top:0;bottom:0;width:2px;background:#e5e7eb;"></div>
-            ${recentActivities.slice(0, 8).map((act, i) => `
-            <div style="position:relative;padding:10px 0 10px 16px;${i < 7 ? 'border-bottom:1px solid #f3f4f6;' : ''}">
-              <div style="position:absolute;left:-20px;top:14px;width:12px;height:12px;border-radius:50%;background:${act.color};border:2px solid #fff;box-shadow:0 0 0 2px ${act.color}33;"></div>
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                <span style="background:${act.color};color:#fff;padding:2px 8px;font-size:10px;font-weight:700;border-radius:9999px;text-transform:uppercase;">${act.type}</span>
-                <span style="font-size:13px;font-weight:600;color:#111827;">${act.detail}</span>
-                <span style="font-size:12px;color:#6b7280;margin-left:auto;">${act.date}</span>
-              </div>
-            </div>`).join('')}
-          </div>
+        </div>
+        <div class="timeline">
+          ${recentActivities.slice(0, 8).map((act, i) => `
+          <div class="timeline-item" style="${i < 7 ? 'border-bottom:1px solid #f1f5f9;' : ''}">
+            <div class="timeline-dot" style="background:${act.color};box-shadow:0 0 0 3px ${act.color}33;"></div>
+            <div class="timeline-content">
+              <span class="timeline-type" style="background:${act.color};">${act.type}</span>
+              <span class="timeline-detail">${act.detail}</span>
+              <span class="timeline-date">${act.date}</span>
+            </div>
+          </div>`).join('')}
         </div>
       </div>` : ''}
 
       <!-- VISITAS TÉCNICAS -->
       ${totalVisitas > 0 ? `
-      <div style="padding:0 40px 32px 40px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-          <div style="width:8px;height:24px;background:linear-gradient(180deg, #10b981, #059669);border-radius:9999px;"></div>
-          <div style="font-size:16px;font-weight:800;color:#111827;text-transform:uppercase;">Visitas Técnicas</div>
-          <div style="margin-left:auto;font-size:12px;color:#6b7280;background:#f0fdf4;padding:4px 12px;border-radius:9999px;font-weight:600;">${totalVisitas} registros</div>
+      <div class="section" style="padding-top:0;">
+        <div class="section-divider">
+          <div class="section-divider-accent" style="background:#10b981;"></div>
+          <div class="section-divider-title">Visitas Técnicas</div>
+          <div class="section-divider-count" style="background:#f0fdf4;color:#10b981;">${totalVisitas} registros</div>
         </div>
         ${data.visitas.map((v: any, idx: number) => dataCard(
           `${v.origen || 'N/A'} → ${v.destino || 'N/A'}`,
@@ -514,11 +979,11 @@ export default function Reportes() {
 
       <!-- TAREAS OPERATIVAS -->
       ${totalTareas > 0 ? `
-      <div style="padding:0 40px 32px 40px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-          <div style="width:8px;height:24px;background:linear-gradient(180deg, #3b82f6, #1d4ed8);border-radius:9999px;"></div>
-          <div style="font-size:16px;font-weight:800;color:#111827;text-transform:uppercase;">Tareas Operativas</div>
-          <div style="margin-left:auto;font-size:12px;color:#6b7280;background:#eff6ff;padding:4px 12px;border-radius:9999px;font-weight:600;">${totalTareas} registros</div>
+      <div class="section" style="padding-top:0;">
+        <div class="section-divider">
+          <div class="section-divider-accent" style="background:#3b82f6;"></div>
+          <div class="section-divider-title">Tareas Operativas</div>
+          <div class="section-divider-count" style="background:#eff6ff;color:#3b82f6;">${totalTareas} registros</div>
         </div>
         ${data.tareas.map((t: any, idx: number) => {
           const accent = t.priority === 'alta' ? '#ef4444' : t.priority === 'media' ? '#f59e0b' : '#10b981';
@@ -541,11 +1006,11 @@ export default function Reportes() {
 
       <!-- PERSONAL ACTIVO -->
       ${totalPersonal > 0 ? `
-      <div style="padding:0 40px 32px 40px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-          <div style="width:8px;height:24px;background:linear-gradient(180deg, #8b5cf6, #6d28d9);border-radius:9999px;"></div>
-          <div style="font-size:16px;font-weight:800;color:#111827;text-transform:uppercase;">Personal Activo</div>
-          <div style="margin-left:auto;font-size:12px;color:#6b7280;background:#f5f3ff;padding:4px 12px;border-radius:9999px;font-weight:600;">${totalPersonal} registros</div>
+      <div class="section" style="padding-top:0;">
+        <div class="section-divider">
+          <div class="section-divider-accent" style="background:#8b5cf6;"></div>
+          <div class="section-divider-title">Personal Activo</div>
+          <div class="section-divider-count" style="background:#f5f3ff;color:#8b5cf6;">${totalPersonal} registros</div>
         </div>
         ${data.personal.map((p: any, idx: number) => {
           const accent = p.status === 'Activo' ? '#10b981' : '#ef4444';
@@ -564,11 +1029,11 @@ export default function Reportes() {
 
       <!-- NOVEDADES -->
       ${totalNovedades > 0 ? `
-      <div style="padding:0 40px 32px 40px;">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-          <div style="width:8px;height:24px;background:linear-gradient(180deg, #f59e0b, #d97706);border-radius:9999px;"></div>
-          <div style="font-size:16px;font-weight:800;color:#111827;text-transform:uppercase;">Novedades</div>
-          <div style="margin-left:auto;font-size:12px;color:#6b7280;background:#fffbeb;padding:4px 12px;border-radius:9999px;font-weight:600;">${totalNovedades} registros</div>
+      <div class="section" style="padding-top:0;">
+        <div class="section-divider">
+          <div class="section-divider-accent" style="background:#f59e0b;"></div>
+          <div class="section-divider-title">Novedades</div>
+          <div class="section-divider-count" style="background:#fffbeb;color:#f59e0b;">${totalNovedades} registros</div>
         </div>
         ${data.novedades.map((n: any, idx: number) => dataCard(
           n.title || 'Sin título',
@@ -585,11 +1050,13 @@ export default function Reportes() {
       </div>` : ''}
 
       <!-- FOOTER -->
-      <div style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:24px 40px;text-align:center;">
-        <div style="font-size:12px;color:#6b7280;">SGA PZBP — Prefectura Naval Argentina</div>
-        <div style="font-size:11px;color:#9ca3af;margin-top:4px;">Generado el ${now}</div>
+      <div class="report-footer">
+        <div class="report-footer-brand">SGA PZBP — Prefectura Naval Argentina</div>
+        <div class="report-footer-date">Generado el ${now}</div>
       </div>
-    </div>`;
+    </div>
+    </body>
+    </html>`;
 
     // Create visible overlay with preview
     const overlay = document.createElement('div');
