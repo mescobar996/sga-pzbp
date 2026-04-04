@@ -39,41 +39,30 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth.currentUser) {
-      console.log('[Dashboard] No user logged in');
-      return;
-    }
+    if (!auth.currentUser) return;
 
-    console.log('[Dashboard] User logged in:', auth.currentUser.email);
-    console.log('[Dashboard] Firestore DB:', import.meta.env.VITE_FIREBASE_FIRESTORE_DATABASE_ID || 'ai-studio-b794c53b-a898-4b3b-a5b0-4f8cfb63fa64');
-
-    const tasksQuery = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'), limit(50));
+    // Simple queries without orderBy - documents without createdAt would be excluded
+    const tasksQuery = query(collection(db, 'tasks'), limit(100));
     const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
       const tasksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-      console.log('[Dashboard] Tasks loaded:', tasksData.length);
       setTasks(tasksData);
     }, (error) => {
-      console.error('[Dashboard] Tasks error:', error);
       handleFirestoreError(error, 'tareas');
     });
 
-    const visitsQuery = query(collection(db, 'visitas'), orderBy('createdAt', 'desc'), limit(50));
+    const visitsQuery = query(collection(db, 'visitas'), limit(100));
     const unsubscribeVisits = onSnapshot(visitsQuery, (snapshot) => {
       const visitsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Visita));
-      console.log('[Dashboard] Visits loaded:', visitsData.length);
       setVisits(visitsData);
     }, (error) => {
-      console.error('[Dashboard] Visits error:', error);
       handleFirestoreError(error, 'visitas');
     });
 
-    const novedadesQuery = query(collection(db, 'novedades'), orderBy('createdAt', 'desc'), limit(50));
+    const novedadesQuery = query(collection(db, 'novedades'), limit(100));
     const unsubscribeNovedades = onSnapshot(novedadesQuery, (snapshot) => {
       const novedadesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Novedad));
-      console.log('[Dashboard] Novedades loaded:', novedadesData.length);
       setNovedades(novedadesData);
     }, (error) => {
-      console.error('[Dashboard] Novedades error:', error);
       handleFirestoreError(error, 'novedades');
     });
 

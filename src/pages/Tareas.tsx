@@ -104,7 +104,7 @@ export default function Tareas() {
   useEffect(() => {
     if (!auth.currentUser) return;
 
-    const q = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'tasks'), limit(200));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const tasksData: Task[] = [];
       snapshot.forEach((doc) => {

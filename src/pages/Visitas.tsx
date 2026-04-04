@@ -63,7 +63,7 @@ export default function Visitas() {
   useEffect(() => {
     if (!auth.currentUser) return;
 
-    const q = query(collection(db, 'visitas'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'visitas'), limit(200));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const visitasData: Visita[] = [];
       snapshot.forEach((doc) => {

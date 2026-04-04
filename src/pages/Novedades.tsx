@@ -113,7 +113,7 @@ export default function Novedades() {
   useEffect(() => {
     if (!auth.currentUser) return;
 
-    const q = query(collection(db, 'novedades'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, 'novedades'), limit(200));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const novedadesData: Novedad[] = [];
       snapshot.forEach((doc) => {
