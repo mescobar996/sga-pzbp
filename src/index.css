@@ -11,9 +11,18 @@ body {
   background-color: #f5f0e8;
   color: #1a1a1a;
   font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom scrollbar for Neo-Brutalist look */
+/* Focus States for Accessibility */
+*:focus-visible {
+  outline: 3px solid #0055ff;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 12px;
   height: 12px;
@@ -33,26 +42,23 @@ body {
   background: #1a1a1a;
 }
 
-/* Custom CSS for MuiDataGrid actions cell as requested */
-.MuiDataGrid-cell[data-field="actions"] {
-  display: flex;
-  gap: 8px;
-  justify-content: flex-end;
-  align-items: center;
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-.MuiDataGrid-cell[data-field="actions"] button {
-  border: 2px solid #1a1a1a;
-  background-color: #ffffff;
-  color: #1a1a1a;
-  padding: 4px;
-  transition: all 0.2s;
-  box-shadow: 2px 2px 0px 0px rgba(26,26,26,1);
-}
-
-.MuiDataGrid-cell[data-field="actions"] button:hover {
+/* Selection */
+::selection {
   background-color: #0055ff;
-  color: #ffffff;
-  transform: translate(1px, 1px);
-  box-shadow: none;
+  color: white;
+}
+
+/* Smooth scroll */
+html {
+  scroll-behavior: smooth;
 }

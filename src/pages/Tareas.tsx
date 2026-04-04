@@ -6,56 +6,11 @@ import { Plus, Clock, CheckCircle, AlertCircle, Trash2, Search, Edit2, LayoutGri
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
+import type { TaskHistory } from '../types';
 
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId: string | undefined;
-    email: string | null | undefined;
-    emailVerified: boolean | undefined;
-    isAnonymous: boolean | undefined;
-    tenantId: string | null | undefined;
-    providerInfo: {
-      providerId: string;
-      displayName: string | null;
-      email: string | null;
-      photoUrl: string | null;
-    }[];
-  }
-}
-
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData.map(provider => ({
-        providerId: provider.providerId,
-        displayName: provider.displayName,
-        email: provider.email,
-        photoUrl: provider.photoURL
-      })) || []
-    },
-    operationType,
-    path
-  }
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+function handleFirestoreError(error: unknown, collectionName: string) {
+  console.error(`Firestore error on ${collectionName}:`, error);
+  toast.error(`Error al procesar la solicitud`);
 }
 
 interface Attachment {
@@ -159,7 +114,7 @@ export default function Tareas() {
       setLoading(false);
     }, (error) => {
       setLoading(false);
-      handleFirestoreError(error, OperationType.GET, 'tasks');
+      handleFirestoreError(error, 'tareas');
     });
 
     return () => unsubscribe();
@@ -335,7 +290,7 @@ export default function Tareas() {
       toast.success(isEditing ? 'Tarea actualizada' : 'Tarea creada');
     } catch (error) {
       setIsUploading(false);
-      handleFirestoreError(error, isEditing ? OperationType.UPDATE : OperationType.CREATE, 'tasks');
+      handleFirestoreError(error, 'tareas');
     }
   };
 
@@ -344,7 +299,7 @@ export default function Tareas() {
       const taskRef = doc(db, 'tasks', taskId);
       await updateDoc(taskRef, { priority: newPriority });
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'tasks');
+      handleFirestoreError(error, 'tasks');
     }
   };
 
@@ -353,7 +308,7 @@ export default function Tareas() {
       const taskRef = doc(db, 'tasks', taskId);
       await updateDoc(taskRef, { dueDate: newDueDate });
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'tasks');
+      handleFirestoreError(error, 'tasks');
     }
   };
 
@@ -361,7 +316,8 @@ export default function Tareas() {
     try {
       const taskRef = doc(db, 'tasks', taskId);
       const taskToUpdate = tasks.find(t => t.id === taskId);
-      if (newStatus === 'completado' && taskToUpdate?.status !== 'completado') {
+      if (!taskToUpdate) return;
+      if (newStatus === 'completado' && taskToUpdate.status !== 'completado') {
         await logTaskHistory(taskToUpdate, 'completado');
         
         // Handle recurrence
@@ -397,7 +353,7 @@ export default function Tareas() {
       }
       await updateDoc(taskRef, { status: newStatus });
     } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, 'tasks');
+      handleFirestoreError(error, 'tasks');
     }
   };
 
@@ -438,7 +394,7 @@ export default function Tareas() {
       const taskRef = doc(db, 'tasks', id);
       await deleteDoc(taskRef);
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, 'tasks');
+      handleFirestoreError(error, 'tasks');
     }
   };
 
@@ -518,69 +474,69 @@ export default function Tareas() {
 
   return (
     <div className="font-['Inter'] max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Lista de Tareas</h1>
-        <div className="flex border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] bg-white">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 sm:mb-6 gap-3 sm:gap-4">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Lista de Tareas</h1>
+        <div className="flex border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] bg-white">
           <button 
             onClick={() => setViewMode('grid')}
-            className={`p-2 flex items-center gap-2 font-bold uppercase transition-colors text-xs ${viewMode === 'grid' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
+            className={`p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 font-bold uppercase transition-colors text-[10px] sm:text-xs ${viewMode === 'grid' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
           >
-            <LayoutGrid className="w-4 h-4" /> Grid
+            <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Grid</span>
           </button>
           <div className="w-0.5 bg-[#1a1a1a]"></div>
           <button 
             onClick={() => setViewMode('kanban')}
-            className={`p-2 flex items-center gap-2 font-bold uppercase transition-colors text-xs ${viewMode === 'kanban' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
+            className={`p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 font-bold uppercase transition-colors text-[10px] sm:text-xs ${viewMode === 'kanban' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
           >
-            <Columns className="w-4 h-4" /> Kanban
+            <Columns className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Kanban</span>
           </button>
           <div className="w-0.5 bg-[#1a1a1a]"></div>
           <button 
             onClick={() => setViewMode('calendar')}
-            className={`p-2 flex items-center gap-2 font-bold uppercase transition-colors text-xs ${viewMode === 'calendar' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
+            className={`p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 font-bold uppercase transition-colors text-[10px] sm:text-xs ${viewMode === 'calendar' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
           >
-            <CalendarIcon className="w-4 h-4" /> Calendario
+            <CalendarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Calendario</span>
           </button>
           <div className="w-0.5 bg-[#1a1a1a]"></div>
           <button 
             onClick={() => setViewMode('history')}
-            className={`p-2 flex items-center gap-2 font-bold uppercase transition-colors text-xs ${viewMode === 'history' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
+            className={`p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 font-bold uppercase transition-colors text-[10px] sm:text-xs ${viewMode === 'history' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
           >
-            <History className="w-4 h-4" /> Historial
+            <History className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Historial</span>
           </button>
         </div>
       </div>
       
       {/* Add Task Button */}
-      <div className="mb-8">
+      <div className="mb-4 sm:mb-8">
         <button 
           onClick={() => openNewTaskModal()}
-          className="w-full md:w-auto px-6 py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-sm"
+          className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-xs sm:text-sm"
         >
-          <Plus className="w-5 h-5" /> Añadir Nueva Tarea
+          <Plus className="w-4 h-4 sm:w-5 sm:h-5" /> Añadir Nueva Tarea
         </button>
       </div>
 
       {/* Search and Filters */}
-      <div className="mb-6 flex flex-col md:flex-row gap-4">
+      <div className="mb-4 sm:mb-6 flex flex-col lg:flex-row gap-3 sm:gap-4">
         <div className="relative flex-1">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="w-5 h-5 text-[#1a1a1a] opacity-50" />
+            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#1a1a1a] opacity-50" />
           </div>
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="BUSCAR TAREAS POR TÍTULO O DESCRIPCIÓN..."
-            className="w-full pl-10 p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] text-sm"
+            placeholder="BUSCAR TAREAS..."
+            className="w-full pl-9 sm:pl-10 p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] text-[10px] sm:text-sm"
           />
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-sm"
+            className="p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-[10px] sm:text-sm"
           >
             <option value="todos">Todos los estados</option>
             <option value="pendiente">Pendiente</option>
@@ -591,7 +547,7 @@ export default function Tareas() {
           <select
             value={priorityFilter}
             onChange={(e) => setPriorityFilter(e.target.value as any)}
-            className="p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-sm"
+            className="p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-[10px] sm:text-sm"
           >
             <option value="todos">Todas las prioridades</option>
             <option value="alta">Alta</option>
@@ -602,7 +558,7 @@ export default function Tareas() {
           <select
             value={tagFilter}
             onChange={(e) => setTagFilter(e.target.value)}
-            className="p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-sm"
+            className="p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-[10px] sm:text-sm"
           >
             <option value="todos">Todas las etiquetas</option>
             {allTags.map(tag => (
@@ -614,11 +570,11 @@ export default function Tareas() {
 
       {/* Task List / Calendar View */}
       {viewMode === 'kanban' ? (
-        <div className="flex flex-col md:flex-row gap-4 overflow-x-auto pb-4 min-h-[600px]">
+        <div className="flex flex-col md:flex-row gap-3 sm:gap-4 overflow-x-auto pb-4 min-h-[400px] sm:min-h-[600px]">
           {(['pendiente', 'en_proceso', 'completado'] as const).map((status) => (
             <div 
               key={status} 
-              className="flex-1 min-w-[280px] bg-gray-50 border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col"
+              className="flex-1 min-w-[240px] sm:min-w-[280px] bg-gray-50 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col"
               onDragOver={(e) => {
                 e.preventDefault();
                 e.currentTarget.classList.add('bg-[#f5f0e8]');
@@ -635,23 +591,23 @@ export default function Tareas() {
                 }
               }}
             >
-              <div className="p-3 border-b-2 border-[#1a1a1a] bg-white flex justify-between items-center">
-                <h3 className="font-black uppercase tracking-widest flex items-center gap-2 text-sm">
+              <div className="p-2 sm:p-3 border-b-2 border-[#1a1a1a] bg-white flex justify-between items-center">
+                <h3 className="font-black uppercase tracking-widest flex items-center gap-1.5 sm:gap-2 text-[10px] sm:text-sm">
                   {getStatusIcon(status)}
-                  {status.replace('_', ' ')}
+                  <span className="hidden sm:inline">{status.replace('_', ' ')}</span>
+                  <span className="sm:hidden">{status === 'en_proceso' ? 'Proceso' : status === 'completado' ? 'Listas' : 'Pendientes'}</span>
                 </h3>
-                <span className="bg-[#1a1a1a] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="bg-[#1a1a1a] text-white text-[10px] sm:text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full">
                   {filteredTasks.filter(t => t.status === status).length}
                 </span>
               </div>
-              <div className="p-3 flex-1 flex flex-col gap-3 overflow-y-auto custom-scrollbar">
+              <div className="p-2 sm:p-3 flex-1 flex flex-col gap-2 sm:gap-3 overflow-y-auto custom-scrollbar">
                 {filteredTasks.filter(t => t.status === status).map(task => (
                   <div
                     key={task.id}
                     draggable
                     onDragStart={(e) => {
                       e.dataTransfer.setData('taskId', task.id);
-                      // Optional: make it look slightly transparent while dragging
                       setTimeout(() => {
                         (e.target as HTMLElement).classList.add('opacity-50');
                       }, 0);
@@ -659,54 +615,54 @@ export default function Tareas() {
                     onDragEnd={(e) => {
                       (e.target as HTMLElement).classList.remove('opacity-50');
                     }}
-                    className="p-3 bg-white border-2 border-[#1a1a1a] shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] cursor-move hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] transition-all group"
+                    className="p-2.5 sm:p-3 bg-white border-2 border-[#1a1a1a] shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] cursor-move hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] transition-all group"
                   >
-                    <div className="flex justify-between items-start mb-2">
-                      <span className={`px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[9px] tracking-widest ${getPriorityColor(task.priority)}`}>
+                    <div className="flex justify-between items-start mb-1.5 sm:mb-2">
+                      <span className={`px-1.5 sm:px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[8px] sm:text-[9px] tracking-widest ${getPriorityColor(task.priority)}`}>
                         {task.priority}
                       </span>
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex gap-0.5 sm:gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button onClick={() => openEditTaskModal(task)} className="p-1 hover:bg-[#1a1a1a] hover:text-white transition-colors" title="Editar">
-                          <Edit2 className="w-3.5 h-3.5" />
+                          <Edit2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                         </button>
                         {isAdmin && (
                           <button onClick={() => handleDeleteTask(task.id)} className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors" title="Eliminar">
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                           </button>
                         )}
                       </div>
                     </div>
-                    <h4 className={`font-black uppercase tracking-tight mb-2 text-sm ${task.status === 'completado' ? 'line-through text-gray-500' : ''}`}>
+                    <h4 className={`font-black uppercase tracking-tight mb-1.5 sm:mb-2 text-xs sm:text-sm ${task.status === 'completado' ? 'line-through text-gray-500' : ''}`}>
                       {task.title}
                     </h4>
                     {task.tags && task.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-2">
+                      <div className="flex flex-wrap gap-1 mb-1.5 sm:mb-2">
                         {task.tags.map(tag => (
-                          <span key={tag} className="px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[9px] font-bold uppercase tracking-widest">
+                          <span key={tag} className="px-1 sm:px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[8px] sm:text-[9px] font-bold uppercase tracking-widest">
                             {tag}
                           </span>
                         ))}
                       </div>
                     )}
                     {task.dueDate && (
-                      <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest mb-2">
+                      <p className="text-[8px] sm:text-[10px] font-bold opacity-60 uppercase tracking-widest mb-1.5 sm:mb-2">
                         Vence: {task.dueDate}
                       </p>
                     )}
                     {task.subtasks && task.subtasks.length > 0 && (
-                      <div className="flex items-center gap-1 text-[10px] font-bold opacity-60 uppercase tracking-widest mb-2">
-                        <CheckSquare className="w-3 h-3" /> {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} Subtareas
+                      <div className="flex items-center gap-1 text-[8px] sm:text-[10px] font-bold opacity-60 uppercase tracking-widest mb-1.5 sm:mb-2">
+                        <CheckSquare className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
                       </div>
                     )}
                     {task.attachments && task.attachments.length > 0 && (
-                      <div className="flex items-center gap-1 text-[10px] font-bold opacity-60 uppercase tracking-widest">
-                        <Paperclip className="w-3 h-3" /> {task.attachments.length} {task.attachments.length === 1 ? 'Archivo' : 'Archivos'}
+                      <div className="flex items-center gap-1 text-[8px] sm:text-[10px] font-bold opacity-60 uppercase tracking-widest">
+                        <Paperclip className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {task.attachments.length}
                       </div>
                     )}
                   </div>
                 ))}
                 {filteredTasks.filter(t => t.status === status).length === 0 && (
-                  <div className="text-center p-8 border-2 border-dashed border-gray-300 text-gray-400 font-bold uppercase text-sm">
+                  <div className="text-center p-6 sm:p-8 border-2 border-dashed border-gray-300 text-gray-400 font-bold uppercase text-[10px] sm:text-sm">
                     Arrastra tareas aquí
                   </div>
                 )}
@@ -774,15 +730,15 @@ export default function Tareas() {
             </div>
           )}
         </div>
-      ) : viewMode === 'grid' ? (
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+       ) : viewMode === 'grid' ? (
+        <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {loading ? (
-            <div className="col-span-full text-center p-8 font-black uppercase text-xl animate-pulse">Cargando tareas...</div>
+            <div className="col-span-full text-center p-6 sm:p-8 font-black uppercase text-base sm:text-xl animate-pulse">Cargando tareas...</div>
           ) : tasks.length === 0 ? (
-            <div className="col-span-full text-center p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-xl opacity-50">No hay tareas pendientes</div>
+            <div className="col-span-full text-center p-6 sm:p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-base sm:text-xl opacity-50">No hay tareas pendientes</div>
           ) : paginatedGridTasks.length === 0 ? (
-            <div className="col-span-full text-center p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-xl opacity-50">No se encontraron tareas para "{searchQuery}"</div>
+            <div className="col-span-full text-center p-6 sm:p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-base sm:text-xl opacity-50">No se encontraron tareas para "{searchQuery}"</div>
           ) : (
             <AnimatePresence mode="popLayout">
               {paginatedGridTasks.map((task) => (
@@ -798,13 +754,13 @@ export default function Tareas() {
                 exit={{ opacity: 0, scale: 0.9 }}
                 whileHover={task.status !== 'completado' ? { y: -4 } : {}}
                 transition={{ duration: 0.3 }}
-                className="p-4 border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col justify-between group relative"
+                className="p-3 sm:p-4 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col justify-between group relative"
               >
-                <div className="flex justify-between items-start mb-4">
+                <div className="flex justify-between items-start mb-2 sm:mb-4 gap-2">
                 <select
                   value={task.priority}
                   onChange={(e) => handleUpdatePriority(task.id, e.target.value as 'alta' | 'media' | 'baja')}
-                  className={`px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-widest cursor-pointer focus:outline-none ${getPriorityColor(task.priority)}`}
+                  className={`px-1.5 sm:px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[8px] sm:text-[10px] tracking-widest cursor-pointer focus:outline-none ${getPriorityColor(task.priority)}`}
                 >
                   <option value="alta" className="bg-[#e63b2e] text-white">ALTA</option>
                   <option value="media" className="bg-[#0055ff] text-white">MEDIA</option>
@@ -815,20 +771,20 @@ export default function Tareas() {
                   <select
                     value={task.status}
                     onChange={(e) => handleUpdateStatus(task.id, e.target.value as 'pendiente' | 'en_proceso' | 'completado')}
-                    className="px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-widest cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
+                    className="px-1.5 sm:px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[8px] sm:text-[10px] tracking-widest cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
                   >
                     <option value="pendiente">PENDIENTE</option>
                     <option value="en_proceso">EN PROCESO</option>
                     <option value="completado">COMPLETADO</option>
                   </select>
-                  <div className="p-1 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
+                  <div className="p-0.5 sm:p-1 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
                     {getStatusIcon(task.status)}
                   </div>
                 </div>
               </div>
               
-              <div className="mb-4 flex-1 flex flex-col">
-                <h3 className={`text-xl font-black uppercase tracking-tight font-['Space_Grotesk'] line-clamp-2 relative w-fit ${task.status === 'completado' ? 'text-gray-500' : ''}`} title={task.title}>
+              <div className="mb-2 sm:mb-4 flex-1 flex flex-col">
+                <h3 className={`text-base sm:text-xl font-black uppercase tracking-tight font-['Space_Grotesk'] line-clamp-2 relative w-fit ${task.status === 'completado' ? 'text-gray-500' : ''}`} title={task.title}>
                   {task.title}
                   {task.status === 'completado' && (
                     <motion.div 
@@ -841,9 +797,9 @@ export default function Tareas() {
                 </h3>
 
                 {task.tags && task.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
+                  <div className="flex flex-wrap gap-1 mt-1.5 sm:mt-2">
                     {task.tags.map(tag => (
-                      <span key={tag} className="px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[9px] font-bold uppercase tracking-widest">
+                      <span key={tag} className="px-1 sm:px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[8px] sm:text-[9px] font-bold uppercase tracking-widest">
                         {tag}
                       </span>
                     ))}
@@ -852,11 +808,11 @@ export default function Tareas() {
                 
                 <button 
                   onClick={() => openEditTaskModal(task)}
-                  className={`mt-3 mb-3 p-2 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors text-left flex justify-between items-center group flex-1 ${task.status === 'completado' ? 'bg-gray-300' : 'bg-[#f5f0e8]'}`}
+                  className={`mt-2 sm:mt-3 mb-2 sm:mb-3 p-1.5 sm:p-2 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors text-left flex justify-between items-center group flex-1 ${task.status === 'completado' ? 'bg-gray-300' : 'bg-[#f5f0e8]'}`}
                 >
                   <div className="flex-1 overflow-hidden relative">
                     {task.description ? (
-                      <p className={`text-xs font-medium line-clamp-2 relative w-fit ${task.status === 'completado' ? 'text-gray-600' : ''}`}>
+                      <p className={`text-[10px] sm:text-xs font-medium line-clamp-2 relative w-fit ${task.status === 'completado' ? 'text-gray-600' : ''}`}>
                         {task.description}
                         {task.status === 'completado' && (
                           <motion.div 
@@ -868,7 +824,7 @@ export default function Tareas() {
                         )}
                       </p>
                     ) : (
-                      <span className={`text-xs font-bold uppercase tracking-widest opacity-50 relative w-fit ${task.status === 'completado' ? 'text-gray-600' : ''}`}>
+                      <span className={`text-[10px] sm:text-xs font-bold uppercase tracking-widest opacity-50 relative w-fit ${task.status === 'completado' ? 'text-gray-600' : ''}`}>
                         Añadir Descripción...
                         {task.status === 'completado' && (
                           <motion.div 
@@ -881,40 +837,40 @@ export default function Tareas() {
                       </span>
                     )}
                   </div>
-                  <Edit2 className="w-3.5 h-3.5 ml-2 opacity-50 group-hover:opacity-100 flex-shrink-0" />
+                  <Edit2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-1 sm:ml-2 opacity-50 group-hover:opacity-100 flex-shrink-0" />
                 </button>
 
-                <div className="mb-3">
-                  <label className="block text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1">Vencimiento:</label>
+                <div className="mb-2 sm:mb-3">
+                  <label className="block text-[8px] sm:text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1">Vencimiento:</label>
                   <input
                     type="date"
                     value={task.dueDate || ''}
                     onChange={(e) => handleUpdateDueDate(task.id, e.target.value)}
-                    className="w-full p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs cursor-pointer"
+                    className="w-full p-1 sm:p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-[10px] sm:text-xs cursor-pointer"
                   />
                 </div>
 
-                <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest mt-auto">
+                <p className="text-[8px] sm:text-[10px] font-bold opacity-60 uppercase tracking-widest mt-auto">
                   Creada: {new Date(task.createdAt).toLocaleDateString()}
                 </p>
                 {task.subtasks && task.subtasks.length > 0 && (
-                  <div className="flex items-center gap-1 mt-2 text-xs font-bold opacity-60 uppercase tracking-widest" title={`${task.subtasks.length} subtareas`}>
-                    <CheckSquare className="w-3 h-3" /> {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length} Subtareas
+                  <div className="flex items-center gap-1 mt-1.5 sm:mt-2 text-[8px] sm:text-xs font-bold opacity-60 uppercase tracking-widest" title={`${task.subtasks.length} subtareas`}>
+                    <CheckSquare className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
                   </div>
                 )}
                 {task.attachments && task.attachments.length > 0 && (
-                  <div className="flex items-center gap-1 mt-2 text-xs font-bold opacity-60 uppercase tracking-widest" title={`${task.attachments.length} archivos adjuntos`}>
-                    <Paperclip className="w-3 h-3" /> {task.attachments.length} {task.attachments.length === 1 ? 'Archivo' : 'Archivos'}
+                  <div className="flex items-center gap-1 mt-1.5 sm:mt-2 text-[8px] sm:text-xs font-bold opacity-60 uppercase tracking-widest" title={`${task.attachments.length} archivos adjuntos`}>
+                    <Paperclip className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {task.attachments.length}
                   </div>
                 )}
               </div>
 
-              <div className="flex justify-end gap-2 mt-auto pt-3 border-t-2 border-[#1a1a1a]/10">
+              <div className="flex justify-end gap-1.5 sm:gap-2 mt-auto pt-2 sm:pt-3 border-t-2 border-[#1a1a1a]/10">
                 <label 
-                  className="p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                  className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
                   title="Subir archivo rápido"
                 >
-                  <Upload className="w-4 h-4" />
+                  <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <input 
                     type="file" 
                     className="hidden" 
@@ -930,10 +886,10 @@ export default function Tareas() {
                 {isAdmin && (
                   <button 
                     onClick={() => handleDeleteTask(task.id)}
-                    className="p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                    className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors opacity-0 group-hover:opacity-100"
                     title="Eliminar tarea"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   </button>
                 )}
               </div>
@@ -967,29 +923,29 @@ export default function Tareas() {
         )}
       </div>
       ) : (
-        <div className="bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-5 overflow-x-auto">
-          <div className="flex justify-between items-center mb-4 min-w-[600px]">
-            <div className="flex gap-2">
-              <button onClick={prevMonth} className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none" title="Mes anterior (Flecha Izquierda)">
-                <ChevronLeft className="w-5 h-5" />
+        <div className="bg-white border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-3 sm:p-5 overflow-x-auto">
+          <div className="flex flex-col sm:flex-row justify-between items-center mb-3 sm:mb-4 gap-2 sm:gap-4">
+            <div className="flex gap-2 order-2 sm:order-1">
+              <button onClick={prevMonth} className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none" title="Mes anterior">
+                <ChevronLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
-              <button onClick={goToToday} className="px-3 py-1.5 border-2 border-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none text-sm" title="Ir a hoy (Tecla T)">
+              <button onClick={goToToday} className="px-3 py-1.5 border-2 border-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none text-xs sm:text-sm" title="Ir a hoy">
                 Hoy
               </button>
+              <button onClick={nextMonth} className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none" title="Mes siguiente">
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
             </div>
-            <h2 className="text-2xl font-black uppercase tracking-widest font-['Space_Grotesk'] text-center flex-1">{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</h2>
-            <button onClick={nextMonth} className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none" title="Mes siguiente (Flecha Derecha)">
-              <ChevronRight className="w-5 h-5" />
-            </button>
+            <h2 className="text-lg sm:text-2xl font-black uppercase tracking-widest font-['Space_Grotesk'] text-center order-1 sm:order-2">{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}</h2>
           </div>
-          <div className="grid grid-cols-7 gap-2 mb-2 min-w-[600px]">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2 mb-1 sm:mb-2">
             {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(d => (
-              <div key={d} className="text-center font-black uppercase text-sm py-2 bg-[#1a1a1a] text-white border-2 border-[#1a1a1a]">{d}</div>
+              <div key={d} className="text-center font-black uppercase text-[8px] sm:text-sm py-1.5 sm:py-2 bg-[#1a1a1a] text-white border-2 border-[#1a1a1a]">{d}</div>
             ))}
           </div>
-          <div className="grid grid-cols-7 gap-2 min-w-[600px]">
+          <div className="grid grid-cols-7 gap-1 sm:gap-2">
             {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-              <div key={`empty-${i}`} className="min-h-[120px] p-2 bg-gray-50 border-2 border-dashed border-gray-300"></div>
+              <div key={`empty-${i}`} className="min-h-[60px] sm:min-h-[120px] p-1 sm:p-2 bg-gray-50 border-2 border-dashed border-gray-300"></div>
             ))}
             {Array.from({ length: daysInMonth }).map((_, i) => {
               const day = i + 1;
@@ -1008,22 +964,22 @@ export default function Tareas() {
                       handleUpdateDueDate(taskId, dateStr);
                     }
                   }}
-                  className={`min-h-[120px] p-2 border-2 border-[#1a1a1a] flex flex-col relative group ${isToday ? 'bg-[#0055ff]/20' : 'bg-[#f5f0e8]'}`}
+                  className={`min-h-[60px] sm:min-h-[120px] p-1 sm:p-2 border-2 border-[#1a1a1a] flex flex-col relative group ${isToday ? 'bg-[#0055ff]/20' : 'bg-[#f5f0e8]'}`}
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className={`font-black text-lg w-8 h-8 flex items-center justify-center ${isToday ? 'bg-[#1a1a1a] text-white rounded-full' : ''}`}>{day}</span>
+                  <div className="flex justify-between items-start mb-1 sm:mb-2">
+                    <span className={`font-black text-sm sm:text-lg w-6 h-6 sm:w-8 sm:h-8 flex items-center justify-center ${isToday ? 'bg-[#1a1a1a] text-white rounded-full' : ''}`}>{day}</span>
                     <button 
                       onClick={() => {
                         const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                         openNewTaskModal(dateStr);
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-1 hover:bg-[#1a1a1a] hover:text-white border-2 border-transparent hover:border-[#1a1a1a] transition-all rounded-full"
-                      title="Añadir tarea para este día"
+                      className="opacity-0 group-hover:opacity-100 p-0.5 sm:p-1 hover:bg-[#1a1a1a] hover:text-white border-2 border-transparent hover:border-[#1a1a1a] transition-all rounded-full"
+                      title="Añadir tarea"
                     >
-                      <Plus className="w-4 h-4" />
+                      <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
                     </button>
                   </div>
-                  <div className="flex-1 flex flex-col gap-1 overflow-y-auto max-h-[100px] custom-scrollbar">
+                  <div className="flex-1 flex flex-col gap-0.5 sm:gap-1 overflow-y-auto max-h-[40px] sm:max-h-[100px] custom-scrollbar">
                     {dayTasks.map(t => {
                       const isOverdue = t.dueDate && new Date(t.dueDate) < new Date(new Date().setHours(0,0,0,0)) && t.status !== 'completado';
                       const isHighPriority = t.priority === 'alta' && t.status !== 'completado';
@@ -1039,13 +995,13 @@ export default function Tareas() {
                             e.stopPropagation();
                             openEditTaskModal(t);
                           }}
-                          className={`text-xs p-1.5 border-2 border-[#1a1a1a] font-bold uppercase truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-between gap-1 ${t.status === 'completado' ? 'line-through opacity-50 bg-gray-200 text-gray-600' : getPriorityColor(t.priority)} ${isOverdue ? 'ring-2 ring-red-500 animate-pulse' : ''}`} 
+                          className={`text-[8px] sm:text-xs p-1 sm:p-1.5 border-2 border-[#1a1a1a] font-bold uppercase truncate cursor-pointer hover:opacity-80 transition-opacity flex items-center justify-between gap-0.5 sm:gap-1 ${t.status === 'completado' ? 'line-through opacity-50 bg-gray-200 text-gray-600' : getPriorityColor(t.priority)} ${isOverdue ? 'ring-1 sm:ring-2 ring-red-500' : ''}`} 
                           title={`${t.title}${isOverdue ? ' (Vencida)' : ''}`}
                         >
                           <span className="truncate">{t.title}</span>
-                          <div className="flex items-center gap-1 flex-shrink-0">
-                            {isHighPriority && <AlertCircle className="w-3 h-3 text-red-600" />}
-                            {isOverdue && <Clock className="w-3 h-3 text-red-600" />}
+                          <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
+                            {isHighPriority && <AlertCircle className="w-2 h-2 sm:w-3 sm:h-3 text-red-600" />}
+                            {isOverdue && <Clock className="w-2 h-2 sm:w-3 sm:h-3 text-red-600" />}
                           </div>
                         </div>
                       );

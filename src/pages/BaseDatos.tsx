@@ -3,22 +3,11 @@ import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { collection, getDocs, deleteDoc, doc, onSnapshot, addDoc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
+import { reauthenticateWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import * as XLSX from 'xlsx';
 import { useOutletContext } from 'react-router-dom';
-
-interface Personal {
-  id: string;
-  name: string;
-  role: string;
-  status: string;
-}
-
-interface Location {
-  id: string;
-  name: string;
-  type: string;
-  status: string;
-}
+import { personalSchema, locationSchema } from '../utils/validation';
+import type { Personal, Location } from '../types';
 
 enum OperationType {
   CREATE = 'create',
@@ -29,9 +18,9 @@ enum OperationType {
   WRITE = 'write',
 }
 
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+function handleFirestoreError(error: unknown, _operationType: OperationType, _path: string | null) {
   console.error('Firestore Error: ', error);
-  throw new Error(String(error));
+  toast.error('Error al procesar la solicitud');
 }
 
 export default function BaseDatos() {
@@ -83,19 +72,25 @@ export default function BaseDatos() {
 
   const handleSavePersonal = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!personalForm.name.trim() || !personalForm.role.trim() || !auth.currentUser) return;
+    if (!auth.currentUser) return;
+
+    const result = personalSchema.safeParse(personalForm);
+    if (!result.success) {
+      result.error.issues.forEach(err => toast.error(err.message));
+      return;
+    }
 
     try {
       if (editingPersonal) {
         await updateDoc(doc(db, 'personal', editingPersonal.id), {
-          name: personalForm.name,
-          role: personalForm.role,
-          status: personalForm.status
+          name: result.data.name,
+          role: result.data.role,
+          status: result.data.status
         });
         toast.success('Personal actualizado');
       } else {
         await addDoc(collection(db, 'personal'), {
-          ...personalForm,
+          ...result.data,
           createdAt: new Date().toISOString(),
           authorId: auth.currentUser.uid
         });
@@ -119,19 +114,25 @@ export default function BaseDatos() {
 
   const handleSaveLocation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!locationForm.name.trim() || !auth.currentUser) return;
+    if (!auth.currentUser) return;
+
+    const result = locationSchema.safeParse(locationForm);
+    if (!result.success) {
+      result.error.issues.forEach(err => toast.error(err.message));
+      return;
+    }
 
     try {
       if (editingLocation) {
         await updateDoc(doc(db, 'locations', editingLocation.id), {
-          name: locationForm.name,
-          type: locationForm.type,
-          status: locationForm.status
+          name: result.data.name,
+          type: result.data.type,
+          status: result.data.status
         });
         toast.success('Ubicación actualizada');
       } else {
         await addDoc(collection(db, 'locations'), {
-          ...locationForm,
+          ...result.data,
           createdAt: new Date().toISOString(),
           authorId: auth.currentUser.uid
         });
@@ -159,18 +160,115 @@ export default function BaseDatos() {
       const collectionsToExport = ['tasks', 'visitas', 'novedades', 'task_history'];
       const workbook = XLSX.utils.book_new();
 
+      const sheetConfigurations: Record<string, { title: string; columns: { key: string; header: string; width: number }[] }> = {
+        tasks: {
+          title: 'TAREAS OPERATIVAS',
+          columns: [
+            { key: 'title', header: 'Título', width: 30 },
+            { key: 'priority', header: 'Prioridad', width: 12 },
+            { key: 'status', header: 'Estado', width: 14 },
+            { key: 'dueDate', header: 'Vencimiento', width: 14 },
+            { key: 'description', header: 'Descripción', width: 40 },
+            { key: 'createdAt', header: 'Fecha Creación', width: 20 },
+          ],
+        },
+        visitas: {
+          title: 'VISITAS TÉCNICAS',
+          columns: [
+            { key: 'fecha', header: 'Fecha', width: 14 },
+            { key: 'hora', header: 'Hora', width: 10 },
+            { key: 'origen', header: 'Origen', width: 22 },
+            { key: 'destino', header: 'Destino', width: 22 },
+            { key: 'responsable', header: 'Responsable', width: 24 },
+            { key: 'observaciones', header: 'Observaciones', width: 40 },
+          ],
+        },
+        novedades: {
+          title: 'NOVEDADES',
+          columns: [
+            { key: 'createdAt', header: 'Fecha', width: 22 },
+            { key: 'title', header: 'Título', width: 30 },
+            { key: 'authorName', header: 'Autor', width: 20 },
+            { key: 'content', header: 'Contenido', width: 50 },
+          ],
+        },
+        task_history: {
+          title: 'HISTORIAL DE TAREAS',
+          columns: [
+            { key: 'taskId', header: 'ID Tarea', width: 24 },
+            { key: 'action', header: 'Acción', width: 16 },
+            { key: 'timestamp', header: 'Fecha/Hora', width: 20 },
+            { key: 'userId', header: 'Usuario', width: 24 },
+            { key: 'details', header: 'Detalles', width: 40 },
+          ],
+        },
+      };
+
       for (const colName of collectionsToExport) {
         const querySnapshot = await getDocs(collection(db, colName));
         const data = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        if (data.length > 0) {
-          const worksheet = XLSX.utils.json_to_sheet(data);
-          XLSX.utils.book_append_sheet(workbook, worksheet, colName.toUpperCase());
+        const config = sheetConfigurations[colName];
+
+        const worksheetData: any[] = [];
+
+        // Title and metadata
+        worksheetData.push({ A: config?.title || colName.toUpperCase() });
+        worksheetData.push({ A: `Respaldo generado: ${new Date().toLocaleString('es-ES')}` });
+        worksheetData.push({ A: `Total de registros: ${data.length}` });
+        worksheetData.push({}); // spacer
+
+        if (data.length > 0 && config) {
+          // Header row
+          const headerRow: Record<string, string> = {};
+          config.columns.forEach((col, idx) => {
+            headerRow[String.fromCharCode(65 + idx)] = col.header;
+          });
+          worksheetData.push(headerRow);
+
+          // Data rows
+          data.forEach((record) => {
+            const row: Record<string, any> = {};
+            config.columns.forEach((col, idx) => {
+              const cellRef = String.fromCharCode(65 + idx);
+              let val = (record as Record<string, any>)[col.key];
+              if (val === null || val === undefined) val = '';
+              if (typeof val === 'object') {
+                if (Array.isArray(val)) {
+                  val = `${val.length} elemento(s)`;
+                } else {
+                  val = JSON.stringify(val).slice(0, 40);
+                }
+              }
+              if (col.key === 'createdAt' || col.key === 'timestamp') {
+                try {
+                  const d = new Date(val);
+                  if (!isNaN(d.getTime())) val = d.toLocaleString('es-ES');
+                } catch { /* fall through */ }
+              }
+              row[cellRef] = String(val).slice(0, 100);
+            });
+            worksheetData.push(row);
+          });
+        } else if (data.length > 0) {
+          // Fallback: export all columns
+          worksheetData.push({ A: 'Datos exportados (formato estándar)' });
+          data.forEach((record, idx) => {
+            worksheetData.push({ A: `Registro ${idx + 1}`, B: JSON.stringify(record).slice(0, 100) });
+          });
         } else {
-          // Empty sheet
-          const worksheet = XLSX.utils.json_to_sheet([{ message: 'Sin datos' }]);
-          XLSX.utils.book_append_sheet(workbook, worksheet, colName.toUpperCase());
+          worksheetData.push({ A: 'Sin datos disponibles' });
         }
+
+        const worksheet = XLSX.utils.json_to_sheet(worksheetData, { skipHeader: true });
+
+        // Set column widths
+        if (config) {
+          const wscols = config.columns.map(col => ({ wch: col.width }));
+          worksheet['!cols'] = wscols;
+          worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: config.columns.length - 1 } }];
+        }
+
+        XLSX.utils.book_append_sheet(workbook, worksheet, config?.title || colName.toUpperCase());
       }
 
       XLSX.writeFile(workbook, `Respaldo_Sistema_${new Date().toISOString().split('T')[0]}.xlsx`);
@@ -189,13 +287,46 @@ export default function BaseDatos() {
       return;
     }
 
+    if (!auth.currentUser) {
+      toast.error('Debes iniciar sesión');
+      return;
+    }
+
+    try {
+      await reauthenticateWithPopup(auth.currentUser, new GoogleAuthProvider());
+    } catch (error) {
+      toast.error('Reautenticación cancelada o fallida');
+      return;
+    }
+
     setIsDeleting(true);
     try {
+      const collectionsToBackup = ['tasks', 'visitas', 'novedades', 'task_history', 'personal', 'locations', 'notifications'];
+      const backupData: Record<string, unknown[]> = {};
+
+      for (const colName of collectionsToBackup) {
+        const querySnapshot = await getDocs(collection(db, colName));
+        backupData[colName] = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      }
+
+      const totalRecords = Object.values(backupData).reduce((sum, arr) => sum + arr.length, 0);
+      if (totalRecords > 0) {
+        const workbook = XLSX.utils.book_new();
+        for (const [colName, data] of Object.entries(backupData)) {
+          if (data.length > 0) {
+            const worksheet = XLSX.utils.json_to_sheet(data);
+            XLSX.utils.book_append_sheet(workbook, worksheet, colName.toUpperCase());
+          }
+        }
+        XLSX.writeFile(workbook, `Respaldo_PRE_Borrado_${new Date().toISOString().replace(/[:.]/g, '-')}.xlsx`);
+        toast.success('Respaldo automático creado antes del borrado');
+      }
+
       const collectionsToDelete = ['tasks', 'visitas', 'novedades', 'task_history', 'notifications', 'personal', 'locations'];
-      
+
       for (const colName of collectionsToDelete) {
         const querySnapshot = await getDocs(collection(db, colName));
-        const deletePromises = querySnapshot.docs.map(document => 
+        const deletePromises = querySnapshot.docs.map(document =>
           deleteDoc(doc(db, colName, document.id))
         );
         await Promise.all(deletePromises);
