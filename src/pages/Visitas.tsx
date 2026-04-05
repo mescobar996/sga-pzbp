@@ -4,7 +4,6 @@ import { db, auth } from '../firebase';
 import {
   Save,
   X,
-  MessageSquare,
   Edit2,
   Trash2,
   MapPin,
@@ -33,20 +32,11 @@ interface Visita {
   observaciones?: string;
   createdAt: string;
   authorId: string;
-  comments?: Comment[];
 }
 
 function handleFirestoreError(error: unknown, _operationType: string, _path: string | null) {
   console.error('Firestore Error: ', error);
   toast.error('Error al procesar la solicitud');
-}
-
-interface Comment {
-  id: string;
-  text: string;
-  authorId: string;
-  authorName: string;
-  createdAt: string;
 }
 
 export default function Visitas() {
@@ -64,7 +54,6 @@ export default function Visitas() {
   const [locations, setLocations] = useState<{ id: string; name: string; type: string }[]>([]);
   const [personal, setPersonal] = useState<{ id: string; name: string }[]>([]);
   const [selectedVisita, setSelectedVisita] = useState<Visita | null>(null);
-  const [newCommentText, setNewCommentText] = useState('');
   const [isEditingVisita, setIsEditingVisita] = useState(false);
   const [editingVisitaId, setEditingVisitaId] = useState<string | null>(null);
   const [selectedResponsables, setSelectedResponsables] = useState<string[]>([]);
@@ -112,33 +101,6 @@ export default function Visitas() {
     };
   }, []);
 
-  const handleAddComment = async () => {
-    if (!selectedVisita || !newCommentText.trim() || !auth.currentUser) return;
-
-    try {
-      const newComment: Comment = {
-        id: Date.now().toString(),
-        text: newCommentText.trim(),
-        authorId: auth.currentUser.uid,
-        authorName: auth.currentUser.displayName || auth.currentUser.email || 'Usuario',
-        createdAt: new Date().toISOString(),
-      };
-
-      const visitaRef = doc(db, 'visitas', selectedVisita.id);
-      await updateDoc(visitaRef, {
-        comments: [...(selectedVisita.comments || []), newComment],
-      });
-
-      setNewCommentText('');
-      // Update local state to reflect immediately in modal
-      setSelectedVisita((prev) =>
-        prev ? { ...prev, comments: [...(prev.comments || []), newComment] as Comment[] } : null,
-      );
-    } catch (error) {
-      handleFirestoreError(error, 'update', 'visitas');
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth.currentUser) {
@@ -185,7 +147,6 @@ export default function Visitas() {
           ...finalFormData,
           createdAt: new Date().toISOString(),
           authorId: auth.currentUser.uid,
-          comments: [],
         });
 
         await addDoc(collection(db, 'notifications'), {
@@ -534,10 +495,6 @@ export default function Visitas() {
                         </button>
                       )}
                     </div>
-                    <div className="flex items-center gap-1 text-xs sm:text-sm font-bold opacity-70">
-                      <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      <span>{visita.comments?.length || 0}</span>
-                    </div>
                   </div>
                 </div>
               ))}
@@ -572,7 +529,7 @@ export default function Visitas() {
             )}
           </div>
 
-          {/* Visita Details & Comments Modal */}
+          {/* Visita Details Modal */}
           {selectedVisita && (
             <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto pt-8 sm:pt-10 pb-8 sm:pb-10">
               <div className="bg-white border-2 sm:border-4 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] sm:shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-0 w-full max-w-3xl flex flex-col relative">
@@ -636,71 +593,6 @@ export default function Visitas() {
                         </p>
                       </div>
                     )}
-                  </div>
-
-                  {/* Comments Section */}
-                  <div className="border-t-2 sm:border-t-4 border-[#1a1a1a] pt-4 sm:pt-6">
-                    <h3 className="text-lg sm:text-2xl font-black uppercase mb-4 sm:mb-6 font-['Space_Grotesk'] flex items-center gap-1.5 sm:gap-2">
-                      <MessageSquare className="w-4 h-4 sm:w-6 sm:h-6" /> Comentarios
-                    </h3>
-
-                    <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6 max-h-[200px] sm:max-h-[300px] overflow-y-auto custom-scrollbar pr-2 sm:pr-4">
-                      {selectedVisita.comments?.map((comment) => {
-                        const isMe = comment.authorId === auth.currentUser?.uid;
-                        return (
-                          <div key={comment.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                            <div
-                              className={`max-w-[90%] sm:max-w-[85%] p-3 sm:p-4 border-2 border-[#1a1a1a] ${isMe ? 'bg-[#0055ff] text-white' : 'bg-[#f5f0e8]'}`}
-                            >
-                              <div className="flex justify-between items-center gap-2 sm:gap-4 mb-1.5 sm:mb-2 border-b-2 border-[#1a1a1a]/10 pb-1.5 sm:pb-2">
-                                <span className="font-black text-[10px] sm:text-xs uppercase tracking-widest truncate">
-                                  {comment.authorName}
-                                </span>
-                                <span className="text-[8px] sm:text-[10px] font-bold opacity-60 uppercase shrink-0">
-                                  {new Date(comment.createdAt).toLocaleString()}
-                                </span>
-                              </div>
-                              <p className="text-xs sm:text-sm whitespace-pre-wrap font-medium leading-relaxed">
-                                {comment.text}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                      {(!selectedVisita.comments || selectedVisita.comments.length === 0) && (
-                        <div className="text-center p-6 sm:p-8 border-2 border-dashed border-[#1a1a1a]/30 bg-gray-50">
-                          <p className="text-[10px] sm:text-sm font-bold uppercase tracking-widest opacity-50">
-                            No hay comentarios aún
-                          </p>
-                          <p className="text-[10px] sm:text-xs font-medium opacity-40 mt-1">
-                            Sé el primero en comentar sobre esta visita.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <input
-                        type="text"
-                        value={newCommentText}
-                        onChange={(e) => setNewCommentText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddComment();
-                          }
-                        }}
-                        className="flex-1 p-3 sm:p-4 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold transition-colors text-xs sm:text-sm"
-                        placeholder="Escribe un comentario..."
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddComment}
-                        className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-[#0055ff] border-2 sm:border-4 border-[#1a1a1a] text-white font-black uppercase tracking-widest text-xs sm:text-sm hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
-                      >
-                        Enviar
-                      </button>
-                    </div>
                   </div>
                 </div>
               </div>

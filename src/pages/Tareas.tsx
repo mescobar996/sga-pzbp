@@ -69,14 +69,6 @@ interface Subtask {
   completed: boolean;
 }
 
-interface Comment {
-  id: string;
-  text: string;
-  authorId: string;
-  authorName: string;
-  createdAt: string;
-}
-
 interface Task {
   id: string;
   title: string;
@@ -90,7 +82,6 @@ interface Task {
   tags?: string[];
   subtasks?: Subtask[];
   recurrence?: 'none' | 'diaria' | 'semanal' | 'mensual';
-  comments?: Comment[];
 }
 
 export default function Tareas() {
@@ -130,15 +121,13 @@ export default function Tareas() {
     tags: [],
     subtasks: [],
     recurrence: 'none',
-    comments: [],
   });
   const [currentTagsInput, setCurrentTagsInput] = useState<string>('');
   const [newSubtaskTitle, setNewSubtaskTitle] = useState<string>('');
-  const [newCommentText, setNewCommentText] = useState<string>('');
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [attachmentsToDelete, setAttachmentsToDelete] = useState<Attachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'description' | 'subtasks' | 'attachments' | 'comments'>('description');
+  const [activeTab, setActiveTab] = useState<'description' | 'subtasks' | 'attachments'>('description');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
@@ -237,11 +226,9 @@ export default function Tareas() {
       tags: [],
       subtasks: [],
       recurrence: 'none',
-      comments: [],
     });
     setCurrentTagsInput('');
     setNewSubtaskTitle('');
-    setNewCommentText('');
     setPendingFiles([]);
     setAttachmentsToDelete([]);
     setFormErrors({});
@@ -256,11 +243,9 @@ export default function Tareas() {
       tags: task.tags || [],
       subtasks: task.subtasks || [],
       recurrence: task.recurrence || 'none',
-      comments: task.comments || [],
     });
     setCurrentTagsInput((task.tags || []).join(', '));
     setNewSubtaskTitle('');
-    setNewCommentText('');
     setPendingFiles([]);
     setAttachmentsToDelete([]);
     setFormErrors({});
@@ -318,7 +303,6 @@ export default function Tareas() {
           tags: [],
           subtasks: currentTask.subtasks || [],
           recurrence: validationResult.data.recurrence || 'none',
-          comments: currentTask.comments || [],
         });
         taskId = docRef.id;
 
@@ -392,7 +376,6 @@ export default function Tareas() {
         tags: finalTags,
         subtasks: currentTask.subtasks || [],
         recurrence: validationResult.data.recurrence || 'none',
-        comments: currentTask.comments || [],
       });
 
       setIsModalOpen(false);
@@ -1339,16 +1322,6 @@ export default function Tareas() {
                   {(currentTask.attachments?.length || 0) - attachmentsToDelete.length + pendingFiles.length > 0 &&
                     `(${(currentTask.attachments?.length || 0) - attachmentsToDelete.length + pendingFiles.length})`}
                 </button>
-                {isEditing && (
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('comments')}
-                    className={`px-3 py-2 font-bold uppercase tracking-widest whitespace-nowrap transition-colors text-xs ${activeTab === 'comments' ? 'bg-[#1a1a1a] text-white' : 'bg-[#f5f0e8] hover:bg-gray-200'}`}
-                  >
-                    Comentarios{' '}
-                    {currentTask.comments && currentTask.comments.length > 0 && `(${currentTask.comments.length})`}
-                  </button>
-                )}
               </div>
 
               {/* Tab Contents */}
@@ -1553,80 +1526,6 @@ export default function Tareas() {
                             No hay archivos adjuntos
                           </p>
                         )}
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'comments' && isEditing && (
-                  <div className="border-2 border-[#1a1a1a] p-3 bg-white animate-in fade-in duration-200">
-                    <div className="flex flex-col gap-3 mb-3 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
-                      {currentTask.comments?.map((comment) => (
-                        <div key={comment.id} className="p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
-                          <div className="flex justify-between items-start mb-1">
-                            <span className="font-bold text-xs">{comment.authorName}</span>
-                            <span className="text-[10px] opacity-70">
-                              {new Date(comment.createdAt).toLocaleString()}
-                            </span>
-                          </div>
-                          <p className="text-xs whitespace-pre-wrap">{comment.text}</p>
-                        </div>
-                      ))}
-                      {(!currentTask.comments || currentTask.comments.length === 0) && (
-                        <p className="text-[10px] font-bold uppercase tracking-widest opacity-50 text-center py-2">
-                          No hay comentarios aún
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newCommentText}
-                        onChange={(e) => setNewCommentText(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            if (newCommentText.trim() && auth.currentUser) {
-                              const newComment: Comment = {
-                                id: Date.now().toString(),
-                                text: newCommentText.trim(),
-                                authorId: auth.currentUser.uid,
-                                authorName: auth.currentUser.displayName || auth.currentUser.email || 'Usuario',
-                                createdAt: new Date().toISOString(),
-                              };
-                              setCurrentTask((prev) => ({
-                                ...prev,
-                                comments: [...(prev.comments || []), newComment],
-                              }));
-                              setNewCommentText('');
-                            }
-                          }
-                        }}
-                        className="flex-1 p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium transition-colors text-xs"
-                        placeholder="Escribe un comentario..."
-                      />
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (newCommentText.trim() && auth.currentUser) {
-                            const newComment: Comment = {
-                              id: Date.now().toString(),
-                              text: newCommentText.trim(),
-                              authorId: auth.currentUser.uid,
-                              authorName: auth.currentUser.displayName || auth.currentUser.email || 'Usuario',
-                              createdAt: new Date().toISOString(),
-                            };
-                            setCurrentTask((prev) => ({
-                              ...prev,
-                              comments: [...(prev.comments || []), newComment],
-                            }));
-                            setNewCommentText('');
-                          }
-                        }}
-                        className="px-3 py-1.5 bg-[#1a1a1a] text-white font-bold uppercase text-xs hover:bg-[#333] transition-colors"
-                      >
-                        Comentar
-                      </button>
                     </div>
                   </div>
                 )}
