@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, addDoc, doc, updateDoc, deleteDoc, limit } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, auth, storage } from '../firebase';
 import {
   Plus,
   Trash2,
@@ -25,57 +22,13 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useOutletContext } from 'react-router-dom';
 import { SkeletonPage } from '../components/Skeleton';
+import { getNovedades, addNovedad, updateNovedad, deleteNovedad, uploadNovedadAttachment, onNovedadesChange } from '../db/novedades';
+import { addNotification } from '../db/notifications';
+import { getCurrentUserId, supabase, withTimeout } from '../db/client';
 
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId: string | undefined;
-    email: string | null | undefined;
-    emailVerified: boolean | undefined;
-    isAnonymous: boolean | undefined;
-    tenantId: string | null | undefined;
-    providerInfo: {
-      providerId: string;
-      displayName: string | null;
-      email: string | null;
-      photoUrl: string | null;
-    }[];
-  };
-}
-
-function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo:
-        auth.currentUser?.providerData.map((provider) => ({
-          providerId: provider.providerId,
-          displayName: provider.displayName,
-          email: provider.email,
-          photoUrl: provider.photoURL,
-        })) || [],
-    },
-    operationType,
-    path,
-  };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+function handleError(error: unknown) {
+  console.error('Error:', error);
+  toast.error('Error al procesar la solicitud');
 }
 
 interface Attachment {
@@ -130,27 +83,24 @@ export default function Novedades() {
   };
 
   useEffect(() => {
-    if (!auth.currentUser) return;
-
-    const q = query(collection(db, 'novedades'), limit(200));
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const novedadesData: Novedad[] = [];
-        snapshot.forEach((doc) => {
-          novedadesData.push({ id: doc.id, ...doc.data() } as Novedad);
-        });
-        setNovedades(novedadesData);
-        setLoading(false);
-      },
-      (error) => {
-        setLoading(false);
-        handleFirestoreError(error, OperationType.GET, 'novedades');
-      },
-    );
-
-    return () => unsubscribe();
+    loadNovedades();
+    const unsub = onNovedadesChange((data) => {
+      setNovedades(data);
+      setLoading(false);
+    });
+    return unsub;
   }, []);
+
+  const loadNovedades = async () => {
+    try {
+      const data = await withTimeout(getNovedades());
+      setNovedades(data);
+    } catch (error) {
+      handleError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const openNewModal = () => {
     setCurrentNovedad({ title: '', content: '', attachments: [] });
@@ -170,20 +120,23 @@ export default function Novedades() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentNovedad.title?.trim() || !currentNovedad.content?.trim() || !auth.currentUser) return;
+    if (!currentNovedad.title?.trim() || !currentNovedad.content?.trim()) return;
 
     setIsUploading(true);
     try {
       let finalAttachments = currentNovedad.attachments ? [...currentNovedad.attachments] : [];
+      const userId = getCurrentUserId();
 
       // Handle deletions
       if (attachmentsToDelete.length > 0) {
         for (const att of attachmentsToDelete) {
-          try {
-            const fileRef = ref(storage, att.url);
-            await deleteObject(fileRef);
-          } catch (error) {
-            console.error('Error deleting file:', error);
+          const path = att.url.split('/object/public/attachments/')[1] || att.url.split('/attachments/')[1] || '';
+          if (path) {
+            try {
+              await supabase.storage.from('attachments').remove([path]);
+            } catch (error) {
+              console.error('Error deleting file:', error);
+            }
           }
           finalAttachments = finalAttachments.filter((a) => a.url !== att.url);
         }
@@ -192,48 +145,36 @@ export default function Novedades() {
       // Handle new uploads
       if (pendingFiles.length > 0) {
         for (const file of pendingFiles) {
-          const fileRef = ref(storage, `novedades/${auth.currentUser.uid}/${Date.now()}_${file.name}`);
-          await uploadBytes(fileRef, file);
-          const url = await getDownloadURL(fileRef);
-          finalAttachments.push({
-            name: file.name,
-            url,
-            type: file.type,
-          });
+          const uploaded = await uploadNovedadAttachment(file, userId);
+          finalAttachments.push(uploaded);
         }
       }
 
       if (isEditing && currentNovedad.id) {
-        const docRef = doc(db, 'novedades', currentNovedad.id);
-        await updateDoc(docRef, {
+        await updateNovedad(currentNovedad.id, {
           title: currentNovedad.title,
           content: currentNovedad.content,
-          attachments: finalAttachments,
+          attachments: finalAttachments as any,
         });
         toast.success('Novedad actualizada');
       } else {
-        await addDoc(collection(db, 'novedades'), {
+        await addNovedad({
           title: currentNovedad.title,
           content: currentNovedad.content,
-          createdAt: new Date().toISOString(),
-          authorId: auth.currentUser.uid,
-          authorName: auth.currentUser.displayName || auth.currentUser.email || 'Usuario',
           attachments: finalAttachments,
         });
 
-        await addDoc(collection(db, 'notifications'), {
+        await addNotification({
           title: 'Nueva Novedad',
-          message: currentNovedad.title,
+          message: currentNovedad.title!,
           type: 'novedad',
-          createdAt: new Date().toISOString(),
-          authorId: auth.currentUser.uid,
         });
 
         toast.success('Novedad creada');
       }
       setIsModalOpen(false);
     } catch (error) {
-      handleFirestoreError(error, isEditing ? OperationType.UPDATE : OperationType.CREATE, 'novedades');
+      handleError(error);
     } finally {
       setIsUploading(false);
     }
@@ -242,10 +183,10 @@ export default function Novedades() {
   const handleDelete = async (id: string) => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar esta novedad?')) return;
     try {
-      await deleteDoc(doc(db, 'novedades', id));
+      await deleteNovedad(id);
       toast.success('Novedad eliminada');
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, 'novedades');
+      handleError(error);
     }
   };
 

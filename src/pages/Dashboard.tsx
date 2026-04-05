@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Activity, CheckCircle, Clock, AlertTriangle, Newspaper, ArrowRight, HardHat, Plus, TrendingUp } from 'lucide-react';
-import { collection, query, onSnapshot, orderBy, limit } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { getTasks } from '../db/tasks';
+import { getVisitas } from '../db/visitas';
+import { getNovedades } from '../db/novedades';
+import { withTimeout } from '../db/client';
+import type { Task, Visita, Novedad } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
-import type { Task, Visita, Novedad } from '../types';
 
 function handleFirestoreError(error: unknown, collectionName: string) {
-  console.error(`Firestore error on ${collectionName}:`, error);
+  console.error(`Error loading ${collectionName}:`, error);
   toast.error(`Error al cargar ${collectionName}`);
 }
 
@@ -39,41 +41,23 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth.currentUser) return;
-
-    // Simple queries without orderBy - documents without createdAt would be excluded
-    const tasksQuery = query(collection(db, 'tasks'), limit(100));
-    const unsubscribeTasks = onSnapshot(tasksQuery, (snapshot) => {
-      const tasksData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Task));
-      setTasks(tasksData);
-    }, (error) => {
-      handleFirestoreError(error, 'tareas');
-    });
-
-    const visitsQuery = query(collection(db, 'visitas'), limit(100));
-    const unsubscribeVisits = onSnapshot(visitsQuery, (snapshot) => {
-      const visitsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Visita));
-      setVisits(visitsData);
-    }, (error) => {
-      handleFirestoreError(error, 'visitas');
-    });
-
-    const novedadesQuery = query(collection(db, 'novedades'), limit(100));
-    const unsubscribeNovedades = onSnapshot(novedadesQuery, (snapshot) => {
-      const novedadesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Novedad));
-      setNovedades(novedadesData);
-    }, (error) => {
-      handleFirestoreError(error, 'novedades');
-    });
-
-    const timer = setTimeout(() => setLoading(false), 500);
-
-    return () => {
-      unsubscribeTasks();
-      unsubscribeVisits();
-      unsubscribeNovedades();
-      clearTimeout(timer);
+    const loadData = async () => {
+      try {
+        const [tasksData, visitsData, novedadesData] = await withTimeout(Promise.all([
+          getTasks(),
+          getVisitas(),
+          getNovedades(),
+        ]), 8000);
+        setTasks(tasksData);
+        setVisits(visitsData);
+        setNovedades(novedadesData);
+      } catch (error) {
+        handleFirestoreError(error, 'dashboard');
+      } finally {
+        setLoading(false);
+      }
     };
+    loadData();
   }, []);
 
   const pendingTasks = tasks.filter(t => t.status === 'pendiente' || t.status === 'en_proceso').length;
