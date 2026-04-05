@@ -209,8 +209,12 @@ export default function BaseDatos() {
 
     try {
       const coords: Record<string, number | undefined> = {};
-      if (locationForm.latitude !== undefined) coords.latitude = locationForm.latitude;
-      if (locationForm.longitude !== undefined) coords.longitude = locationForm.longitude;
+      if (typeof locationForm.latitude === 'number' && !isNaN(locationForm.latitude)) {
+        coords.latitude = locationForm.latitude;
+      }
+      if (typeof locationForm.longitude === 'number' && !isNaN(locationForm.longitude)) {
+        coords.longitude = locationForm.longitude;
+      }
 
       if (editingLocation) {
         await updateDoc(doc(db, 'locations', editingLocation.id), {

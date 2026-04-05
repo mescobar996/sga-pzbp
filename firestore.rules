@@ -181,12 +181,14 @@ service cloud.firestore {
     }
 
     function isValidLocation(data) {
-      return hasOnlyAllowedFields(['name', 'type', 'status', 'createdAt', 'authorId']) &&
+      return hasOnlyAllowedFields(['name', 'type', 'status', 'createdAt', 'authorId', 'latitude', 'longitude']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              data.type in ['Origen', 'Destino', 'Origen/Destino'] &&
              data.status in ['Operativo', 'Mantenimiento', 'Inactivo'] &&
              data.createdAt is string && data.createdAt.size() > 0 && data.createdAt.size() < 50 &&
-             data.authorId is string && data.authorId.size() > 0 && data.authorId.size() < 100;
+             data.authorId is string && data.authorId.size() > 0 && data.authorId.size() < 100 &&
+             (!('latitude' in data) || (data.latitude is number && data.latitude >= -90 && data.latitude <= 90)) &&
+             (!('longitude' in data) || (data.longitude is number && data.longitude >= -180 && data.longitude <= 180));
     }
 
     function isValidVisita(data) {
