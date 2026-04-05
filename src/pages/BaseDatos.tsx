@@ -249,6 +249,41 @@ export default function BaseDatos() {
     }
   };
 
+  const handleExportJSON = async () => {
+    setIsExporting(true);
+    try {
+      const collectionsToExport = ['tasks', 'visitas', 'novedades', 'task_history', 'personal', 'locations', 'notifications', 'users'];
+      const backupData: Record<string, any[]> = {};
+
+      for (const col of collectionsToExport) {
+        try {
+          const snap = await getDocs(collection(db, col));
+          backupData[col] = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        } catch {
+          backupData[col] = [];
+        }
+      }
+
+      const jsonString = JSON.stringify(backupData, null, 2);
+      const blob = new Blob([jsonString], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sgo_pzbp_full_backup_${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success('Backup JSON descargado con éxito');
+    } catch (error) {
+      console.error('Error exportando JSON:', error);
+      toast.error('Error al exportar los datos');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleExportExcel = async () => {
     setIsExporting(true);
     try {
@@ -663,6 +698,13 @@ export default function BaseDatos() {
                     className="px-3 py-1.5 border-2 border-white bg-[#00cc66] text-[#1a1a1a] font-black uppercase text-xs tracking-widest hover:bg-white transition-colors flex items-center gap-2 disabled:opacity-50 shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
                   >
                     <Download className="w-3.5 h-3.5" /> {isExporting ? 'Exportando...' : 'Exportar Excel'}
+                  </button>
+                  <button
+                    onClick={handleExportJSON}
+                    disabled={isExporting}
+                    className="px-3 py-1.5 border-2 border-white bg-[#e63b2e] text-white font-black uppercase text-xs tracking-widest hover:bg-[#1a1a1a] hover:text-[#e63b2e] transition-colors flex items-center gap-2 disabled:opacity-50 shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
+                  >
+                    <FileJson className="w-3.5 h-3.5" /> FULL BACKUP JSON
                   </button>
                 </div>
               </div>
