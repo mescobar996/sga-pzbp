@@ -29,6 +29,32 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
   return null;
 }
 
+function MapController({ lat, lng }: { lat: number | undefined, lng: number | undefined }) {
+  const map = useMapEvents({
+    click(e) {
+      // we can handle clicks in the parent, or pass it here
+    }
+  });
+
+  import('react').then((React) => {
+    // 1. Force resize on mount for modal
+    React.useEffect(() => {
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+      }, 300);
+      return () => clearTimeout(timer);
+    }, [map]);
+
+    // 2. Fly to when coords change
+    React.useEffect(() => {
+      if (lat !== undefined && lng !== undefined) {
+        map.setView([lat, lng], map.getZoom() < 14 ? 14 : map.getZoom());
+      }
+    }, [lat, lng, map]);
+  });
+  return null;
+}
+
 export default function LocationMapPicker({
   isOpen,
   onClose,
@@ -106,11 +132,11 @@ export default function LocationMapPicker({
             )}
           </div>
         </div>
-        <div className="flex-1 min-h-[400px] relative">
+        <div className="flex-1 min-h-[400px] relative bg-[#e5e5e5] z-0 overflow-hidden">
           <MapContainer
             center={center}
             zoom={lat !== undefined ? 14 : 6}
-            style={{ width: '100%', height: '100%' }}
+            style={{ width: '100%', height: '400px', zIndex: 0 }}
             scrollWheelZoom={true}
           >
             <TileLayer
@@ -118,6 +144,7 @@ export default function LocationMapPicker({
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             <MapClickHandler onMapClick={handleMapClick} />
+            <MapController lat={lat} lng={lng} />
             {lat !== undefined && lng !== undefined && (
               <Marker position={[lat, lng]}>
                 <Popup>

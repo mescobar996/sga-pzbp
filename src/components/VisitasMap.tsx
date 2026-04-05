@@ -1,7 +1,19 @@
-import { MapContainer, TileLayer, Marker, Popup, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, ArrowRight, User, Calendar, Clock } from 'lucide-react';
+import React, { useEffect } from 'react';
+
+function MapResizer() {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [map]);
+  return null;
+}
 
 // Fix for default markers in react-leaflet
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -102,6 +114,7 @@ export default function VisitasMap({ visitas, locations }: VisitasMapProps) {
         style={{ width: '100%', height: '100%', zIndex: 0 }}
         scrollWheelZoom={true}
       >
+        <MapResizer />
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
