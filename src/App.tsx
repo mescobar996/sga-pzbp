@@ -1,37 +1,34 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect, useState, lazy, Suspense } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { auth } from './firebase';
+import { useEffect, useState } from 'react';
+import { supabase } from './db/client';
+import type { User } from '@supabase/supabase-js';
 import { Toaster } from 'sonner';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import { OfflineBanner } from './components/OfflineBanner';
-import { SkeletonPage } from './components/Skeleton';
 import { AnimatePresence, motion } from 'motion/react';
 
-const Dashboard = lazy(() => import('./pages/Dashboard'));
-const Visitas = lazy(() => import('./pages/Visitas'));
-const Tareas = lazy(() => import('./pages/Tareas'));
-const Reportes = lazy(() => import('./pages/Reportes'));
-const BaseDatos = lazy(() => import('./pages/BaseDatos'));
-const Novedades = lazy(() => import('./pages/Novedades'));
-const Configuracion = lazy(() => import('./pages/Configuracion'));
-const DebugDB = lazy(() => import('./pages/DebugDB'));
-const Login = lazy(() => import('./pages/Login'));
-const Notificaciones = lazy(() => import('./pages/Notificaciones'));
+import Dashboard from './pages/Dashboard';
+import Visitas from './pages/Visitas';
+import Tareas from './pages/Tareas';
+import Reportes from './pages/Reportes';
+import BaseDatos from './pages/BaseDatos';
+import Novedades from './pages/Novedades';
+import Configuracion from './pages/Configuracion';
+import DebugDB from './pages/DebugDB';
+import Login from './pages/Login';
+import Notificaciones from './pages/Notificaciones';
 
 function PageTransition({ children }: { children: React.ReactNode }) {
   return (
-    <Suspense fallback={<SkeletonPage layout="cards" cardCount={3} />}>
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -8 }}
-        transition={{ duration: 0.2, ease: 'easeOut' }}
-      >
-        {children}
-      </motion.div>
-    </Suspense>
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
+      {children}
+    </motion.div>
   );
 }
 
@@ -127,11 +124,18 @@ export default function App() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
       setLoading(false);
     });
-    return () => unsubscribe();
+
+    // Check for existing session on mount
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user || null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   if (loading) {
