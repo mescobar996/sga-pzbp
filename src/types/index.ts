@@ -68,6 +68,8 @@ export interface Location {
   name: string;
   type: 'Origen' | 'Destino' | 'Origen/Destino';
   status: 'Operativo' | 'Mantenimiento' | 'Inactivo';
+  latitude?: number;
+  longitude?: number;
   createdAt: string;
   authorId: string;
 }
