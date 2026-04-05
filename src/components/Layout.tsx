@@ -644,6 +644,19 @@ export default function Layout({ user }: { user: User }) {
                         ))
                       )}
                     </div>
+                    {notifications.length > 0 && (
+                      <div className="p-3 border-t-4 border-[#1a1a1a] bg-[#f5f0e8] text-center">
+                        <button 
+                          onClick={() => {
+                            setShowNotifications(false);
+                            navigate('/notificaciones');
+                          }}
+                          className="text-xs font-black uppercase text-[#0055ff] hover:underline flex items-center justify-center gap-1 w-full"
+                        >
+                          Ver Todas Las Notificaciones <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
                   </motion.div>
                 )}
               </AnimatePresence>

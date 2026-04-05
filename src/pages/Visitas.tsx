@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
 import { visitaSchema } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
+import VisitasMap from '../components/VisitasMap';
 
 interface Visita {
   id: string;
@@ -58,6 +59,7 @@ export default function Visitas() {
   const [editingVisitaId, setEditingVisitaId] = useState<string | null>(null);
   const [selectedResponsables, setSelectedResponsables] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
 
   // Filters and Pagination
   const [searchQuery, setSearchQuery] = useState('');
@@ -86,7 +88,7 @@ export default function Visitas() {
     );
 
     const unsubLocations = onSnapshot(query(collection(db, 'locations'), orderBy('name')), (snapshot) => {
-      setLocations(snapshot.docs.map((d) => ({ id: d.id, name: d.data().name, type: d.data().type })));
+      setLocations(snapshot.docs.map((d) => ({ id: d.id, name: d.data().name, type: d.data().type, latitude: d.data().latitude, longitude: d.data().longitude })));
     });
 
     const unsubPersonal = onSnapshot(query(collection(db, 'personal'), orderBy('name')), (snapshot) => {
@@ -396,6 +398,20 @@ export default function Visitas() {
               <h2 className="text-xl sm:text-2xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">
                 Registro Histórico
               </h2>
+              <div className="flex border-2 border-[#1a1a1a] shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest transition-colors ${viewMode === 'list' ? 'bg-[#1a1a1a] text-white' : 'bg-white text-[#1a1a1a] hover:bg-[#f5f0e8]'}`}
+                >
+                  Lista
+                </button>
+                <button
+                  onClick={() => setViewMode('map')}
+                  className={`px-3 sm:px-4 py-1.5 sm:py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest border-l-2 border-[#1a1a1a] transition-colors ${viewMode === 'map' ? 'bg-[#1a1a1a] text-white' : 'bg-white text-[#1a1a1a] hover:bg-[#f5f0e8]'}`}
+                >
+                  Mapa
+                </button>
+              </div>
             </div>
 
             {/* Filters */}
@@ -450,81 +466,89 @@ export default function Visitas() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-              {paginatedVisitas.map((visita) => (
-                <div
-                  key={visita.id}
-                  onClick={() => setSelectedVisita(visita)}
-                  className="bg-white border-2 sm:border-4 border-[#1a1a1a] p-3 sm:p-4 cursor-pointer hover:bg-[#f5f0e8] transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none flex flex-col justify-between group"
-                >
-                  <div>
-                    <div className="flex justify-between items-start mb-1.5 sm:mb-2">
-                      <h3 className="font-black uppercase text-sm sm:text-lg truncate pr-2">
-                        {visita.origen} &rarr; {visita.destino}
-                      </h3>
-                      <span className="text-[10px] sm:text-xs font-bold bg-[#1a1a1a] text-white px-1.5 sm:px-2 py-0.5 sm:py-1 uppercase flex-shrink-0">
-                        {visita.fecha}
-                      </span>
+            {viewMode === 'list' ? (
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                  {paginatedVisitas.map((visita) => (
+                    <div
+                      key={visita.id}
+                      onClick={() => setSelectedVisita(visita)}
+                      className="bg-white border-2 sm:border-4 border-[#1a1a1a] p-3 sm:p-4 cursor-pointer hover:bg-[#f5f0e8] transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none flex flex-col justify-between group"
+                    >
+                      <div>
+                        <div className="flex justify-between items-start mb-1.5 sm:mb-2">
+                          <h3 className="font-black uppercase text-sm sm:text-lg truncate pr-2">
+                            {visita.origen} &rarr; {visita.destino}
+                          </h3>
+                          <span className="text-[10px] sm:text-xs font-bold bg-[#1a1a1a] text-white px-1.5 sm:px-2 py-0.5 sm:py-1 uppercase flex-shrink-0">
+                            {visita.fecha}
+                          </span>
+                        </div>
+                        <p className="text-[10px] sm:text-sm font-bold opacity-70 uppercase truncate">
+                          Resp: {visita.responsable}
+                        </p>
+                      </div>
+                      <div className="mt-3 sm:mt-4 flex justify-between items-center">
+                        <div className="flex gap-1.5 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditVisita(visita);
+                            }}
+                            className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                            title="Editar"
+                          >
+                            <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          </button>
+                          {isAdmin && (
+                            <button
+                               onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteVisita(visita.id);
+                              }}
+                              className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <p className="text-[10px] sm:text-sm font-bold opacity-70 uppercase truncate">
-                      Resp: {visita.responsable}
+                  ))}
+                  {paginatedVisitas.length === 0 && (
+                    <p className="text-xs sm:text-sm font-bold uppercase opacity-50 sm:col-span-2 text-center py-8">
+                      No hay visitas que coincidan con los filtros.
                     </p>
-                  </div>
-                  <div className="mt-3 sm:mt-4 flex justify-between items-center">
-                    <div className="flex gap-1.5 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditVisita(visita);
-                        }}
-                        className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
-                        title="Editar"
-                      >
-                        <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      </button>
-                      {isAdmin && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteVisita(visita.id);
-                          }}
-                          className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  )}
                 </div>
-              ))}
-              {paginatedVisitas.length === 0 && (
-                <p className="text-xs sm:text-sm font-bold uppercase opacity-50 sm:col-span-2 text-center py-8">
-                  No hay visitas que coincidan con los filtros.
-                </p>
-              )}
-            </div>
 
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-3 sm:gap-4 mt-6 sm:mt-8">
-                <button
-                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                  disabled={currentPage === 1}
-                  className="p-1.5 sm:p-2 border-2 sm:border-4 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
-                </button>
-                <span className="font-black uppercase tracking-widest text-xs sm:text-sm">
-                  Página {currentPage} de {totalPages}
-                </span>
-                <button
-                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={currentPage === totalPages}
-                  className="p-1.5 sm:p-2 border-2 sm:border-4 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" />
-                </button>
+                {/* Pagination */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center items-center gap-3 sm:gap-4 mt-6 sm:mt-8">
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="p-1.5 sm:p-2 border-2 sm:border-4 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
+                    </button>
+                    <span className="font-black uppercase tracking-widest text-xs sm:text-sm">
+                      Página {currentPage} de {totalPages}
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="p-1.5 sm:p-2 border-2 sm:border-4 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" />
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="mt-4 mb-8">
+                <VisitasMap visitas={filteredVisitas} locations={locations} />
               </div>
             )}
           </div>

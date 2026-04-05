@@ -11,6 +11,7 @@ import {
   X,
   FileJson,
   FileSpreadsheet,
+  Crosshair,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
@@ -34,6 +35,7 @@ import { personalSchema, locationSchema } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import { DataTable } from '../components/DataTable';
 import type { Personal, Location } from '../types';
+import LocationMapPicker from '../components/LocationMapPicker';
 
 enum OperationType {
   CREATE = 'create',
@@ -77,10 +79,17 @@ export default function BaseDatos() {
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [editingPersonal, setEditingPersonal] = useState<Personal | null>(null);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
 
   // Form states
   const [personalForm, setPersonalForm] = useState({ name: '', role: '', status: 'Activo' });
-  const [locationForm, setLocationForm] = useState({ name: '', type: 'Origen', status: 'Operativo' });
+  const [locationForm, setLocationForm] = useState({
+    name: '',
+    type: 'Origen',
+    status: 'Operativo',
+    latitude: undefined as number | undefined,
+    longitude: undefined as number | undefined,
+  });
 
   // Filter states
   const [personalFilter, setPersonalFilter] = useState('Todos');
@@ -199,16 +208,22 @@ export default function BaseDatos() {
     }
 
     try {
+      const coords: Record<string, number | undefined> = {};
+      if (locationForm.latitude !== undefined) coords.latitude = locationForm.latitude;
+      if (locationForm.longitude !== undefined) coords.longitude = locationForm.longitude;
+
       if (editingLocation) {
         await updateDoc(doc(db, 'locations', editingLocation.id), {
           name: result.data.name,
           type: result.data.type,
           status: result.data.status,
+          ...coords,
         });
         toast.success('Ubicación actualizada');
       } else {
         await addDoc(collection(db, 'locations'), {
           ...result.data,
+          ...coords,
           createdAt: new Date().toISOString(),
           authorId: auth.currentUser.uid,
         });
@@ -600,12 +615,24 @@ export default function BaseDatos() {
               onFilterChange={setLocationFilter}
               onAdd={() => {
                 setEditingLocation(null);
-                setLocationForm({ name: '', type: 'Origen', status: 'Operativo' });
+                setLocationForm({
+                  name: '',
+                  type: 'Origen',
+                  status: 'Operativo',
+                  latitude: undefined,
+                  longitude: undefined,
+                });
                 setIsLocationModalOpen(true);
               }}
               onEdit={(l) => {
                 setEditingLocation(l);
-                setLocationForm({ name: l.name, type: l.type, status: l.status });
+                setLocationForm({
+                  name: l.name,
+                  type: l.type,
+                  status: l.status,
+                  latitude: l.latitude,
+                  longitude: l.longitude,
+                });
                 setIsLocationModalOpen(true);
               }}
               onDelete={(l) => handleDeleteLocation(l.id)}
@@ -830,6 +857,26 @@ export default function BaseDatos() {
                       <option value="Inactivo">Inactivo</option>
                     </select>
                   </div>
+                  <div>
+                    <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">
+                      Ubicación en Mapa
+                    </label>
+                    <div className="flex gap-2 items-center">
+                      <button
+                        type="button"
+                        onClick={() => setIsMapPickerOpen(true)}
+                        className="flex-1 py-3 border-4 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase text-sm tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] flex items-center justify-center gap-2"
+                      >
+                        <Crosshair className="w-4 h-4" />{' '}
+                        {locationForm.latitude && locationForm.longitude ? 'Cambiar ubicación' : 'Seleccionar en mapa'}
+                      </button>
+                    </div>
+                    {locationForm.latitude && locationForm.longitude && (
+                      <p className="text-xs font-bold opacity-60 mt-1 font-mono">
+                        📍 {locationForm.latitude.toFixed(4)}, {locationForm.longitude.toFixed(4)}
+                      </p>
+                    )}
+                  </div>
                   <button
                     type="submit"
                     className="mt-4 w-full py-4 border-4 border-[#1a1a1a] bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#00cc66] transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
@@ -936,6 +983,20 @@ export default function BaseDatos() {
                 </button>
               </div>
             </div>
+          )}
+
+          {/* Location Map Picker */}
+          {isMapPickerOpen && (
+            <LocationMapPicker
+              isOpen={isMapPickerOpen}
+              onClose={() => setIsMapPickerOpen(false)}
+              onSelect={(lat, lng) => {
+                setLocationForm({ ...locationForm, latitude: lat, longitude: lng });
+                setIsMapPickerOpen(false);
+              }}
+              initialLat={locationForm.latitude}
+              initialLng={locationForm.longitude}
+            />
           )}
         </>
       )}

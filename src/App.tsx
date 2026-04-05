@@ -18,6 +18,7 @@ const Novedades = lazy(() => import('./pages/Novedades'));
 const Configuracion = lazy(() => import('./pages/Configuracion'));
 const DebugDB = lazy(() => import('./pages/DebugDB'));
 const Login = lazy(() => import('./pages/Login'));
+const Notificaciones = lazy(() => import('./pages/Notificaciones'));
 
 function PageTransition({ children }: { children: React.ReactNode }) {
   return (
@@ -104,6 +105,14 @@ function AnimatedRoutes({ user }: { user: User | null }) {
             element={
               <PageTransition>
                 <DebugDB />
+              </PageTransition>
+            }
+          />
+          <Route
+            path="notificaciones"
+            element={
+              <PageTransition>
+                <Notificaciones />
               </PageTransition>
             }
           />
