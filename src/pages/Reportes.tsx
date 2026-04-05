@@ -1,8 +1,7 @@
 import { FileText, Download, Database, Eye, BarChart3, Users, HardHat, ListChecks, Newspaper } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
-import { db } from '../firebase';
+import { supabase } from '../db/client';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
@@ -25,13 +24,13 @@ export default function Reportes() {
     const data: Record<string, any[]> = {};
 
     const fetchCollection = async (colName: string) => {
-      const q = query(collection(db, colName));
-      const snapshot = await getDocs(q);
-      let docs = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      const { data: docs, error } = await supabase.from(colName).select('*');
+      if (error) throw error;
+      let result = docs || [];
 
       if (dateFrom || dateTo) {
-        docs = docs.filter((doc: any) => {
-          const docDate = doc.createdAt ? new Date(doc.createdAt) : doc.fecha ? new Date(doc.fecha) : null;
+        result = result.filter((doc: any) => {
+          const docDate = doc.created_at ? new Date(doc.created_at) : doc.fecha ? new Date(doc.fecha) : null;
           if (!docDate) return true;
           if (dateFrom && new Date(dateFrom + 'T00:00:00') > docDate) return false;
           if (dateTo && new Date(dateTo + 'T23:59:59') < docDate) return false;
@@ -40,27 +39,27 @@ export default function Reportes() {
       }
 
       if (sortBy === 'fecha_desc') {
-        docs.sort((a: any, b: any) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : a.fecha ? new Date(a.fecha).getTime() : 0;
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : b.fecha ? new Date(b.fecha).getTime() : 0;
+        result.sort((a: any, b: any) => {
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : a.fecha ? new Date(a.fecha).getTime() : 0;
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : b.fecha ? new Date(b.fecha).getTime() : 0;
           return dateB - dateA;
         });
       } else if (sortBy === 'fecha_asc') {
-        docs.sort((a: any, b: any) => {
-          const dateA = a.createdAt ? new Date(a.createdAt).getTime() : a.fecha ? new Date(a.fecha).getTime() : 0;
-          const dateB = b.createdAt ? new Date(b.createdAt).getTime() : b.fecha ? new Date(b.fecha).getTime() : 0;
+        result.sort((a: any, b: any) => {
+          const dateA = a.created_at ? new Date(a.created_at).getTime() : a.fecha ? new Date(a.fecha).getTime() : 0;
+          const dateB = b.created_at ? new Date(b.created_at).getTime() : b.fecha ? new Date(b.fecha).getTime() : 0;
           return dateA - dateB;
         });
       } else if (sortBy === 'prioridad') {
         const priorityOrder: Record<string, number> = { alta: 1, media: 2, baja: 3 };
-        docs.sort((a: any, b: any) => {
+        result.sort((a: any, b: any) => {
           const pA = priorityOrder[a.priority?.toLowerCase()] || 4;
           const pB = priorityOrder[b.priority?.toLowerCase()] || 4;
           return pA - pB;
         });
       }
 
-      return docs;
+      return result;
     };
 
     if (dataSource === 'todas' || dataSource === 'visitas') data.visitas = await fetchCollection('visitas');

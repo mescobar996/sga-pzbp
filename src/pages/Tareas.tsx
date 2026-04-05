@@ -1,21 +1,5 @@
 import React, { useState, useEffect, memo, useCallback, useMemo } from 'react';
 import {
-  collection,
-  query,
-  onSnapshot,
-  addDoc,
-  serverTimestamp,
-  doc,
-  updateDoc,
-  deleteDoc,
-  limit,
-  orderBy,
-  startAfter,
-  getDocs,
-} from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
-import { db, auth, storage } from '../firebase';
-import {
   Plus,
   Clock,
   CheckCircle,
@@ -39,11 +23,15 @@ import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
 import { taskSchema } from '../utils/validation';
 import { TaskKanbanCard } from '../components/TaskKanbanCard';
-import type { TaskHistory } from '../types';
+import type { TaskHistory, Task } from '../types';
+import { getTasks, addTask, updateTask, deleteTask, onTasksChange, logTaskHistory } from '../db/tasks';
+import { onTaskHistoryChange } from '../db/taskHistory';
+import { addNotification } from '../db/notifications';
+import { supabase, getCurrentUserId } from '../db/client';
 
-function handleFirestoreError(error: unknown, collectionName: string) {
-  console.error(`Firestore error on ${collectionName}:`, error);
-  toast.error(`Error al procesar la solicitud`);
+function handleError(error: unknown) {
+  console.error('Error:', error);
+  toast.error('Error al procesar la solicitud');
 }
 
 interface Attachment {
@@ -69,19 +57,20 @@ interface Subtask {
   completed: boolean;
 }
 
-interface Task {
+interface LocalAttachment {
+  name: string;
+  url: string;
+  type: string;
+  path: string;
+  size?: number;
+}
+
+interface TaskComment {
   id: string;
-  title: string;
-  description: string;
-  priority: 'alta' | 'media' | 'baja';
-  status: 'pendiente' | 'en_proceso' | 'completado';
-  createdAt: string;
   authorId: string;
-  dueDate?: string;
-  attachments?: Attachment[];
-  tags?: string[];
-  subtasks?: Subtask[];
-  recurrence?: 'none' | 'diaria' | 'semanal' | 'mensual';
+  authorName: string;
+  content: string;
+  createdAt: string;
 }
 
 export default function Tareas() {
@@ -131,88 +120,71 @@ export default function Tareas() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    const safetyTimeout = setTimeout(() => {
+      setLoading(false);
+    }, 5000);
 
-    const q = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'), limit(tasksPageSize));
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const tasksData: Task[] = [];
-        snapshot.forEach((doc) => {
-          tasksData.push({ id: doc.id, ...doc.data() } as Task);
-        });
-        setTasks(tasksData);
-        setTasksLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
-        setHasMoreTasks(snapshot.docs.length === tasksPageSize);
-        setLoading(false);
-      },
-      (error) => {
-        setLoading(false);
-        handleFirestoreError(error, 'tareas');
-      },
-    );
-
-    return () => unsubscribe();
+    const unsub = onTasksChange((data) => {
+      clearTimeout(safetyTimeout);
+      setTasks(data as any);
+      setLoading(false);
+    });
+    return () => {
+      clearTimeout(safetyTimeout);
+      unsub();
+    };
   }, []);
 
   const loadMoreTasks = async () => {
-    if (!tasksLastDoc || !hasMoreTasks || isLoadingMore) return;
+    // Pagination with Supabase: use range-based pagination
+    if (!hasMoreTasks || isLoadingMore) return;
     setIsLoadingMore(true);
     try {
-      const q = query(
-        collection(db, 'tasks'),
-        orderBy('createdAt', 'desc'),
-        startAfter(tasksLastDoc),
-        limit(tasksPageSize),
-      );
-      const snapshot = await getDocs(q);
-      const newTasks: Task[] = [];
-      snapshot.forEach((doc) => {
-        newTasks.push({ id: doc.id, ...doc.data() } as Task);
-      });
+      const start = tasks.length;
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .range(start, start + tasksPageSize - 1);
+      if (error) throw error;
+      const newTasks = (data || []).map(mapRowToTask);
       setTasks((prev) => [...prev, ...newTasks]);
-      setTasksLastDoc(snapshot.docs[snapshot.docs.length - 1] || null);
-      setHasMoreTasks(snapshot.docs.length === tasksPageSize);
+      setHasMoreTasks((data || []).length === tasksPageSize);
     } catch (error) {
-      handleFirestoreError(error, 'tareas');
+      handleError(error);
     } finally {
       setIsLoadingMore(false);
     }
   };
 
+  function mapRowToTask(row: Record<string, any>): Task {
+    return {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      priority: row.priority || 'media',
+      status: row.status || 'pendiente',
+      createdAt: row.created_at || '',
+      authorId: row.author_id || '',
+      dueDate: row.due_date || '',
+      assignedTo: row.assigned_to || '',
+      attachments: (row.attachments || []) as any,
+      tags: row.tags || [],
+      subtasks: (row.subtasks || []) as any,
+      recurrence: row.recurrence || 'none',
+      comments: (row.comments || []) as any,
+    } as Task;
+  }
+
   useEffect(() => {
-    if (!auth.currentUser) return;
-    const q = query(collection(db, 'task_history'), orderBy('timestamp', 'desc'));
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const historyData: TaskHistoryEvent[] = [];
-        snapshot.forEach((doc) => {
-          historyData.push({ id: doc.id, ...doc.data() } as TaskHistoryEvent);
-        });
-        setHistoryEvents(historyData);
-      },
-      (error) => {
-        console.error('Error fetching history:', error);
-      },
-    );
-    return () => unsubscribe();
+    const unsub = onTaskHistoryChange((data) => {
+      setHistoryEvents(data);
+    });
+    return unsub;
   }, []);
 
-  const logTaskHistory = async (task: Partial<Task>, action: 'completado' | 'eliminado') => {
-    if (!auth.currentUser) return;
-    try {
-      await addDoc(collection(db, 'task_history'), {
-        taskId: task.id || '',
-        taskTitle: task.title || 'Tarea sin título',
-        action,
-        timestamp: new Date().toISOString(),
-        userId: auth.currentUser.uid,
-        userEmail: auth.currentUser.email || 'Usuario desconocido',
-      });
-    } catch (error) {
-      console.error('Error logging task history', error);
-    }
+  const logTaskHistoryFn = async (taskId: string, taskTitle: string, action: 'completado' | 'eliminado') => {
+    await logTaskHistory(taskId, taskTitle, action);
   };
 
   const openNewTaskModal = (initialDate?: string) => {
@@ -255,7 +227,6 @@ export default function Tareas() {
 
   const handleSaveTask = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!auth.currentUser) return;
 
     const validationResult = taskSchema.safeParse({
       title: currentTask.title,
@@ -291,88 +262,77 @@ export default function Tareas() {
       let taskId = currentTask.id;
 
       if (!isEditing || !taskId) {
-        const docRef = await addDoc(collection(db, 'tasks'), {
+        taskId = await addTask({
           title: validationResult.data.title,
           description: validationResult.data.description || '',
           priority: validationResult.data.priority,
           status: validationResult.data.status,
-          createdAt: new Date().toISOString(),
           dueDate: validationResult.data.dueDate || '',
-          authorId: auth.currentUser.uid,
           attachments: [],
           tags: [],
           subtasks: currentTask.subtasks || [],
           recurrence: validationResult.data.recurrence || 'none',
-        });
-        taskId = docRef.id;
+          comments: [],
+          authorId: getCurrentUserId(),
+          createdAt: new Date().toISOString(),
+        } as any);
 
         if (validationResult.data.priority === 'alta') {
-          await addDoc(collection(db, 'notifications'), {
+          await addNotification({
             title: 'Nueva Tarea Urgente',
             message: validationResult.data.title,
             type: 'tarea',
-            createdAt: new Date().toISOString(),
-            authorId: auth.currentUser.uid,
           });
         }
       }
 
       // Upload pending files
       const newAttachments: Attachment[] = [];
-      try {
-        for (const file of pendingFiles) {
-          const filePath = `tasks/${taskId}/${Date.now()}_${file.name}`;
-          const fileRef = ref(storage, filePath);
-          await uploadBytes(fileRef, file);
-          const url = await getDownloadURL(fileRef);
-          newAttachments.push({
-            name: file.name,
-            url,
-            type: file.type,
-            path: filePath,
-          });
-        }
-      } catch (uploadError) {
-        console.error('Error uploading files:', uploadError);
-        toast.error('Error al subir archivos. Verifica que Firebase Storage esté configurado.');
+      for (const file of pendingFiles) {
+        const filePath = `tasks/${taskId}/${Date.now()}_${file.name}`;
+        const { error: uploadError } = await supabase.storage.from('attachments').upload(filePath, file);
+        if (uploadError) throw uploadError;
+        const { data } = supabase.storage.from('attachments').getPublicUrl(filePath);
+        newAttachments.push({
+          name: file.name,
+          url: data.publicUrl,
+          type: file.type,
+          path: filePath,
+        });
       }
 
       // Delete removed attachments
       for (const att of attachmentsToDelete) {
         try {
-          const fileRef = ref(storage, att.path);
-          await deleteObject(fileRef);
+          const path = att.path || att.url.split('/object/public/attachments/')[1] || '';
+          if (path) await supabase.storage.from('attachments').remove([path]);
         } catch (e) {
           console.error('Error deleting file', e);
         }
       }
 
-      // Update task with final attachments
       const finalAttachments = [
-        ...(currentTask.attachments || []).filter((a) => !attachmentsToDelete.includes(a)),
+        ...(currentTask.attachments || []).filter((a: any) => !attachmentsToDelete.includes(a as any)),
         ...newAttachments,
       ];
-
       const finalTags = validationResult.data.tags || [];
 
-      const taskRef = doc(db, 'tasks', taskId);
-
-      if (isEditing) {
+      if (isEditing && taskId) {
         const originalTask = tasks.find((t) => t.id === taskId);
         if (validationResult.data.status === 'completado' && originalTask?.status !== 'completado') {
-          await logTaskHistory({ ...currentTask, id: taskId }, 'completado');
+          await logTaskHistoryFn(taskId, currentTask.title || '', 'completado');
         }
-      } else if (validationResult.data.status === 'completado') {
-        await logTaskHistory({ ...currentTask, id: taskId }, 'completado');
+      } else if (validationResult.data.status === 'completado' && taskId) {
+        await logTaskHistoryFn(taskId, currentTask.title || '', 'completado');
       }
 
-      await updateDoc(taskRef, {
+      await updateTask(taskId, {
         title: validationResult.data.title,
         description: validationResult.data.description || '',
         priority: validationResult.data.priority,
         status: validationResult.data.status,
         dueDate: validationResult.data.dueDate || '',
-        attachments: finalAttachments,
+        attachments: finalAttachments as any,
         tags: finalTags,
         subtasks: currentTask.subtasks || [],
         recurrence: validationResult.data.recurrence || 'none',
@@ -383,37 +343,33 @@ export default function Tareas() {
       toast.success(isEditing ? 'Tarea actualizada' : 'Tarea creada');
     } catch (error) {
       setIsUploading(false);
-      handleFirestoreError(error, 'tareas');
+      handleError(error);
     }
   };
 
   const handleUpdatePriority = async (taskId: string, newPriority: 'alta' | 'media' | 'baja') => {
     try {
-      const taskRef = doc(db, 'tasks', taskId);
-      await updateDoc(taskRef, { priority: newPriority });
+      await updateTask(taskId, { priority: newPriority });
     } catch (error) {
-      handleFirestoreError(error, 'tasks');
+      handleError(error);
     }
   };
 
   const handleUpdateDueDate = async (taskId: string, newDueDate: string) => {
     try {
-      const taskRef = doc(db, 'tasks', taskId);
-      await updateDoc(taskRef, { dueDate: newDueDate });
+      await updateTask(taskId, { dueDate: newDueDate });
     } catch (error) {
-      handleFirestoreError(error, 'tasks');
+      handleError(error);
     }
   };
 
   const handleUpdateStatus = async (taskId: string, newStatus: 'pendiente' | 'en_proceso' | 'completado') => {
     try {
-      const taskRef = doc(db, 'tasks', taskId);
       const taskToUpdate = tasks.find((t) => t.id === taskId);
       if (!taskToUpdate) return;
       if (newStatus === 'completado' && taskToUpdate.status !== 'completado') {
-        await logTaskHistory(taskToUpdate, 'completado');
+        await logTaskHistoryFn(taskId, taskToUpdate.title, 'completado');
 
-        // Handle recurrence
         if (taskToUpdate.recurrence && taskToUpdate.recurrence !== 'none') {
           let nextDueDate = new Date();
           if (taskToUpdate.dueDate) {
@@ -428,25 +384,25 @@ export default function Tareas() {
             nextDueDate.setMonth(nextDueDate.getMonth() + 1);
           }
 
-          await addDoc(collection(db, 'tasks'), {
+          await addTask({
             title: taskToUpdate.title,
             description: taskToUpdate.description || '',
             priority: taskToUpdate.priority || 'media',
             status: 'pendiente',
-            createdAt: new Date().toISOString(),
             dueDate: nextDueDate.toISOString().split('T')[0],
-            authorId: auth.currentUser?.uid || taskToUpdate.authorId,
-            attachments: taskToUpdate.attachments || [],
+            authorId: getCurrentUserId(),
+            createdAt: new Date().toISOString(),
+            attachments: (taskToUpdate.attachments || []) as any,
             tags: taskToUpdate.tags || [],
             subtasks: (taskToUpdate.subtasks || []).map((st) => ({ ...st, completed: false })),
             recurrence: taskToUpdate.recurrence,
             comments: [],
-          });
+          } as any);
         }
       }
-      await updateDoc(taskRef, { status: newStatus });
+      await updateTask(taskId, { status: newStatus });
     } catch (error) {
-      handleFirestoreError(error, 'tasks');
+      handleError(error);
     }
   };
 
@@ -455,28 +411,25 @@ export default function Tareas() {
       toast.loading(`Subiendo ${file.name}...`, { id: `upload-${taskId}` });
 
       const filePath = `tasks/${taskId}/${Date.now()}_${file.name}`;
-      const fileRef = ref(storage, filePath);
-      await uploadBytes(fileRef, file);
-      const url = await getDownloadURL(fileRef);
+      const { error: uploadError } = await supabase.storage.from('attachments').upload(filePath, file);
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage.from('attachments').getPublicUrl(filePath);
 
       const newAttachment: Attachment = {
         name: file.name,
-        url,
+        url: data.publicUrl,
         type: file.type,
         path: filePath,
       };
 
-      const taskRef = doc(db, 'tasks', taskId);
-      await updateDoc(taskRef, {
-        attachments: [...currentAttachments, newAttachment],
+      await updateTask(taskId, {
+        attachments: [...currentAttachments, newAttachment] as any,
       });
 
       toast.success(`Archivo ${file.name} subido correctamente`, { id: `upload-${taskId}` });
     } catch (error) {
       console.error('Error quick uploading file:', error);
-      toast.error('Error al subir el archivo. Verifica que Firebase Storage esté configurado.', {
-        id: `upload-${taskId}`,
-      });
+      toast.error('Error al subir el archivo.', { id: `upload-${taskId}` });
     }
   };
 
@@ -484,12 +437,11 @@ export default function Tareas() {
     try {
       const taskToDelete = tasks.find((t) => t.id === id);
       if (taskToDelete) {
-        await logTaskHistory(taskToDelete, 'eliminado');
+        await logTaskHistoryFn(id, taskToDelete.title, 'eliminado');
       }
-      const taskRef = doc(db, 'tasks', id);
-      await deleteDoc(taskRef);
+      await deleteTask(id);
     } catch (error) {
-      handleFirestoreError(error, 'tasks');
+      handleError(error);
     }
   };
 
@@ -739,7 +691,7 @@ export default function Tareas() {
                   .map((task) => (
                     <TaskKanbanCard
                       key={task.id}
-                      task={task}
+                      task={task as Task}
                       isAdmin={isAdmin}
                       onEdit={openEditTaskModal}
                       onDelete={handleDeleteTask}
@@ -1021,7 +973,7 @@ export default function Tareas() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) {
-                              handleQuickUpload(task.id, task.attachments, file);
+                              handleQuickUpload(task.id, task.attachments as any, file);
                             }
                             e.target.value = '';
                           }}
@@ -1471,8 +1423,8 @@ export default function Tareas() {
                     <div className="flex flex-col gap-2">
                       {/* Existing Attachments */}
                       {currentTask.attachments
-                        ?.filter((a) => !attachmentsToDelete.includes(a))
-                        .map((att, idx) => (
+                        ?.filter((a: any) => !attachmentsToDelete.includes(a as any))
+                        .map((att: any, idx: number) => (
                           <div
                             key={`att-${idx}`}
                             className="flex items-center justify-between p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8]"

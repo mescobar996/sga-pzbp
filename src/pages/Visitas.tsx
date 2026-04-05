@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, limit, orderBy } from 'firebase/firestore';
-import { db, auth } from '../firebase';
 import {
   Save,
   X,
@@ -22,6 +20,11 @@ import { useOutletContext } from 'react-router-dom';
 import { visitaSchema } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import VisitasMap from '../components/VisitasMap';
+import { getVisitas, addVisita, updateVisita, deleteVisita, onVisitasChange } from '../db/visitas';
+import { getLocations, onLocationsChange } from '../db/locations';
+import { getPersonal, onPersonalChange } from '../db/personal';
+import { addNotification } from '../db/notifications';
+import { getCurrentUserId } from '../db/client';
 
 interface Visita {
   id: string;
@@ -35,8 +38,8 @@ interface Visita {
   authorId: string;
 }
 
-function handleFirestoreError(error: unknown, _operationType: string, _path: string | null) {
-  console.error('Firestore Error: ', error);
+function handleError(error: unknown) {
+  console.error('Error:', error);
   toast.error('Error al procesar la solicitud');
 }
 
@@ -70,34 +73,26 @@ export default function Visitas() {
   const itemsPerPage = 6;
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    const loadVisitas = async () => {
+      try {
+        const data = await getVisitas();
+        setVisitas(data);
+      } catch (error) {
+        handleError(error);
+      }
+    };
 
-    const q = query(collection(db, 'visitas'), limit(200));
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const visitasData: Visita[] = [];
-        snapshot.forEach((doc) => {
-          visitasData.push({ id: doc.id, ...doc.data() } as Visita);
-        });
-        setVisitas(visitasData);
-      },
-      (error) => {
-        handleFirestoreError(error, 'get', 'visitas');
-      },
-    );
-
-    const unsubLocations = onSnapshot(query(collection(db, 'locations'), orderBy('name')), (snapshot) => {
-      setLocations(snapshot.docs.map((d) => ({ id: d.id, name: d.data().name, type: d.data().type, latitude: d.data().latitude, longitude: d.data().longitude })));
+    const unsubLocations = onLocationsChange((locs) => {
+      setLocations(locs.map(l => ({ id: l.id, name: l.name, type: l.type, latitude: l.latitude, longitude: l.longitude })));
     });
 
-    const unsubPersonal = onSnapshot(query(collection(db, 'personal'), orderBy('name')), (snapshot) => {
-      setPersonal(snapshot.docs.map((d) => ({ id: d.id, name: d.data().name })));
+    const unsubPersonal = onPersonalChange((pers) => {
+      setPersonal(pers.map(p => ({ id: p.id, name: p.name })));
       setLoading(false);
     });
 
+    loadVisitas();
     return () => {
-      unsubscribe();
       unsubLocations();
       unsubPersonal();
     };
@@ -105,10 +100,6 @@ export default function Visitas() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) {
-      toast.error('Debes iniciar sesión para registrar una visita.');
-      return;
-    }
 
     if (selectedResponsables.length === 0) {
       toast.error('Debe seleccionar al menos un responsable.');
@@ -137,26 +128,20 @@ export default function Visitas() {
       };
 
       if (isEditingVisita && editingVisitaId) {
-        const visitaRef = doc(db, 'visitas', editingVisitaId);
-        await updateDoc(visitaRef, {
-          ...finalFormData,
-        });
+        await updateVisita(editingVisitaId, finalFormData);
         toast.success('Visita actualizada exitosamente');
         setIsEditingVisita(false);
         setEditingVisitaId(null);
       } else {
-        await addDoc(collection(db, 'visitas'), {
+        await addVisita({
           ...finalFormData,
-          createdAt: new Date().toISOString(),
-          authorId: auth.currentUser.uid,
+          comments: [],
         });
 
-        await addDoc(collection(db, 'notifications'), {
+        await addNotification({
           title: 'Nueva Visita Técnica',
           message: `${formData.origen} -> ${formData.destino}`,
           type: 'visita',
-          createdAt: new Date().toISOString(),
-          authorId: auth.currentUser.uid,
         });
 
         toast.success('Visita registrada exitosamente');
@@ -165,7 +150,7 @@ export default function Visitas() {
       setSelectedResponsables([]);
     } catch (error) {
       toast.error(isEditingVisita ? 'Error al actualizar la visita' : 'Error al registrar la visita');
-      handleFirestoreError(error, isEditingVisita ? 'update' : 'create', 'visitas');
+      handleError(error);
     }
   };
 
@@ -187,14 +172,14 @@ export default function Visitas() {
   const handleDeleteVisita = async (id: string) => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar esta visita?')) return;
     try {
-      await deleteDoc(doc(db, 'visitas', id));
+      await deleteVisita(id);
       toast.success('Visita eliminada exitosamente');
       if (selectedVisita?.id === id) {
         setSelectedVisita(null);
       }
     } catch (error) {
       toast.error('Error al eliminar la visita');
-      handleFirestoreError(error, 'delete', 'visitas');
+      handleError(error);
     }
   };
 

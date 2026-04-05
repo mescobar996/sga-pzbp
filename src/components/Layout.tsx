@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { signOut, User } from 'firebase/auth';
-import { collection, query, orderBy, limit, onSnapshot, doc, getDoc, getDocs } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { supabase, getCurrentUserId, isAdmin } from '../db/client';
 import {
   Search,
   Bell,
@@ -49,13 +47,15 @@ interface SearchResult {
   color: string;
 }
 
+import type { User } from '@supabase/supabase-js';
+
 export default function Layout({ user }: { user: User }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const _isAdmin = isAdmin();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
@@ -101,59 +101,73 @@ export default function Layout({ user }: { user: User }) {
   }, []);
 
   useEffect(() => {
-    const checkAdmin = async () => {
-      try {
-        if (user.email === 'matialeescobar96@gmail.com' && user.emailVerified) {
-          setIsAdmin(true);
-          return;
-        }
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists() && userDoc.data().role === 'admin') {
-          setIsAdmin(true);
-        }
-      } catch (error) {
-        console.error('Error checking admin status', error);
-      }
-    };
-    checkAdmin();
-
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
 
-    const q = query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(50));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    // Notifications realtime
+    const channel = supabase
+      .channel('notifications-layout')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications' },
+        () => {
+          loadNotifications();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user.id]);
+
+  const loadNotifications = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) throw error;
+
       const notifs: AppNotification[] = [];
       let newUnread = 0;
       const lastRead = localStorage.getItem('lastReadNotification') || '1970-01-01T00:00:00.000Z';
 
-      snapshot.docChanges().forEach((change) => {
-        if (change.type === 'added') {
-          const data = change.doc.data() as AppNotification;
-          const isForMe = !data.recipientId || data.recipientId === user.uid;
-          if (data.createdAt > sessionStartTime.current && data.authorId !== user.uid && isForMe) {
-            toast(data.title, { description: data.message });
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification(data.title, { body: data.message });
-            }
-          }
+      data.forEach((row) => {
+        const notif = {
+          id: row.id,
+          title: row.title,
+          message: row.message,
+          type: row.type,
+          createdAt: row.created_at,
+          authorId: row.author_id,
+          recipientId: row.recipient_id,
+        } as AppNotification;
+        notifs.push(notif);
+        if (notif.createdAt > lastRead) {
+          newUnread++;
         }
       });
 
-      snapshot.forEach((doc) => {
-        const data = { id: doc.id, ...doc.data() } as AppNotification;
-        notifs.push(data);
-        if (data.createdAt > lastRead) {
-          newUnread++;
+      // Check for new notifications to toast
+      notifs.forEach((n) => {
+        const isForMe = !n.recipientId || n.recipientId === user.id;
+        if (n.createdAt > sessionStartTime.current && n.authorId !== user.id && isForMe) {
+          toast(n.title, { description: n.message });
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification(n.title, { body: n.message });
+          }
         }
       });
 
       setNotifications(notifs);
       setUnreadCount(newUnread);
-    });
-
-    return () => unsubscribe();
-  }, [user.uid]);
+    } catch (error) {
+      console.error('Error loading notifications:', error);
+    }
+  };
 
   const handleBellClick = () => {
     setShowNotifications(!showNotifications);
@@ -165,7 +179,7 @@ export default function Layout({ user }: { user: User }) {
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
+      await supabase.auth.signOut();
       navigate('/login');
     } catch (error) {
       console.error('Error signing out', error);
@@ -186,18 +200,17 @@ export default function Layout({ user }: { user: User }) {
 
     try {
       // Search Tasks
-      const tasksSnap = await getDocs(query(collection(db, 'tasks'), limit(200)));
-      tasksSnap.forEach((d) => {
-        const data = d.data() as any;
-        const title = (data.title || '').toLowerCase();
-        const desc = (data.description || '').toLowerCase();
+      const { data: tasksData } = await supabase.from('tasks').select('*').limit(200);
+      (tasksData || []).forEach((d: any) => {
+        const title = (d.title || '').toLowerCase();
+        const desc = (d.description || '').toLowerCase();
         if (title.includes(term) || desc.includes(term)) {
           results.push({
             id: d.id,
             type: 'tarea',
-            title: data.title || 'Sin título',
-            subtitle: data.priority ? `Prioridad: ${data.priority}` : '',
-            detail: data.dueDate ? `Vence: ${data.dueDate}` : data.status ? `Estado: ${data.status}` : '',
+            title: d.title || 'Sin título',
+            subtitle: d.priority ? `Prioridad: ${d.priority}` : '',
+            detail: d.due_date ? `Vence: ${d.due_date}` : d.status ? `Estado: ${d.status}` : '',
             route: '/tareas',
             icon: <ListChecks className="w-4 h-4" />,
             color: 'bg-[#0055ff]',
@@ -206,20 +219,19 @@ export default function Layout({ user }: { user: User }) {
       });
 
       // Search Visitas
-      const visitasSnap = await getDocs(query(collection(db, 'visitas'), limit(200)));
-      visitasSnap.forEach((d) => {
-        const data = d.data() as any;
-        const origen = (data.origen || '').toLowerCase();
-        const destino = (data.destino || '').toLowerCase();
-        const resp = (data.responsable || '').toLowerCase();
-        const obs = (data.observaciones || '').toLowerCase();
+      const { data: visitasData } = await supabase.from('visitas').select('*').limit(200);
+      (visitasData || []).forEach((d: any) => {
+        const origen = (d.origen || '').toLowerCase();
+        const destino = (d.destino || '').toLowerCase();
+        const resp = (d.responsable || '').toLowerCase();
+        const obs = (d.observaciones || '').toLowerCase();
         if (origen.includes(term) || destino.includes(term) || resp.includes(term) || obs.includes(term)) {
           results.push({
             id: d.id,
             type: 'visita',
-            title: `${data.origen || 'N/A'} → ${data.destino || 'N/A'}`,
-            subtitle: data.responsable ? `Resp: ${data.responsable}` : '',
-            detail: data.fecha ? `${data.fecha} ${data.hora || ''}` : '',
+            title: `${d.origen || 'N/A'} → ${d.destino || 'N/A'}`,
+            subtitle: d.responsable ? `Resp: ${d.responsable}` : '',
+            detail: d.fecha ? `${d.fecha} ${d.hora || ''}` : '',
             route: '/visitas',
             icon: <HardHat className="w-4 h-4" />,
             color: 'bg-[#00cc66]',
@@ -228,19 +240,18 @@ export default function Layout({ user }: { user: User }) {
       });
 
       // Search Novedades
-      const novedadesSnap = await getDocs(query(collection(db, 'novedades'), limit(200)));
-      novedadesSnap.forEach((d) => {
-        const data = d.data() as any;
-        const title = (data.title || '').toLowerCase();
-        const content = (data.content || '').toLowerCase();
-        const author = (data.authorName || '').toLowerCase();
+      const { data: novedadesData } = await supabase.from('novedades').select('*').limit(200);
+      (novedadesData || []).forEach((d: any) => {
+        const title = (d.title || '').toLowerCase();
+        const content = (d.content || '').toLowerCase();
+        const author = (d.author_name || '').toLowerCase();
         if (title.includes(term) || content.includes(term) || author.includes(term)) {
           results.push({
             id: d.id,
             type: 'novedad',
-            title: data.title || 'Sin título',
-            subtitle: data.authorName ? `Por: ${data.authorName}` : '',
-            detail: data.createdAt ? new Date(data.createdAt).toLocaleDateString('es-ES') : '',
+            title: d.title || 'Sin título',
+            subtitle: d.author_name ? `Por: ${d.author_name}` : '',
+            detail: d.created_at ? new Date(d.created_at).toLocaleDateString('es-ES') : '',
             route: '/novedades',
             icon: <FileText className="w-4 h-4" />,
             color: 'bg-[#1a1a1a]',
@@ -249,18 +260,17 @@ export default function Layout({ user }: { user: User }) {
       });
 
       // Search Personal
-      const personalSnap = await getDocs(query(collection(db, 'personal'), limit(200)));
-      personalSnap.forEach((d) => {
-        const data = d.data() as any;
-        const name = (data.name || '').toLowerCase();
-        const role = (data.role || '').toLowerCase();
+      const { data: personalData } = await supabase.from('personal').select('*').limit(200);
+      (personalData || []).forEach((d: any) => {
+        const name = (d.name || '').toLowerCase();
+        const role = (d.role || '').toLowerCase();
         if (name.includes(term) || role.includes(term)) {
           results.push({
             id: d.id,
             type: 'personal',
-            title: data.name || 'Sin nombre',
-            subtitle: data.role || '',
-            detail: data.status || '',
+            title: d.name || 'Sin nombre',
+            subtitle: d.role || '',
+            detail: d.status || '',
             route: '/base-datos',
             icon: <Users className="w-4 h-4" />,
             color: 'bg-[#0055ff]',
@@ -269,18 +279,17 @@ export default function Layout({ user }: { user: User }) {
       });
 
       // Search Locations
-      const locationsSnap = await getDocs(query(collection(db, 'locations'), limit(200)));
-      locationsSnap.forEach((d) => {
-        const data = d.data() as any;
-        const name = (data.name || '').toLowerCase();
-        const type = (data.type || '').toLowerCase();
+      const { data: locationsData } = await supabase.from('locations').select('*').limit(200);
+      (locationsData || []).forEach((d: any) => {
+        const name = (d.name || '').toLowerCase();
+        const type = (d.type || '').toLowerCase();
         if (name.includes(term) || type.includes(term)) {
           results.push({
             id: d.id,
             type: 'ubicacion',
-            title: data.name || 'Sin nombre',
-            subtitle: data.type || '',
-            detail: data.status || '',
+            title: d.name || 'Sin nombre',
+            subtitle: d.type || '',
+            detail: d.status || '',
             route: '/base-datos',
             icon: <MapPin className="w-4 h-4" />,
             color: 'bg-[#00cc66]',
@@ -411,7 +420,7 @@ export default function Layout({ user }: { user: User }) {
     { to: '/base-datos', icon: Database, label: 'Base de Datos' },
   ];
 
-  const userName = user.displayName || user.email?.split('@')[0] || 'Usuario';
+  const userName = (user.user_metadata?.name as string) || user.email?.split('@')[0] || 'Usuario';
   const userEmail = user.email || '';
 
   const typeIcon = (type: string) => {
@@ -674,9 +683,9 @@ export default function Layout({ user }: { user: User }) {
             {/* User Avatar */}
             <div className="flex items-center gap-2 lg:ml-2">
               <div className="w-9 h-9 lg:w-10 lg:h-10 border-2 border-[#1a1a1a] overflow-hidden shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] bg-[#0055ff] flex items-center justify-center">
-                {user.photoURL ? (
+                {(user.user_metadata?.avatar_url || user.user_metadata?.picture) ? (
                   <img
-                    src={user.photoURL}
+                    src={(user.user_metadata?.avatar_url || user.user_metadata?.picture) as string}
                     alt="Foto de usuario"
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
@@ -865,7 +874,7 @@ export default function Layout({ user }: { user: User }) {
 
       {/* Main Content */}
       <main className="lg:ml-64 mt-16 lg:mt-20 p-4 lg:p-8 min-h-screen transition-all duration-200">
-        <Outlet context={{ user, isAdmin }} />
+        <Outlet context={{ user, isAdmin: _isAdmin }} />
       </main>
     </div>
   );

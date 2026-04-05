@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, orderBy, limit, deleteDoc, doc } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { getNotifications, deleteNotification, clearAllNotifications, onNotificationsChange } from '../db/notifications';
 import { Bell, Trash2, CheckCircle, Search, Clock, ShieldAlert } from 'lucide-react';
 import { toast } from 'sonner';
 import { SkeletonPage } from '../components/Skeleton';
@@ -13,36 +12,30 @@ export default function Notificaciones() {
   const [filterType, setFilterType] = useState('todas');
 
   useEffect(() => {
-    if (!auth.currentUser) return;
+    loadNotifications();
+    const unsub = onNotificationsChange((notifs) => {
+      setNotifications(notifs);
+    });
+    return unsub;
+  }, []);
 
-    // Obtener hasta 100 notificaciones recientes
-    const q = query(collection(db, 'notifications'), orderBy('createdAt', 'desc'), limit(100));
-    
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notifsData: AppNotification[] = [];
-      snapshot.forEach((document) => {
-        const data = { id: document.id, ...document.data() } as AppNotification;
-        // Filtrar notificaciones que no son para mí, a menos que sean globales
-        if (!data.recipientId || data.recipientId === auth.currentUser?.uid) {
-          notifsData.push(data);
-        }
-      });
-      setNotifications(notifsData);
+  const loadNotifications = async () => {
+    try {
+      const data = await getNotifications();
+      setNotifications(data);
       setLoading(false);
-    }, (error) => {
+    } catch (error) {
       console.error('Error fetching notifications:', error);
       toast.error('Error al cargar las notificaciones');
       setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+    }
+  };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!window.confirm('¿Eliminar esta notificación?')) return;
     try {
-      await deleteDoc(doc(db, 'notifications', id));
+      await deleteNotification(id);
       toast.success('Notificación eliminada');
     } catch (error) {
       console.error(error);
@@ -52,11 +45,9 @@ export default function Notificaciones() {
 
   const handleClearAll = async () => {
     if (!window.confirm('¿Seguro que quieres eliminar TODAS tus notificaciones? Esta acción no se puede deshacer.')) return;
-    
+
     try {
-      // Create deletion promises
-      const promises = notifications.map(n => deleteDoc(doc(db, 'notifications', n.id)));
-      await Promise.all(promises);
+      await clearAllNotifications();
       toast.success('Todas las notificaciones fueron eliminadas');
     } catch (error) {
       console.error(error);

@@ -17,13 +17,13 @@ interface Attachment {
 interface Task {
   id: string;
   title: string;
-  description: string;
+  description?: string;
   priority: 'alta' | 'media' | 'baja';
   status: 'pendiente' | 'en_proceso' | 'completado';
   createdAt: string;
   authorId: string;
   dueDate?: string;
-  attachments?: Attachment[];
+  attachments?: any[];
   tags?: string[];
   subtasks?: Subtask[];
   recurrence?: 'none' | 'diaria' | 'semanal' | 'mensual';
@@ -31,9 +31,9 @@ interface Task {
 }
 
 interface TaskKanbanCardProps {
-  task: Task;
+  task: any;
   isAdmin: boolean;
-  onEdit: (task: Task) => void;
+  onEdit: (task: any) => void;
   onDelete: (id: string) => void;
 }
 
@@ -94,7 +94,7 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
       </h4>
       {task.tags && task.tags.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-1.5 sm:mb-2">
-          {task.tags.map((tag) => (
+          {task.tags.map((tag: string) => (
             <span
               key={tag}
               className="px-1 sm:px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[8px] sm:text-[9px] font-bold uppercase tracking-widest"
@@ -111,7 +111,7 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
       )}
       {task.subtasks && task.subtasks.length > 0 && (
         <div className="flex items-center gap-1 text-[8px] sm:text-[10px] font-bold opacity-60 uppercase tracking-widest mb-1.5 sm:mb-2">
-          <CheckSquare className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {task.subtasks.filter((st) => st.completed).length}/
+          <CheckSquare className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {task.subtasks.filter((st: any) => st.completed).length}/
           {task.subtasks.length}
         </div>
       )}

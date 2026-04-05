@@ -15,20 +15,9 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
-import {
-  collection,
-  getDocs,
-  deleteDoc,
-  doc,
-  onSnapshot,
-  addDoc,
-  updateDoc,
-  query,
-  orderBy,
-  setDoc,
-} from 'firebase/firestore';
-import { db, auth } from '../firebase';
-import { reauthenticateWithPopup, GoogleAuthProvider } from 'firebase/auth';
+import { getPersonal, addPersonal, updatePersonal, deletePersonal, onPersonalChange } from '../db/personal';
+import { getLocations, addLocation, updateLocation, deleteLocation, onLocationsChange } from '../db/locations';
+import { supabase, getCurrentUserId } from '../db/client';
 import * as XLSX from 'xlsx';
 import { useOutletContext } from 'react-router-dom';
 import { personalSchema, locationSchema } from '../utils/validation';
@@ -37,17 +26,8 @@ import { DataTable } from '../components/DataTable';
 import type { Personal, Location } from '../types';
 import LocationMapPicker from '../components/LocationMapPicker';
 
-enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-function handleFirestoreError(error: unknown, _operationType: OperationType, _path: string | null) {
-  console.error('Firestore Error: ', error);
+function handleError(error: unknown) {
+  console.error('Error:', error);
   toast.error('Error al procesar la solicitud');
 }
 
@@ -97,35 +77,15 @@ export default function BaseDatos() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Fetch Personnel
-    const qPersonal = query(collection(db, 'personal'), orderBy('name'));
-    const unsubPersonal = onSnapshot(
-      qPersonal,
-      (snapshot) => {
-        const data: Personal[] = [];
-        snapshot.forEach((doc) => data.push({ id: doc.id, ...doc.data() } as Personal));
-        setPersonnel(data);
-      },
-      (error) => handleFirestoreError(error, OperationType.GET, 'personal'),
-    );
+    const unsubPersonal = onPersonalChange((data) => {
+      setPersonnel(data);
+    });
 
-    // Fetch Locations
-    const qLocations = query(collection(db, 'locations'), orderBy('name'));
-    const unsubLocations = onSnapshot(
-      qLocations,
-      (snapshot) => {
-        const data: Location[] = [];
-        snapshot.forEach((doc) => data.push({ id: doc.id, ...doc.data() } as Location));
-        setLocations(data);
-        setLoading(false);
-      },
-      (error) => {
-        handleFirestoreError(error, OperationType.GET, 'locations');
-        setLoading(false);
-      },
-    );
+    const unsubLocations = onLocationsChange((data) => {
+      setLocations(data);
+      setLoading(false);
+    });
 
-    // Fetch system stats (all collections)
     const fetchStats = async () => {
       const cols = ['tasks', 'visitas', 'novedades', 'personal', 'locations', 'task_history', 'notifications'];
       const counts: Record<string, number> = {};
@@ -133,9 +93,10 @@ export default function BaseDatos() {
 
       for (const col of cols) {
         try {
-          const snap = await getDocs(collection(db, col));
-          counts[col] = snap.size;
-          total += snap.size;
+          const { count, error } = await supabase.from(col).select('*', { count: 'exact', head: true });
+          if (error) throw error;
+          counts[col] = count || 0;
+          total += count || 0;
         } catch {
           counts[col] = 0;
         }
@@ -157,7 +118,6 @@ export default function BaseDatos() {
 
   const handleSavePersonal = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) return;
 
     const result = personalSchema.safeParse(personalForm);
     if (!result.success) {
@@ -167,39 +127,38 @@ export default function BaseDatos() {
 
     try {
       if (editingPersonal) {
-        await updateDoc(doc(db, 'personal', editingPersonal.id), {
+        await updatePersonal(editingPersonal.id, {
           name: result.data.name,
           role: result.data.role,
           status: result.data.status,
         });
         toast.success('Personal actualizado');
       } else {
-        await addDoc(collection(db, 'personal'), {
-          ...result.data,
-          createdAt: new Date().toISOString(),
-          authorId: auth.currentUser.uid,
+        await addPersonal({
+          name: result.data.name,
+          role: result.data.role,
+          status: result.data.status,
         });
         toast.success('Personal añadido');
       }
       setIsPersonalModalOpen(false);
     } catch (error) {
-      handleFirestoreError(error, editingPersonal ? OperationType.UPDATE : OperationType.CREATE, 'personal');
+      handleError(error);
     }
   };
 
   const handleDeletePersonal = async (id: string) => {
     if (!window.confirm('¿Eliminar este registro de personal?')) return;
     try {
-      await deleteDoc(doc(db, 'personal', id));
+      await deletePersonal(id);
       toast.success('Personal eliminado');
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, 'personal');
+      handleError(error);
     }
   };
 
   const handleSaveLocation = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!auth.currentUser) return;
 
     const result = locationSchema.safeParse(locationForm);
     if (!result.success) {
@@ -217,7 +176,7 @@ export default function BaseDatos() {
       }
 
       if (editingLocation) {
-        await updateDoc(doc(db, 'locations', editingLocation.id), {
+        await updateLocation(editingLocation.id, {
           name: result.data.name,
           type: result.data.type,
           status: result.data.status,
@@ -225,27 +184,28 @@ export default function BaseDatos() {
         });
         toast.success('Ubicación actualizada');
       } else {
-        await addDoc(collection(db, 'locations'), {
-          ...result.data,
-          ...coords,
-          createdAt: new Date().toISOString(),
-          authorId: auth.currentUser.uid,
+        await addLocation({
+          name: result.data.name,
+          type: result.data.type,
+          status: result.data.status,
+          latitude: locationForm.latitude,
+          longitude: locationForm.longitude,
         });
         toast.success('Ubicación añadida');
       }
       setIsLocationModalOpen(false);
     } catch (error) {
-      handleFirestoreError(error, editingLocation ? OperationType.UPDATE : OperationType.CREATE, 'locations');
+      handleError(error);
     }
   };
 
   const handleDeleteLocation = async (id: string) => {
     if (!window.confirm('¿Eliminar esta ubicación?')) return;
     try {
-      await deleteDoc(doc(db, 'locations', id));
+      await deleteLocation(id);
       toast.success('Ubicación eliminada');
     } catch (error) {
-      handleFirestoreError(error, OperationType.DELETE, 'locations');
+      handleError(error);
     }
   };
 
@@ -257,8 +217,9 @@ export default function BaseDatos() {
 
       for (const col of collectionsToExport) {
         try {
-          const snap = await getDocs(collection(db, col));
-          backupData[col] = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          const { data, error } = await supabase.from(col).select('*');
+          if (error) throw error;
+          backupData[col] = data || [];
         } catch {
           backupData[col] = [];
         }
@@ -338,8 +299,9 @@ export default function BaseDatos() {
       };
 
       for (const colName of collectionsToExport) {
-        const querySnapshot = await getDocs(collection(db, colName));
-        const data = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const { data, error } = await supabase.from(colName).select('*');
+        if (error) throw error;
+        const dataRows = data || [];
         const config = sheetConfigurations[colName];
 
         const worksheetData: any[] = [];
@@ -347,10 +309,10 @@ export default function BaseDatos() {
         // Title and metadata
         worksheetData.push({ A: config?.title || colName.toUpperCase() });
         worksheetData.push({ A: `Respaldo generado: ${new Date().toLocaleString('es-ES')}` });
-        worksheetData.push({ A: `Total de registros: ${data.length}` });
+        worksheetData.push({ A: `Total de registros: ${dataRows.length}` });
         worksheetData.push({}); // spacer
 
-        if (data.length > 0 && config) {
+        if (dataRows.length > 0 && config) {
           // Header row
           const headerRow: Record<string, string> = {};
           config.columns.forEach((col, idx) => {
@@ -359,7 +321,7 @@ export default function BaseDatos() {
           worksheetData.push(headerRow);
 
           // Data rows
-          data.forEach((record) => {
+          dataRows.forEach((record) => {
             const row: Record<string, any> = {};
             config.columns.forEach((col, idx) => {
               const cellRef = String.fromCharCode(65 + idx);
@@ -384,10 +346,10 @@ export default function BaseDatos() {
             });
             worksheetData.push(row);
           });
-        } else if (data.length > 0) {
+        } else if (dataRows.length > 0) {
           // Fallback: export all columns
           worksheetData.push({ A: 'Datos exportados (formato estándar)' });
-          data.forEach((record, idx) => {
+          dataRows.forEach((record, idx) => {
             worksheetData.push({ A: `Registro ${idx + 1}`, B: JSON.stringify(record).slice(0, 100) });
           });
         } else {
@@ -463,10 +425,6 @@ export default function BaseDatos() {
       toast.error('Seleccioná un archivo con datos');
       return;
     }
-    if (!auth.currentUser) {
-      toast.error('Debes iniciar sesión');
-      return;
-    }
 
     setIsImporting(true);
     try {
@@ -477,15 +435,10 @@ export default function BaseDatos() {
         try {
           const docData = { ...record };
           // Ensure required fields
-          if (!docData.authorId) docData.authorId = auth.currentUser.uid;
+          if (!docData.authorId) docData.authorId = getCurrentUserId();
           if (!docData.createdAt) docData.createdAt = new Date().toISOString();
 
-          // Use document ID if provided, otherwise auto-generate
-          if (docData.id) {
-            await setDoc(doc(db, importCollection, docData.id), docData);
-          } else {
-            await addDoc(collection(db, importCollection), docData);
-          }
+          await supabase.from(importCollection).insert(docData);
           successCount++;
         } catch (err) {
           console.error('Error importing record:', err);
@@ -515,18 +468,6 @@ export default function BaseDatos() {
       return;
     }
 
-    if (!auth.currentUser) {
-      toast.error('Debes iniciar sesión');
-      return;
-    }
-
-    try {
-      await reauthenticateWithPopup(auth.currentUser, new GoogleAuthProvider());
-    } catch (error) {
-      toast.error('Reautenticación cancelada o fallida');
-      return;
-    }
-
     setIsDeleting(true);
     try {
       const collectionsToBackup = [
@@ -541,8 +482,9 @@ export default function BaseDatos() {
       const backupData: Record<string, unknown[]> = {};
 
       for (const colName of collectionsToBackup) {
-        const querySnapshot = await getDocs(collection(db, colName));
-        backupData[colName] = querySnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        const { data, error } = await supabase.from(colName).select('*');
+        if (error) throw error;
+        backupData[colName] = data || [];
       }
 
       const totalRecords = Object.values(backupData).reduce((sum, arr) => sum + arr.length, 0);
@@ -569,9 +511,7 @@ export default function BaseDatos() {
       ];
 
       for (const colName of collectionsToDelete) {
-        const querySnapshot = await getDocs(collection(db, colName));
-        const deletePromises = querySnapshot.docs.map((document) => deleteDoc(doc(db, colName, document.id)));
-        await Promise.all(deletePromises);
+        await supabase.from(colName).delete().neq('id', '');
       }
 
       toast.success('Base de datos limpiada exitosamente');

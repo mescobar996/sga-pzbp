@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useOutletContext, useNavigate } from 'react-router-dom';
-import { User, signOut } from 'firebase/auth';
-import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore';
-import { db, auth } from '../firebase';
+import { supabase, getCurrentUserId } from '../db/client';
+import type { User } from '@supabase/supabase-js';
 import { toast } from 'sonner';
 import {
   Settings,
@@ -36,7 +35,6 @@ import {
   BarChart3,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import * as XLSX from 'xlsx';
 import { SkeletonPage } from '../components/Skeleton';
 
@@ -107,13 +105,12 @@ export default function Configuracion() {
 
   const loadUserData = async () => {
     try {
-      const userDocRef = doc(db, 'users', user.uid);
-      const userDocSnap = await getDoc(userDocRef);
-      if (userDocSnap.exists()) {
-        const data = userDocSnap.data() as UserDocData;
-        setUserData(data);
-        setProfileName(data.name || '');
-        setProfileEmail(data.email || user.email || '');
+      const { data, error } = await supabase.from('users').select('*').eq('id', user.id).single();
+      if (data && !error) {
+        const userData = data as unknown as UserDocData;
+        setUserData(userData);
+        setProfileName(userData.name || '');
+        setProfileEmail(userData.email || user.email || '');
       }
     } catch (error) {
       console.error('Error loading user data:', error);
@@ -130,8 +127,8 @@ export default function Configuracion() {
 
       for (const col of collections) {
         try {
-          const snapshot = await getDocs(collection(db, col));
-          stats[col] = snapshot.size;
+          const { count, error } = await supabase.from(col).select('*', { count: 'exact', head: true });
+          stats[col] = count ?? 0;
         } catch {
           stats[col] = 0;
         }
@@ -153,11 +150,11 @@ export default function Configuracion() {
 
     setLoading(true);
     try {
-      const userDocRef = doc(db, 'users', user.uid);
-      await updateDoc(userDocRef, {
+      const { error } = await supabase.from('users').update({
         name: profileName.trim(),
         email: profileEmail.trim(),
-      });
+      }).eq('id', user.id);
+      if (error) throw error;
       setUserData((prev) => (prev ? { ...prev, name: profileName.trim(), email: profileEmail.trim() } : null));
       toast.success('Perfil actualizado correctamente');
     } catch (error) {
@@ -184,21 +181,14 @@ export default function Configuracion() {
 
     setLoading(true);
     try {
-      const credential = EmailAuthProvider.credential(user.email!, currentPassword);
-      await reauthenticateWithCredential(user, credential);
-      await updatePassword(user, newPassword);
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       toast.success('Contraseña actualizada correctamente');
-    } catch (error: any) {
-      if (error.code === 'auth/wrong-password') {
-        toast.error('La contraseña actual es incorrecta');
-      } else if (error.code === 'auth/weak-password') {
-        toast.error('La nueva contraseña es demasiado débil');
-      } else {
-        toast.error('Error al cambiar la contraseña');
-      }
+    } catch (error) {
+      toast.error('Error al cambiar la contraseña');
     } finally {
       setLoading(false);
     }
@@ -227,9 +217,8 @@ export default function Configuracion() {
       const workbook = XLSX.utils.book_new();
 
       for (const col of collections) {
-        const snapshot = await getDocs(collection(db, col));
-        const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-        if (data.length > 0) {
+        const { data, error } = await supabase.from(col).select('*');
+        if (data && data.length > 0 && !error) {
           const worksheet = XLSX.utils.json_to_sheet(data);
           XLSX.utils.book_append_sheet(workbook, worksheet, col.toUpperCase());
         }
@@ -247,7 +236,7 @@ export default function Configuracion() {
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      await supabase.auth.signOut();
       toast.success('Sesión cerrada correctamente');
     } catch {
       toast.error('Error al cerrar sesión');
@@ -608,7 +597,7 @@ export default function Configuracion() {
                     <div>
                       <div className="font-black text-sm">
                         {connectionStatus === 'connected'
-                          ? 'Conectado a Firebase'
+                          ? 'Conectado a Supabase'
                           : connectionStatus === 'error'
                             ? 'Error de Conexión'
                             : 'Verificando Conexión...'}
@@ -617,7 +606,7 @@ export default function Configuracion() {
                         {connectionStatus === 'connected'
                           ? 'Todos los servicios operativos'
                           : connectionStatus === 'error'
-                            ? 'No se pudo conectar con Firestore'
+                            ? 'No se pudo conectar con Supabase'
                             : 'Conectando con los servidores...'}
                       </div>
                     </div>
@@ -660,10 +649,10 @@ export default function Configuracion() {
                       {[
                         { label: 'Versión', value: '1.0.0' },
                         { label: 'Framework', value: 'React + Vite + TypeScript' },
-                        { label: 'Base de Datos', value: 'Firebase Firestore' },
-                        { label: 'Storage', value: 'Firebase Storage' },
-                        { label: 'Autenticación', value: 'Firebase Auth (Google)' },
-                        { label: 'Usuario UID', value: user.uid.slice(0, 20) + '...' },
+                        { label: 'Base de Datos', value: 'Supabase Postgres' },
+                        { label: 'Storage', value: 'Supabase Storage' },
+                        { label: 'Autenticación', value: 'Supabase Auth' },
+                        { label: 'Usuario UID', value: user.id.slice(0, 20) + '...' },
                         { label: 'Sesión iniciada', value: new Date().toLocaleString('es-ES') },
                       ].map((item) => (
                         <div

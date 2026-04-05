@@ -1,5 +1,4 @@
-import { signInWithPopup } from 'firebase/auth';
-import { auth, googleProvider } from '../firebase';
+import { supabase } from '../db/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Shield, ArrowRight } from 'lucide-react';
@@ -10,8 +9,13 @@ export default function Login() {
 
   const handleLogin = async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
-      navigate('/');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
+      if (error) throw error;
     } catch (error) {
       console.error('Error logging in', error);
       toast.error('Error al iniciar sesión con Google.');
@@ -33,7 +37,7 @@ export default function Login() {
         <h1 className="text-3xl lg:text-4xl font-black uppercase mb-2 tracking-tighter">SGA PZBP - MS</h1>
         <h2 className="text-base lg:text-lg font-bold uppercase mb-2 opacity-70">Prefectura Naval Argentina</h2>
         <p className="text-xs font-medium opacity-50 mb-8 uppercase tracking-wider">Sistema de Gestión de Actividades</p>
-        
+
         <button
           onClick={handleLogin}
           className="w-full py-4 px-6 bg-[#0055ff] border-4 border-[#1a1a1a] text-white font-black text-lg uppercase tracking-wider hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-all shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-1 hover:translate-y-1 flex items-center justify-center gap-3 group"
