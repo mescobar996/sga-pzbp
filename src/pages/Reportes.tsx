@@ -1,17 +1,4 @@
-import {
-  FileText,
-  Download,
-  Calendar,
-  Database,
-  FileSpreadsheet,
-  FileJson,
-  Eye,
-  BarChart3,
-  Users,
-  HardHat,
-  ListChecks,
-  Newspaper,
-} from 'lucide-react';
+import { FileText, Download, Database, Eye, BarChart3, Users, HardHat, ListChecks, Newspaper } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
@@ -20,6 +7,8 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
 import { motion } from 'motion/react';
+import { FormatSelector } from '../components/FormatSelector';
+import { DateRangePicker } from '../components/DateRangePicker';
 
 export default function Reportes() {
   const [format, setFormat] = useState<'pdf' | 'excel' | 'json'>('pdf');
@@ -1311,30 +1300,12 @@ export default function Reportes() {
               </select>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Calendar className="w-3 h-3" /> Desde
-                </label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Calendar className="w-3 h-3" /> Hasta
-                </label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
-                />
-              </div>
-            </div>
+            <DateRangePicker
+              dateFrom={dateFrom}
+              onDateFromChange={setDateFrom}
+              dateTo={dateTo}
+              onDateToChange={setDateTo}
+            />
 
             <div>
               <label className="block text-xs font-black uppercase tracking-widest mb-2">Ordenar por</label>
@@ -1351,26 +1322,7 @@ export default function Reportes() {
 
             <div>
               <label className="block text-xs font-black uppercase tracking-widest mb-2">Formato</label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setFormat('pdf')}
-                  className={`flex-1 py-3 border-2 border-[#1a1a1a] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-xs ${format === 'pdf' ? 'bg-[#1a1a1a] text-[#0055ff] shadow-none translate-x-0.5 translate-y-0.5' : 'bg-[#0055ff] text-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none hover:bg-[#1a1a1a] hover:text-[#0055ff]'}`}
-                >
-                  <FileText className="w-4 h-4" /> PDF
-                </button>
-                <button
-                  onClick={() => setFormat('excel')}
-                  className={`flex-1 py-3 border-2 border-[#1a1a1a] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-xs ${format === 'excel' ? 'bg-[#1a1a1a] text-[#00cc66] shadow-none translate-x-0.5 translate-y-0.5' : 'bg-[#00cc66] text-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none hover:bg-[#1a1a1a] hover:text-[#00cc66]'}`}
-                >
-                  <FileSpreadsheet className="w-4 h-4" /> Excel
-                </button>
-                <button
-                  onClick={() => setFormat('json')}
-                  className={`flex-1 py-3 border-2 border-[#1a1a1a] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 text-xs ${format === 'json' ? 'bg-[#1a1a1a] text-[#0055ff] shadow-none translate-x-0.5 translate-y-0.5' : 'bg-[#0055ff] text-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none hover:bg-[#1a1a1a] hover:text-[#0055ff]'}`}
-                >
-                  <FileJson className="w-4 h-4" /> JSON
-                </button>
-              </div>
+              <FormatSelector value={format} onChange={setFormat} />
             </div>
 
             <button

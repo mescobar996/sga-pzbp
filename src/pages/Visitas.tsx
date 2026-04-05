@@ -1,10 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { collection, addDoc, query, onSnapshot, doc, updateDoc, deleteDoc, limit, orderBy } from 'firebase/firestore';
 import { db, auth } from '../firebase';
-import { Save, X, MessageSquare, Edit2, Trash2, MapPin, Calendar, Clock, User, FileText, ArrowRight, Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import {
+  Save,
+  X,
+  MessageSquare,
+  Edit2,
+  Trash2,
+  MapPin,
+  Calendar,
+  Clock,
+  User,
+  FileText,
+  ArrowRight,
+  Search,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
 import { visitaSchema } from '../utils/validation';
+import { SkeletonPage } from '../components/Skeleton';
 
 interface Visita {
   id: string;
@@ -40,17 +57,18 @@ export default function Visitas() {
     fecha: '',
     hora: '',
     responsable: '',
-    observaciones: ''
+    observaciones: '',
   });
 
   const [visitas, setVisitas] = useState<Visita[]>([]);
-  const [locations, setLocations] = useState<{id: string, name: string, type: string}[]>([]);
-  const [personal, setPersonal] = useState<{id: string, name: string}[]>([]);
+  const [locations, setLocations] = useState<{ id: string; name: string; type: string }[]>([]);
+  const [personal, setPersonal] = useState<{ id: string; name: string }[]>([]);
   const [selectedVisita, setSelectedVisita] = useState<Visita | null>(null);
   const [newCommentText, setNewCommentText] = useState('');
   const [isEditingVisita, setIsEditingVisita] = useState(false);
   const [editingVisitaId, setEditingVisitaId] = useState<string | null>(null);
   const [selectedResponsables, setSelectedResponsables] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // Filters and Pagination
   const [searchQuery, setSearchQuery] = useState('');
@@ -64,22 +82,27 @@ export default function Visitas() {
     if (!auth.currentUser) return;
 
     const q = query(collection(db, 'visitas'), limit(200));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const visitasData: Visita[] = [];
-      snapshot.forEach((doc) => {
-        visitasData.push({ id: doc.id, ...doc.data() } as Visita);
-      });
-      setVisitas(visitasData);
-    }, (error) => {
-      handleFirestoreError(error, 'get', 'visitas');
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const visitasData: Visita[] = [];
+        snapshot.forEach((doc) => {
+          visitasData.push({ id: doc.id, ...doc.data() } as Visita);
+        });
+        setVisitas(visitasData);
+      },
+      (error) => {
+        handleFirestoreError(error, 'get', 'visitas');
+      },
+    );
 
     const unsubLocations = onSnapshot(query(collection(db, 'locations'), orderBy('name')), (snapshot) => {
-      setLocations(snapshot.docs.map(d => ({ id: d.id, name: d.data().name, type: d.data().type })));
+      setLocations(snapshot.docs.map((d) => ({ id: d.id, name: d.data().name, type: d.data().type })));
     });
 
     const unsubPersonal = onSnapshot(query(collection(db, 'personal'), orderBy('name')), (snapshot) => {
-      setPersonal(snapshot.docs.map(d => ({ id: d.id, name: d.data().name })));
+      setPersonal(snapshot.docs.map((d) => ({ id: d.id, name: d.data().name })));
+      setLoading(false);
     });
 
     return () => {
@@ -98,17 +121,19 @@ export default function Visitas() {
         text: newCommentText.trim(),
         authorId: auth.currentUser.uid,
         authorName: auth.currentUser.displayName || auth.currentUser.email || 'Usuario',
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
 
       const visitaRef = doc(db, 'visitas', selectedVisita.id);
       await updateDoc(visitaRef, {
-        comments: [...(selectedVisita.comments || []), newComment]
+        comments: [...(selectedVisita.comments || []), newComment],
       });
 
       setNewCommentText('');
       // Update local state to reflect immediately in modal
-      setSelectedVisita(prev => prev ? { ...prev, comments: [...(prev.comments || []), newComment] as Comment[] } : null);
+      setSelectedVisita((prev) =>
+        prev ? { ...prev, comments: [...(prev.comments || []), newComment] as Comment[] } : null,
+      );
     } catch (error) {
       handleFirestoreError(error, 'update', 'visitas');
     }
@@ -137,20 +162,20 @@ export default function Visitas() {
 
     const result = visitaSchema.safeParse(visitaData);
     if (!result.success) {
-      result.error.issues.forEach(err => toast.error(err.message));
+      result.error.issues.forEach((err) => toast.error(err.message));
       return;
     }
 
     try {
       const finalFormData = {
         ...result.data,
-        responsable: selectedResponsables.join(' Y ')
+        responsable: selectedResponsables.join(' Y '),
       };
 
       if (isEditingVisita && editingVisitaId) {
         const visitaRef = doc(db, 'visitas', editingVisitaId);
         await updateDoc(visitaRef, {
-          ...finalFormData
+          ...finalFormData,
         });
         toast.success('Visita actualizada exitosamente');
         setIsEditingVisita(false);
@@ -160,7 +185,7 @@ export default function Visitas() {
           ...finalFormData,
           createdAt: new Date().toISOString(),
           authorId: auth.currentUser.uid,
-          comments: []
+          comments: [],
         });
 
         await addDoc(collection(db, 'notifications'), {
@@ -168,7 +193,7 @@ export default function Visitas() {
           message: `${formData.origen} -> ${formData.destino}`,
           type: 'visita',
           createdAt: new Date().toISOString(),
-          authorId: auth.currentUser.uid
+          authorId: auth.currentUser.uid,
         });
 
         toast.success('Visita registrada exitosamente');
@@ -188,7 +213,7 @@ export default function Visitas() {
       fecha: visita.fecha,
       hora: visita.hora,
       responsable: '', // We use selectedResponsables instead
-      observaciones: visita.observaciones || ''
+      observaciones: visita.observaciones || '',
     });
     setSelectedResponsables(visita.responsable ? visita.responsable.split(' Y ') : []);
     setIsEditingVisita(true);
@@ -210,16 +235,22 @@ export default function Visitas() {
     }
   };
 
-  const filteredVisitas = visitas.filter(v => {
-    const matchesSearch = v.origen.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          v.destino.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (v.observaciones && v.observaciones.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchesResponsable = responsableFilter === 'todos' || (v.responsable && v.responsable.split(' Y ').includes(responsableFilter));
-    const matchesDateFrom = !dateFrom || v.fecha >= dateFrom;
-    const matchesDateTo = !dateTo || v.fecha <= dateTo;
-    
-    return matchesSearch && matchesResponsable && matchesDateFrom && matchesDateTo;
-  });
+  const filteredVisitas = useMemo(
+    () =>
+      visitas.filter((v) => {
+        const matchesSearch =
+          v.origen.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          v.destino.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (v.observaciones && v.observaciones.toLowerCase().includes(searchQuery.toLowerCase()));
+        const matchesResponsable =
+          responsableFilter === 'todos' || (v.responsable && v.responsable.split(' Y ').includes(responsableFilter));
+        const matchesDateFrom = !dateFrom || v.fecha >= dateFrom;
+        const matchesDateTo = !dateTo || v.fecha <= dateTo;
+
+        return matchesSearch && matchesResponsable && matchesDateFrom && matchesDateTo;
+      }),
+    [visitas, searchQuery, responsableFilter, dateFrom, dateTo],
+  );
 
   const totalPages = Math.max(1, Math.ceil(filteredVisitas.length / itemsPerPage));
   const paginatedVisitas = filteredVisitas.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -231,391 +262,451 @@ export default function Visitas() {
 
   return (
     <div className="font-['Inter'] max-w-6xl mx-auto">
-      <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black uppercase mb-4 sm:mb-6 font-['Space_Grotesk'] tracking-tighter">
-        {isEditingVisita ? 'Editar Visita' : 'Registro de Visita'}
-      </h1>
-      
-      <form onSubmit={handleSubmit} className="bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] sm:shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-4 sm:p-6 mb-6 sm:mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
-          <div className="space-y-2">
-            <label className="block text-xs font-black uppercase tracking-widest">Origen</label>
-            <input 
-              type="text" 
-              list="origenes-list"
-              required
-              value={formData.origen}
-              onChange={(e) => setFormData({...formData, origen: e.target.value.toUpperCase()})}
-              className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
-              placeholder="Ej. Sede Central"
-            />
-            <datalist id="origenes-list">
-              {locations.filter(l => l.type === 'Origen' || l.type === 'Origen/Destino').map(l => (
-                <option key={l.id} value={l.name.toUpperCase()} />
-              ))}
-            </datalist>
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-black uppercase tracking-widest">Destino</label>
-            <input 
-              type="text" 
-              list="destinos-list"
-              required
-              value={formData.destino}
-              onChange={(e) => setFormData({...formData, destino: e.target.value.toUpperCase()})}
-              className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
-              placeholder="Ej. Zona Portuaria"
-            />
-            <datalist id="destinos-list">
-              {locations.filter(l => l.type === 'Destino' || l.type === 'Origen/Destino').map(l => (
-                <option key={l.id} value={l.name.toUpperCase()} />
-              ))}
-            </datalist>
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-black uppercase tracking-widest">Fecha</label>
-            <input 
-              type="date" 
-              required
-              value={formData.fecha}
-              onChange={(e) => setFormData({...formData, fecha: e.target.value})}
-              className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
-            />
-          </div>
-          <div className="space-y-2">
-            <label className="block text-xs font-black uppercase tracking-widest">Hora</label>
-            <input 
-              type="time" 
-              required
-              value={formData.hora}
-              onChange={(e) => setFormData({...formData, hora: e.target.value})}
-              className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
-            />
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <label className="block text-xs font-black uppercase tracking-widest">Responsables</label>
-            <div className="flex gap-2">
-              <input 
-                type="text" 
-                list="personal-list"
-                value={formData.responsable}
-                onChange={(e) => {
-                  const val = e.target.value.toUpperCase();
-                  if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(val)) {
-                    setFormData({...formData, responsable: val});
-                  }
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    if (formData.responsable && !selectedResponsables.includes(formData.responsable)) {
-                      setSelectedResponsables([...selectedResponsables, formData.responsable]);
-                      setFormData({...formData, responsable: ''});
-                    }
-                  }
-                }}
-                className="flex-1 p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
-                placeholder="Nombre del responsable (Enter para agregar)"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  if (formData.responsable && !selectedResponsables.includes(formData.responsable)) {
-                    setSelectedResponsables([...selectedResponsables, formData.responsable]);
-                    setFormData({...formData, responsable: ''});
-                  }
-                }}
-                className="px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-[#0055ff] transition-colors text-xs sm:text-sm"
-              >
-                Agregar
-              </button>
-            </div>
-            <datalist id="personal-list">
-              {personal.map(p => (
-                <option key={p.id} value={p.name.toUpperCase()} />
-              ))}
-            </datalist>
-            {selectedResponsables.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
-                {selectedResponsables.map(resp => (
-                  <span key={resp} className="inline-flex items-center gap-1 bg-[#0055ff] text-white px-2 sm:px-3 py-1 font-bold text-xs sm:text-sm uppercase border-2 border-[#1a1a1a]">
-                    {resp}
-                    <button 
-                      type="button" 
-                      onClick={() => setSelectedResponsables(selectedResponsables.filter(r => r !== resp))}
-                      className="hover:text-[#1a1a1a] ml-1"
-                    >
-                      <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-          <div className="space-y-2 md:col-span-2">
-            <label className="block text-xs font-black uppercase tracking-widest">Observaciones</label>
-            <textarea 
-              rows={3}
-              value={formData.observaciones}
-              onChange={(e) => setFormData({...formData, observaciones: e.target.value.toUpperCase()})}
-              className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors resize-none text-xs sm:text-sm"
-              placeholder="Detalles adicionales..."
-            />
-          </div>
-        </div>
+      {loading ? (
+        <SkeletonPage title="Registro de Visita" cardCount={3} layout="table" />
+      ) : (
+        <>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black uppercase mb-4 sm:mb-6 font-['Space_Grotesk'] tracking-tighter">
+            {isEditingVisita ? 'Editar Visita' : 'Registro de Visita'}
+          </h1>
 
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end border-t-2 border-[#1a1a1a] pt-4 sm:pt-6">
-          <button 
-            type="button"
-            onClick={() => {
-              setFormData({ origen: '', destino: '', fecha: '', hora: '', responsable: '', observaciones: '' });
-              setIsEditingVisita(false);
-              setEditingVisitaId(null);
-            }}
-            className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#e63b2e] hover:text-white transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm"
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] sm:shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-4 sm:p-6 mb-6 sm:mb-8"
           >
-            <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Cancelar
-          </button>
-          <button 
-            type="submit"
-            className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 text-xs sm:text-sm"
-          >
-            <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {isEditingVisita ? 'Actualizar' : 'Guardar'}
-          </button>
-        </div>
-      </form>
-
-      {/* Recent Visits List */}
-      <div className="mt-6 sm:mt-8">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2 sm:gap-4">
-          <h2 className="text-xl sm:text-2xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Registro Histórico</h2>
-        </div>
-
-        {/* Filters */}
-        <div className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 mb-4 sm:mb-6 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-            <div className="relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1a1a1a] opacity-50" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
+              <div className="space-y-2">
+                <label className="block text-xs font-black uppercase tracking-widest">Origen</label>
+                <input
+                  type="text"
+                  list="origenes-list"
+                  required
+                  value={formData.origen}
+                  onChange={(e) => setFormData({ ...formData, origen: e.target.value.toUpperCase() })}
+                  className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
+                  placeholder="Ej. Sede Central"
+                />
+                <datalist id="origenes-list">
+                  {locations
+                    .filter((l) => l.type === 'Origen' || l.type === 'Origen/Destino')
+                    .map((l) => (
+                      <option key={l.id} value={l.name.toUpperCase()} />
+                    ))}
+                </datalist>
               </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="BUSCAR..."
-                className="w-full pl-9 sm:pl-10 p-2 sm:p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-xs transition-colors"
-              />
-            </div>
-            <div>
-              <select
-                value={responsableFilter}
-                onChange={(e) => setResponsableFilter(e.target.value)}
-                className="w-full p-2 sm:p-3 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors"
-              >
-                <option value="todos">TODOS LOS RESPONSABLES</option>
-                {Array.from(new Set(visitas.flatMap(v => v.responsable ? v.responsable.split(' Y ') : []))).map(resp => (
-                  <option key={resp} value={resp}>{resp}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full p-2 sm:p-3 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors"
-                title="Fecha Desde"
-              />
-            </div>
-            <div>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="w-full p-2 sm:p-3 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors"
-                title="Fecha Hasta"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          {paginatedVisitas.map(visita => (
-            <div 
-              key={visita.id} 
-              onClick={() => setSelectedVisita(visita)}
-              className="bg-white border-2 sm:border-4 border-[#1a1a1a] p-3 sm:p-4 cursor-pointer hover:bg-[#f5f0e8] transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none flex flex-col justify-between group"
-            >
-              <div>
-                <div className="flex justify-between items-start mb-1.5 sm:mb-2">
-                  <h3 className="font-black uppercase text-sm sm:text-lg truncate pr-2">{visita.origen} &rarr; {visita.destino}</h3>
-                  <span className="text-[10px] sm:text-xs font-bold bg-[#1a1a1a] text-white px-1.5 sm:px-2 py-0.5 sm:py-1 uppercase flex-shrink-0">{visita.fecha}</span>
-                </div>
-                <p className="text-[10px] sm:text-sm font-bold opacity-70 uppercase truncate">Resp: {visita.responsable}</p>
+              <div className="space-y-2">
+                <label className="block text-xs font-black uppercase tracking-widest">Destino</label>
+                <input
+                  type="text"
+                  list="destinos-list"
+                  required
+                  value={formData.destino}
+                  onChange={(e) => setFormData({ ...formData, destino: e.target.value.toUpperCase() })}
+                  className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
+                  placeholder="Ej. Zona Portuaria"
+                />
+                <datalist id="destinos-list">
+                  {locations
+                    .filter((l) => l.type === 'Destino' || l.type === 'Origen/Destino')
+                    .map((l) => (
+                      <option key={l.id} value={l.name.toUpperCase()} />
+                    ))}
+                </datalist>
               </div>
-              <div className="mt-3 sm:mt-4 flex justify-between items-center">
-                <div className="flex gap-1.5 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleEditVisita(visita);
-                    }}
-                    className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
-                    title="Editar"
-                  >
-                    <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  </button>
-                  {isAdmin && (
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteVisita(visita.id);
-                      }}
-                      className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
-                      title="Eliminar"
-                    >
-                      <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    </button>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 text-xs sm:text-sm font-bold opacity-70">
-                  <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  <span>{visita.comments?.length || 0}</span>
-                </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-black uppercase tracking-widest">Fecha</label>
+                <input
+                  type="date"
+                  required
+                  value={formData.fecha}
+                  onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
+                  className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
+                />
               </div>
-            </div>
-          ))}
-          {paginatedVisitas.length === 0 && (
-            <p className="text-xs sm:text-sm font-bold uppercase opacity-50 sm:col-span-2 text-center py-8">No hay visitas que coincidan con los filtros.</p>
-          )}
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center items-center gap-3 sm:gap-4 mt-6 sm:mt-8">
-            <button 
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="p-1.5 sm:p-2 border-2 sm:border-4 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
-            </button>
-            <span className="font-black uppercase tracking-widest text-xs sm:text-sm">
-              Página {currentPage} de {totalPages}
-            </span>
-            <button 
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
-              className="p-1.5 sm:p-2 border-2 sm:border-4 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Visita Details & Comments Modal */}
-      {selectedVisita && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto pt-8 sm:pt-10 pb-8 sm:pb-10">
-          <div className="bg-white border-2 sm:border-4 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] sm:shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-0 w-full max-w-3xl flex flex-col relative">
-            
-            {/* Header */}
-            <div className="bg-[#1a1a1a] text-white p-4 sm:p-6 flex justify-between items-start">
-              <div className="flex-1 min-w-0 mr-2">
-                <h2 className="text-xl sm:text-3xl font-black uppercase font-['Space_Grotesk'] tracking-widest mb-1.5 sm:mb-2">
-                  Detalles de Visita
-                </h2>
-                <div className="flex items-center gap-1.5 sm:gap-3 text-[#0055ff] font-bold uppercase tracking-widest text-[10px] sm:text-sm flex-wrap">
-                  <span className="flex items-center gap-1 truncate"><MapPin className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" /> {selectedVisita.origen}</span>
-                  <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-white shrink-0" />
-                  <span className="flex items-center gap-1 truncate"><MapPin className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" /> {selectedVisita.destino}</span>
-                </div>
+              <div className="space-y-2">
+                <label className="block text-xs font-black uppercase tracking-widest">Hora</label>
+                <input
+                  type="time"
+                  required
+                  value={formData.hora}
+                  onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
+                  className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
+                />
               </div>
-              <button 
-                onClick={() => setSelectedVisita(null)}
-                className="p-1.5 sm:p-2 hover:bg-[#e63b2e] hover:text-white transition-colors border-2 border-transparent hover:border-white text-white shrink-0"
-              >
-                <X className="w-4 h-4 sm:w-6 sm:h-6" />
-              </button>
-            </div>
-            
-            <div className="p-4 sm:p-6">
-              {/* Info Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
-                <div className="border-2 border-[#1a1a1a] p-3 sm:p-4 bg-[#f5f0e8] flex flex-col justify-center">
-                  <p className="font-bold uppercase opacity-70 text-[10px] sm:text-xs mb-1.5 sm:mb-2 flex items-center gap-1"><Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Fecha</p>
-                  <p className="font-black uppercase text-base sm:text-lg">{selectedVisita.fecha}</p>
-                </div>
-                <div className="border-2 border-[#1a1a1a] p-3 sm:p-4 bg-[#f5f0e8] flex flex-col justify-center">
-                  <p className="font-bold uppercase opacity-70 text-[10px] sm:text-xs mb-1.5 sm:mb-2 flex items-center gap-1"><Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Hora</p>
-                  <p className="font-black uppercase text-base sm:text-lg">{selectedVisita.hora}</p>
-                </div>
-                <div className="border-2 border-[#1a1a1a] p-3 sm:p-4 bg-[#f5f0e8] flex flex-col justify-center overflow-hidden">
-                  <p className="font-bold uppercase opacity-70 text-[10px] sm:text-xs mb-1.5 sm:mb-2 flex items-center gap-1"><User className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Responsable</p>
-                  <p className="font-black uppercase text-base sm:text-lg truncate" title={selectedVisita.responsable}>{selectedVisita.responsable}</p>
-                </div>
-                {selectedVisita.observaciones && (
-                  <div className="col-span-1 sm:col-span-3 border-2 border-[#1a1a1a] p-3 sm:p-4 bg-white">
-                    <p className="font-bold uppercase opacity-70 text-[10px] sm:text-xs mb-1.5 sm:mb-2 flex items-center gap-1"><FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Observaciones</p>
-                    <p className="font-medium text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">{selectedVisita.observaciones}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Comments Section */}
-              <div className="border-t-2 sm:border-t-4 border-[#1a1a1a] pt-4 sm:pt-6">
-                <h3 className="text-lg sm:text-2xl font-black uppercase mb-4 sm:mb-6 font-['Space_Grotesk'] flex items-center gap-1.5 sm:gap-2">
-                  <MessageSquare className="w-4 h-4 sm:w-6 sm:h-6" /> Comentarios
-                </h3>
-                
-                <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6 max-h-[200px] sm:max-h-[300px] overflow-y-auto custom-scrollbar pr-2 sm:pr-4">
-                  {selectedVisita.comments?.map((comment) => {
-                    const isMe = comment.authorId === auth.currentUser?.uid;
-                    return (
-                      <div key={comment.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
-                        <div className={`max-w-[90%] sm:max-w-[85%] p-3 sm:p-4 border-2 border-[#1a1a1a] ${isMe ? 'bg-[#0055ff] text-white' : 'bg-[#f5f0e8]'}`}>
-                          <div className="flex justify-between items-center gap-2 sm:gap-4 mb-1.5 sm:mb-2 border-b-2 border-[#1a1a1a]/10 pb-1.5 sm:pb-2">
-                            <span className="font-black text-[10px] sm:text-xs uppercase tracking-widest truncate">{comment.authorName}</span>
-                            <span className="text-[8px] sm:text-[10px] font-bold opacity-60 uppercase shrink-0">{new Date(comment.createdAt).toLocaleString()}</span>
-                          </div>
-                          <p className="text-xs sm:text-sm whitespace-pre-wrap font-medium leading-relaxed">{comment.text}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {(!selectedVisita.comments || selectedVisita.comments.length === 0) && (
-                    <div className="text-center p-6 sm:p-8 border-2 border-dashed border-[#1a1a1a]/30 bg-gray-50">
-                      <p className="text-[10px] sm:text-sm font-bold uppercase tracking-widest opacity-50">No hay comentarios aún</p>
-                      <p className="text-[10px] sm:text-xs font-medium opacity-40 mt-1">Sé el primero en comentar sobre esta visita.</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex flex-col sm:flex-row gap-2">
+              <div className="space-y-2 md:col-span-2">
+                <label className="block text-xs font-black uppercase tracking-widest">Responsables</label>
+                <div className="flex gap-2">
                   <input
                     type="text"
-                    value={newCommentText}
-                    onChange={(e) => setNewCommentText(e.target.value)}
+                    list="personal-list"
+                    value={formData.responsable}
+                    onChange={(e) => {
+                      const val = e.target.value.toUpperCase();
+                      if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(val)) {
+                        setFormData({ ...formData, responsable: val });
+                      }
+                    }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        handleAddComment();
+                        if (formData.responsable && !selectedResponsables.includes(formData.responsable)) {
+                          setSelectedResponsables([...selectedResponsables, formData.responsable]);
+                          setFormData({ ...formData, responsable: '' });
+                        }
                       }
                     }}
-                    className="flex-1 p-3 sm:p-4 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold transition-colors text-xs sm:text-sm"
-                    placeholder="Escribe un comentario..."
+                    className="flex-1 p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
+                    placeholder="Nombre del responsable (Enter para agregar)"
                   />
                   <button
                     type="button"
-                    onClick={handleAddComment}
-                    className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-[#0055ff] border-2 sm:border-4 border-[#1a1a1a] text-white font-black uppercase tracking-widest text-xs sm:text-sm hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
+                    onClick={() => {
+                      if (formData.responsable && !selectedResponsables.includes(formData.responsable)) {
+                        setSelectedResponsables([...selectedResponsables, formData.responsable]);
+                        setFormData({ ...formData, responsable: '' });
+                      }
+                    }}
+                    className="px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-[#0055ff] transition-colors text-xs sm:text-sm"
                   >
-                    Enviar
+                    Agregar
                   </button>
+                </div>
+                <datalist id="personal-list">
+                  {personal.map((p) => (
+                    <option key={p.id} value={p.name.toUpperCase()} />
+                  ))}
+                </datalist>
+                {selectedResponsables.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
+                    {selectedResponsables.map((resp) => (
+                      <span
+                        key={resp}
+                        className="inline-flex items-center gap-1 bg-[#0055ff] text-white px-2 sm:px-3 py-1 font-bold text-xs sm:text-sm uppercase border-2 border-[#1a1a1a]"
+                      >
+                        {resp}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedResponsables(selectedResponsables.filter((r) => r !== resp))}
+                          className="hover:text-[#1a1a1a] ml-1"
+                        >
+                          <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="block text-xs font-black uppercase tracking-widest">Observaciones</label>
+                <textarea
+                  rows={3}
+                  value={formData.observaciones}
+                  onChange={(e) => setFormData({ ...formData, observaciones: e.target.value.toUpperCase() })}
+                  className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors resize-none text-xs sm:text-sm"
+                  placeholder="Detalles adicionales..."
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end border-t-2 border-[#1a1a1a] pt-4 sm:pt-6">
+              <button
+                type="button"
+                onClick={() => {
+                  setFormData({ origen: '', destino: '', fecha: '', hora: '', responsable: '', observaciones: '' });
+                  setIsEditingVisita(false);
+                  setEditingVisitaId(null);
+                }}
+                className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#e63b2e] hover:text-white transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm"
+              >
+                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Cancelar
+              </button>
+              <button
+                type="submit"
+                className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 text-xs sm:text-sm"
+              >
+                <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {isEditingVisita ? 'Actualizar' : 'Guardar'}
+              </button>
+            </div>
+          </form>
+
+          {/* Recent Visits List */}
+          <div className="mt-6 sm:mt-8">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3 sm:mb-4 gap-2 sm:gap-4">
+              <h2 className="text-xl sm:text-2xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">
+                Registro Histórico
+              </h2>
+            </div>
+
+            {/* Filters */}
+            <div className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 mb-4 sm:mb-6 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1a1a1a] opacity-50" />
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="BUSCAR..."
+                    className="w-full pl-9 sm:pl-10 p-2 sm:p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-xs transition-colors"
+                  />
+                </div>
+                <div>
+                  <select
+                    value={responsableFilter}
+                    onChange={(e) => setResponsableFilter(e.target.value)}
+                    className="w-full p-2 sm:p-3 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors"
+                  >
+                    <option value="todos">TODOS LOS RESPONSABLES</option>
+                    {Array.from(new Set(visitas.flatMap((v) => (v.responsable ? v.responsable.split(' Y ') : [])))).map(
+                      (resp) => (
+                        <option key={resp} value={resp}>
+                          {resp}
+                        </option>
+                      ),
+                    )}
+                  </select>
+                </div>
+                <div>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    className="w-full p-2 sm:p-3 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors"
+                    title="Fecha Desde"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    className="w-full p-2 sm:p-3 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors"
+                    title="Fecha Hasta"
+                  />
                 </div>
               </div>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              {paginatedVisitas.map((visita) => (
+                <div
+                  key={visita.id}
+                  onClick={() => setSelectedVisita(visita)}
+                  className="bg-white border-2 sm:border-4 border-[#1a1a1a] p-3 sm:p-4 cursor-pointer hover:bg-[#f5f0e8] transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="flex justify-between items-start mb-1.5 sm:mb-2">
+                      <h3 className="font-black uppercase text-sm sm:text-lg truncate pr-2">
+                        {visita.origen} &rarr; {visita.destino}
+                      </h3>
+                      <span className="text-[10px] sm:text-xs font-bold bg-[#1a1a1a] text-white px-1.5 sm:px-2 py-0.5 sm:py-1 uppercase flex-shrink-0">
+                        {visita.fecha}
+                      </span>
+                    </div>
+                    <p className="text-[10px] sm:text-sm font-bold opacity-70 uppercase truncate">
+                      Resp: {visita.responsable}
+                    </p>
+                  </div>
+                  <div className="mt-3 sm:mt-4 flex justify-between items-center">
+                    <div className="flex gap-1.5 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditVisita(visita);
+                        }}
+                        className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                        title="Editar"
+                      >
+                        <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteVisita(visita.id);
+                          }}
+                          className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 text-xs sm:text-sm font-bold opacity-70">
+                      <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <span>{visita.comments?.length || 0}</span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {paginatedVisitas.length === 0 && (
+                <p className="text-xs sm:text-sm font-bold uppercase opacity-50 sm:col-span-2 text-center py-8">
+                  No hay visitas que coincidan con los filtros.
+                </p>
+              )}
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-3 sm:gap-4 mt-6 sm:mt-8">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 sm:p-2 border-2 sm:border-4 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
+                </button>
+                <span className="font-black uppercase tracking-widest text-xs sm:text-sm">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 sm:p-2 border-2 sm:border-4 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" />
+                </button>
+              </div>
+            )}
           </div>
-        </div>
+
+          {/* Visita Details & Comments Modal */}
+          {selectedVisita && (
+            <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto pt-8 sm:pt-10 pb-8 sm:pb-10">
+              <div className="bg-white border-2 sm:border-4 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] sm:shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-0 w-full max-w-3xl flex flex-col relative">
+                {/* Header */}
+                <div className="bg-[#1a1a1a] text-white p-4 sm:p-6 flex justify-between items-start">
+                  <div className="flex-1 min-w-0 mr-2">
+                    <h2 className="text-xl sm:text-3xl font-black uppercase font-['Space_Grotesk'] tracking-widest mb-1.5 sm:mb-2">
+                      Detalles de Visita
+                    </h2>
+                    <div className="flex items-center gap-1.5 sm:gap-3 text-[#0055ff] font-bold uppercase tracking-widest text-[10px] sm:text-sm flex-wrap">
+                      <span className="flex items-center gap-1 truncate">
+                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" /> {selectedVisita.origen}
+                      </span>
+                      <ArrowRight className="w-3 h-3 sm:w-4 sm:h-4 text-white shrink-0" />
+                      <span className="flex items-center gap-1 truncate">
+                        <MapPin className="w-3 h-3 sm:w-4 sm:h-4 shrink-0" /> {selectedVisita.destino}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setSelectedVisita(null)}
+                    className="p-1.5 sm:p-2 hover:bg-[#e63b2e] hover:text-white transition-colors border-2 border-transparent hover:border-white text-white shrink-0"
+                  >
+                    <X className="w-4 h-4 sm:w-6 sm:h-6" />
+                  </button>
+                </div>
+
+                <div className="p-4 sm:p-6">
+                  {/* Info Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+                    <div className="border-2 border-[#1a1a1a] p-3 sm:p-4 bg-[#f5f0e8] flex flex-col justify-center">
+                      <p className="font-bold uppercase opacity-70 text-[10px] sm:text-xs mb-1.5 sm:mb-2 flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Fecha
+                      </p>
+                      <p className="font-black uppercase text-base sm:text-lg">{selectedVisita.fecha}</p>
+                    </div>
+                    <div className="border-2 border-[#1a1a1a] p-3 sm:p-4 bg-[#f5f0e8] flex flex-col justify-center">
+                      <p className="font-bold uppercase opacity-70 text-[10px] sm:text-xs mb-1.5 sm:mb-2 flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Hora
+                      </p>
+                      <p className="font-black uppercase text-base sm:text-lg">{selectedVisita.hora}</p>
+                    </div>
+                    <div className="border-2 border-[#1a1a1a] p-3 sm:p-4 bg-[#f5f0e8] flex flex-col justify-center overflow-hidden">
+                      <p className="font-bold uppercase opacity-70 text-[10px] sm:text-xs mb-1.5 sm:mb-2 flex items-center gap-1">
+                        <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Responsable
+                      </p>
+                      <p
+                        className="font-black uppercase text-base sm:text-lg truncate"
+                        title={selectedVisita.responsable}
+                      >
+                        {selectedVisita.responsable}
+                      </p>
+                    </div>
+                    {selectedVisita.observaciones && (
+                      <div className="col-span-1 sm:col-span-3 border-2 border-[#1a1a1a] p-3 sm:p-4 bg-white">
+                        <p className="font-bold uppercase opacity-70 text-[10px] sm:text-xs mb-1.5 sm:mb-2 flex items-center gap-1">
+                          <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Observaciones
+                        </p>
+                        <p className="font-medium text-xs sm:text-sm leading-relaxed whitespace-pre-wrap">
+                          {selectedVisita.observaciones}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Comments Section */}
+                  <div className="border-t-2 sm:border-t-4 border-[#1a1a1a] pt-4 sm:pt-6">
+                    <h3 className="text-lg sm:text-2xl font-black uppercase mb-4 sm:mb-6 font-['Space_Grotesk'] flex items-center gap-1.5 sm:gap-2">
+                      <MessageSquare className="w-4 h-4 sm:w-6 sm:h-6" /> Comentarios
+                    </h3>
+
+                    <div className="flex flex-col gap-3 sm:gap-4 mb-4 sm:mb-6 max-h-[200px] sm:max-h-[300px] overflow-y-auto custom-scrollbar pr-2 sm:pr-4">
+                      {selectedVisita.comments?.map((comment) => {
+                        const isMe = comment.authorId === auth.currentUser?.uid;
+                        return (
+                          <div key={comment.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                            <div
+                              className={`max-w-[90%] sm:max-w-[85%] p-3 sm:p-4 border-2 border-[#1a1a1a] ${isMe ? 'bg-[#0055ff] text-white' : 'bg-[#f5f0e8]'}`}
+                            >
+                              <div className="flex justify-between items-center gap-2 sm:gap-4 mb-1.5 sm:mb-2 border-b-2 border-[#1a1a1a]/10 pb-1.5 sm:pb-2">
+                                <span className="font-black text-[10px] sm:text-xs uppercase tracking-widest truncate">
+                                  {comment.authorName}
+                                </span>
+                                <span className="text-[8px] sm:text-[10px] font-bold opacity-60 uppercase shrink-0">
+                                  {new Date(comment.createdAt).toLocaleString()}
+                                </span>
+                              </div>
+                              <p className="text-xs sm:text-sm whitespace-pre-wrap font-medium leading-relaxed">
+                                {comment.text}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {(!selectedVisita.comments || selectedVisita.comments.length === 0) && (
+                        <div className="text-center p-6 sm:p-8 border-2 border-dashed border-[#1a1a1a]/30 bg-gray-50">
+                          <p className="text-[10px] sm:text-sm font-bold uppercase tracking-widest opacity-50">
+                            No hay comentarios aún
+                          </p>
+                          <p className="text-[10px] sm:text-xs font-medium opacity-40 mt-1">
+                            Sé el primero en comentar sobre esta visita.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="text"
+                        value={newCommentText}
+                        onChange={(e) => setNewCommentText(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddComment();
+                          }
+                        }}
+                        className="flex-1 p-3 sm:p-4 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold transition-colors text-xs sm:text-sm"
+                        placeholder="Escribe un comentario..."
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddComment}
+                        className="w-full sm:w-auto px-6 sm:px-8 py-3 sm:py-4 bg-[#0055ff] border-2 sm:border-4 border-[#1a1a1a] text-white font-black uppercase tracking-widest text-xs sm:text-sm hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
+                      >
+                        Enviar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

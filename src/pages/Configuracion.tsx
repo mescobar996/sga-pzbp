@@ -5,16 +5,40 @@ import { doc, getDoc, updateDoc, collection, getDocs } from 'firebase/firestore'
 import { db, auth } from '../firebase';
 import { toast } from 'sonner';
 import {
-  Settings, User as UserIcon, Bell, Shield, Database,
-  Save, RefreshCw, Moon, Sun, Globe, Mail, Lock,
-  Eye, EyeOff, LogOut, KeyRound,
-  Download, Trash2, AlertTriangle, CheckCircle,
-  Info, ChevronDown, ChevronUp, HardHat, ListChecks, FileText,
-  MapPin, Users, BarChart3,
+  Settings,
+  User as UserIcon,
+  Bell,
+  Shield,
+  Database,
+  Save,
+  RefreshCw,
+  Moon,
+  Sun,
+  Globe,
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  LogOut,
+  KeyRound,
+  Download,
+  Trash2,
+  AlertTriangle,
+  CheckCircle,
+  Info,
+  ChevronDown,
+  ChevronUp,
+  HardHat,
+  ListChecks,
+  FileText,
+  MapPin,
+  Users,
+  BarChart3,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import * as XLSX from 'xlsx';
+import { SkeletonPage } from '../components/Skeleton';
 
 interface UserDocData {
   uid: string;
@@ -32,6 +56,7 @@ export default function Configuracion() {
   const [activeTab, setActiveTab] = useState<TabKey>('perfil');
   const [userData, setUserData] = useState<UserDocData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
 
@@ -59,7 +84,26 @@ export default function Configuracion() {
   useEffect(() => {
     loadUserData();
     loadSystemStats();
+    loadPreferences();
   }, []);
+
+  const loadPreferences = () => {
+    try {
+      const stored = localStorage.getItem('sgo-prefs');
+      if (stored) {
+        const prefs = JSON.parse(stored);
+        if (typeof prefs.darkMode === 'boolean') setDarkMode(prefs.darkMode);
+        if (typeof prefs.notificationsEnabled === 'boolean') setNotificationsEnabled(prefs.notificationsEnabled);
+        if (typeof prefs.language === 'string') setLanguage(prefs.language);
+        if (typeof prefs.autoRefresh === 'boolean') setAutoRefresh(prefs.autoRefresh);
+        if (prefs.darkMode) {
+          document.documentElement.classList.add('dark');
+        }
+      }
+    } catch {
+      // ignore parse errors
+    }
+  };
 
   const loadUserData = async () => {
     try {
@@ -73,6 +117,8 @@ export default function Configuracion() {
       }
     } catch (error) {
       console.error('Error loading user data:', error);
+    } finally {
+      setPageLoading(false);
     }
   };
 
@@ -112,7 +158,7 @@ export default function Configuracion() {
         name: profileName.trim(),
         email: profileEmail.trim(),
       });
-      setUserData(prev => prev ? { ...prev, name: profileName.trim(), email: profileEmail.trim() } : null);
+      setUserData((prev) => (prev ? { ...prev, name: profileName.trim(), email: profileEmail.trim() } : null));
       toast.success('Perfil actualizado correctamente');
     } catch (error) {
       console.error('Error updating profile:', error);
@@ -166,6 +212,11 @@ export default function Configuracion() {
       autoRefresh,
     };
     localStorage.setItem('sgo-prefs', JSON.stringify(prefs));
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
     toast.success('Preferencias guardadas correctamente');
   };
 
@@ -177,7 +228,7 @@ export default function Configuracion() {
 
       for (const col of collections) {
         const snapshot = await getDocs(collection(db, col));
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const data = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         if (data.length > 0) {
           const worksheet = XLSX.utils.json_to_sheet(data);
           XLSX.utils.book_append_sheet(workbook, worksheet, col.toUpperCase());
@@ -232,470 +283,529 @@ export default function Configuracion() {
 
   return (
     <div className="font-['Inter'] max-w-5xl mx-auto">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
-        <div className="flex items-center gap-3">
-          <div className="p-3 bg-[#0055ff] text-white border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)]">
-            <Settings className="w-6 h-6" />
-          </div>
-          <div>
-            <h1 className="text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Configuración</h1>
-            <p className="text-sm font-medium opacity-50">Gestioná tu perfil, preferencias y sistema</p>
-          </div>
-        </div>
-        <button
-          onClick={handleSignOut}
-          className="flex items-center gap-2 px-4 py-2.5 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase text-xs hover:bg-[#1a1a1a] hover:text-white transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
-        >
-          <LogOut className="w-4 h-4" /> Cerrar Sesión
-        </button>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-        {tabs.map(tab => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.key;
-          return (
+      {pageLoading ? (
+        <SkeletonPage title="Configuración" cardCount={2} layout="cards" />
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8 gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-[#0055ff] text-white border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)]">
+                <Settings className="w-6 h-6" />
+              </div>
+              <div>
+                <h1 className="text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">
+                  Configuración
+                </h1>
+                <p className="text-sm font-medium opacity-50">Gestioná tu perfil, preferencias y sistema</p>
+              </div>
+            </div>
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={`flex items-center gap-2 px-5 py-3 border-2 border-[#1a1a1a] font-black uppercase text-xs tracking-wider whitespace-nowrap transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none ${
-                isActive
-                  ? 'bg-[#1a1a1a] text-white translate-x-0.5 translate-y-0.5 shadow-none'
-                  : 'bg-white text-[#1a1a1a] hover:bg-[#f5f0e8]'
-              }`}
+              onClick={handleSignOut}
+              className="flex items-center gap-2 px-4 py-2.5 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase text-xs hover:bg-[#1a1a1a] hover:text-white transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
             >
-              <Icon className="w-4 h-4" /> {tab.label}
+              <LogOut className="w-4 h-4" /> Cerrar Sesión
             </button>
-          );
-        })}
-      </div>
+          </div>
 
-      {/* Tab Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
-          transition={{ duration: 0.2 }}
-          className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] p-6"
-        >
-          {/* PERFIL TAB */}
-          {activeTab === 'perfil' && (
-            <div className="space-y-8">
-              <div>
-                <h2 className="text-xl font-black uppercase font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-3 mb-6 flex items-center gap-3">
-                  <UserIcon className="w-5 h-5" /> Información del Perfil
-                </h2>
-
-                {/* Avatar */}
-                <div className="flex items-center gap-6 mb-8 p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
-                  <div className="w-20 h-20 bg-[#0055ff] text-white flex items-center justify-center text-3xl font-black border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)]">
-                    {userData?.name ? userData.name.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase() || '?'}
-                  </div>
-                  <div>
-                    <div className="font-black text-lg">{userData?.name || 'Usuario'}</div>
-                    <div className="text-sm opacity-50 font-medium">{userData?.email || user.email}</div>
-                    <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-[#0055ff] text-white text-xs font-black uppercase border border-[#1a1a1a]">
-                      {userData?.role === 'admin' ? <Shield className="w-3 h-3" /> : <UserIcon className="w-3 h-3" />}
-                      {userData?.role === 'admin' ? 'Administrador' : 'Usuario'}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Form */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                      <UserIcon className="w-3.5 h-3.5" /> Nombre completo
-                    </label>
-                    <input
-                      type="text"
-                      value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
-                      className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold text-sm transition-colors"
-                      placeholder="Tu nombre"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                      <Mail className="w-3.5 h-3.5" /> Email
-                    </label>
-                    <input
-                      type="email"
-                      value={profileEmail}
-                      onChange={(e) => setProfileEmail(e.target.value)}
-                      className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold text-sm transition-colors"
-                      placeholder="tu@email.com"
-                    />
-                  </div>
-                </div>
-
+          {/* Tabs */}
+          <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
+            {tabs.map((tab) => {
+              const Icon = tab.icon;
+              const isActive = activeTab === tab.key;
+              return (
                 <button
-                  onClick={handleSaveProfile}
-                  disabled={loading}
-                  className="mt-6 px-6 py-3 bg-[#0055ff] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm flex items-center gap-2 hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50"
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`flex items-center gap-2 px-5 py-3 border-2 border-[#1a1a1a] font-black uppercase text-xs tracking-wider whitespace-nowrap transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none ${
+                    isActive
+                      ? 'bg-[#1a1a1a] text-white translate-x-0.5 translate-y-0.5 shadow-none'
+                      : 'bg-white text-[#1a1a1a] hover:bg-[#f5f0e8]'
+                  }`}
                 >
-                  <Save className="w-4 h-4" /> {loading ? 'Guardando...' : 'Guardar Cambios'}
+                  <Icon className="w-4 h-4" /> {tab.label}
                 </button>
-              </div>
+              );
+            })}
+          </div>
 
-              {/* Change Password */}
-              <div>
-                <h2 className="text-xl font-black uppercase font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-3 mb-6 flex items-center gap-3">
-                  <Lock className="w-5 h-5" /> Cambiar Contraseña
-                </h2>
-
-                <div className="space-y-5 max-w-lg">
+          {/* Tab Content */}
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.2 }}
+              className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] p-6"
+            >
+              {/* PERFIL TAB */}
+              {activeTab === 'perfil' && (
+                <div className="space-y-8">
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-widest mb-2">Contraseña actual</label>
-                    <div className="relative">
-                      <input
-                        type={showCurrentPassword ? 'text' : 'password'}
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        className="w-full p-3 pr-12 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold text-sm transition-colors"
-                        placeholder="••••••••"
-                      />
-                      <button
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity"
-                      >
-                        {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-widest mb-2">Nueva contraseña</label>
-                    <div className="relative">
-                      <input
-                        type={showPassword ? 'text' : 'password'}
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full p-3 pr-12 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold text-sm transition-colors"
-                        placeholder="Mínimo 6 caracteres"
-                      />
-                      <button
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity"
-                      >
-                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-widest mb-2">Confirmar nueva contraseña</label>
-                    <input
-                      type="password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold text-sm transition-colors"
-                      placeholder="Repetí la contraseña"
-                    />
-                  </div>
-                  <button
-                    onClick={handleChangePassword}
-                    disabled={loading}
-                    className="px-6 py-3 bg-[#1a1a1a] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm flex items-center gap-2 hover:bg-white hover:text-[#1a1a1a] transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50"
-                  >
-                    <KeyRound className="w-4 h-4" /> {loading ? 'Cambiando...' : 'Cambiar Contraseña'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+                    <h2 className="text-xl font-black uppercase font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-3 mb-6 flex items-center gap-3">
+                      <UserIcon className="w-5 h-5" /> Información del Perfil
+                    </h2>
 
-          {/* PREFERENCIAS TAB */}
-          {activeTab === 'preferencias' && (
-            <div className="space-y-8">
-              <h2 className="text-xl font-black uppercase font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-3 mb-6 flex items-center gap-3">
-                <Bell className="w-5 h-5" /> Preferencias del Sistema
-              </h2>
-
-              <div className="space-y-6">
-                {/* Dark Mode */}
-                <div className="flex items-center justify-between p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-[#1a1a1a] text-white">
-                      {darkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
-                    </div>
-                    <div>
-                      <div className="font-black text-sm">Modo Oscuro</div>
-                      <div className="text-xs opacity-50 font-medium">Cambiá la apariencia de la interfaz</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setDarkMode(!darkMode)}
-                    className={`relative w-14 h-7 border-2 border-[#1a1a1a] transition-colors ${darkMode ? 'bg-[#1a1a1a]' : 'bg-gray-300'}`}
-                  >
-                    <div className={`absolute top-0.5 w-5 h-5 bg-white border border-[#1a1a1a] transition-all ${darkMode ? 'left-[26px]' : 'left-0.5'}`} />
-                  </button>
-                </div>
-
-                {/* Notifications */}
-                <div className="flex items-center justify-between p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-[#0055ff] text-white">
-                      <Bell className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="font-black text-sm">Notificaciones</div>
-                      <div className="text-xs opacity-50 font-medium">Recibir alertas y notificaciones del sistema</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setNotificationsEnabled(!notificationsEnabled)}
-                    className={`relative w-14 h-7 border-2 border-[#1a1a1a] transition-colors ${notificationsEnabled ? 'bg-[#0055ff]' : 'bg-gray-300'}`}
-                  >
-                    <div className={`absolute top-0.5 w-5 h-5 bg-white border border-[#1a1a1a] transition-all ${notificationsEnabled ? 'left-[26px]' : 'left-0.5'}`} />
-                  </button>
-                </div>
-
-                {/* Auto Refresh */}
-                <div className="flex items-center justify-between p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
-                  <div className="flex items-center gap-4">
-                    <div className="p-2 bg-[#10b981] text-white">
-                      <RefreshCw className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="font-black text-sm">Actualización Automática</div>
-                      <div className="text-xs opacity-50 font-medium">Actualizar datos en tiempo real</div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => setAutoRefresh(!autoRefresh)}
-                    className={`relative w-14 h-7 border-2 border-[#1a1a1a] transition-colors ${autoRefresh ? 'bg-[#10b981]' : 'bg-gray-300'}`}
-                  >
-                    <div className={`absolute top-0.5 w-5 h-5 bg-white border border-[#1a1a1a] transition-all ${autoRefresh ? 'left-[26px]' : 'left-0.5'}`} />
-                  </button>
-                </div>
-
-                {/* Language */}
-                <div className="p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="p-2 bg-[#f59e0b] text-white">
-                      <Globe className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="font-black text-sm">Idioma</div>
-                      <div className="text-xs opacity-50 font-medium">Seleccioná el idioma de la interfaz</div>
-                    </div>
-                  </div>
-                  <select
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full p-3 border-2 border-[#1a1a1a] bg-white focus:outline-none font-bold text-sm uppercase cursor-pointer"
-                  >
-                    <option value="es">Español</option>
-                    <option value="en">English</option>
-                    <option value="pt">Português</option>
-                  </select>
-                </div>
-              </div>
-
-              <button
-                onClick={handleSavePreferences}
-                className="px-6 py-3 bg-[#0055ff] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm flex items-center gap-2 hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
-              >
-                <Save className="w-4 h-4" /> Guardar Preferencias
-              </button>
-            </div>
-          )}
-
-          {/* SISTEMA TAB */}
-          {activeTab === 'sistema' && (
-            <div className="space-y-8">
-              <h2 className="text-xl font-black uppercase font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-3 mb-6 flex items-center gap-3">
-                <Shield className="w-5 h-5" /> Estado del Sistema
-              </h2>
-
-              {/* Connection Status */}
-              <div className={`p-4 border-2 flex items-center gap-4 ${
-                connectionStatus === 'connected'
-                  ? 'bg-green-50 border-green-400'
-                  : connectionStatus === 'error'
-                  ? 'bg-red-50 border-red-400'
-                  : 'bg-yellow-50 border-yellow-400'
-              }`}>
-                {connectionStatus === 'connected' ? (
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                ) : connectionStatus === 'error' ? (
-                  <AlertTriangle className="w-6 h-6 text-red-600" />
-                ) : (
-                  <RefreshCw className="w-6 h-6 text-yellow-600 animate-spin" />
-                )}
-                <div>
-                  <div className="font-black text-sm">
-                    {connectionStatus === 'connected' ? 'Conectado a Firebase' : connectionStatus === 'error' ? 'Error de Conexión' : 'Verificando Conexión...'}
-                  </div>
-                  <div className="text-xs opacity-60 font-medium">
-                    {connectionStatus === 'connected' ? 'Todos los servicios operativos' : connectionStatus === 'error' ? 'No se pudo conectar con Firestore' : 'Conectando con los servidores...'}
-                  </div>
-                </div>
-                <button
-                  onClick={loadSystemStats}
-                  className="ml-auto px-4 py-2 bg-white border-2 border-[#1a1a1a] text-xs font-black uppercase flex items-center gap-1.5 hover:bg-[#1a1a1a] hover:text-white transition-all"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" /> Actualizar
-                </button>
-              </div>
-
-              {/* Collection Stats */}
-              <div>
-                <h3 className="text-sm font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <Database className="w-4 h-4" /> Colecciones de Datos
-                </h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {Object.entries(systemStats).map(([col, count]) => (
-                    <div key={col} className="p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a] flex items-center gap-3">
-                      <div className="p-2 bg-[#0055ff] text-white">
-                        {collectionIcons[col] || <Database className="w-5 h-5" />}
+                    {/* Avatar */}
+                    <div className="flex items-center gap-6 mb-8 p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
+                      <div className="w-20 h-20 bg-[#0055ff] text-white flex items-center justify-center text-3xl font-black border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)]">
+                        {userData?.name
+                          ? userData.name.charAt(0).toUpperCase()
+                          : user.email?.charAt(0).toUpperCase() || '?'}
                       </div>
                       <div>
-                        <div className="text-[10px] font-bold uppercase opacity-50">{collectionLabels[col] || col}</div>
-                        <div className="text-2xl font-black font-['Space_Grotesk']">{count}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* System Info */}
-              <div className="p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
-                <h3 className="text-sm font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-                  <Info className="w-4 h-4" /> Información del Sistema
-                </h3>
-                <div className="space-y-3">
-                  {[
-                    { label: 'Versión', value: '1.0.0' },
-                    { label: 'Framework', value: 'React + Vite + TypeScript' },
-                    { label: 'Base de Datos', value: 'Firebase Firestore' },
-                    { label: 'Storage', value: 'Firebase Storage' },
-                    { label: 'Autenticación', value: 'Firebase Auth (Google)' },
-                    { label: 'Usuario UID', value: user.uid.slice(0, 20) + '...' },
-                    { label: 'Sesión iniciada', value: new Date().toLocaleString('es-ES') },
-                  ].map(item => (
-                    <div key={item.label} className="flex justify-between items-center py-2 border-b border-[#1a1a1a]/10 last:border-0">
-                      <span className="text-xs font-bold uppercase opacity-60">{item.label}</span>
-                      <span className="text-xs font-black">{item.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* DATOS TAB */}
-          {activeTab === 'datos' && (
-            <div className="space-y-8">
-              <h2 className="text-xl font-black uppercase font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-3 mb-6 flex items-center gap-3">
-                <Database className="w-5 h-5" /> Gestión de Datos
-              </h2>
-
-              {/* Export */}
-              <div className="p-6 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-[#10b981] text-white">
-                    <Download className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="font-black text-lg">Exportar Todos los Datos</div>
-                    <div className="text-sm opacity-50 font-medium">Descargá un respaldo completo en Excel con todas las colecciones</div>
-                  </div>
-                </div>
-                <button
-                  onClick={handleExportAllData}
-                  disabled={exporting}
-                  className="px-6 py-3 bg-[#10b981] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm flex items-center gap-2 hover:bg-[#1a1a1a] hover:text-[#10b981] transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50"
-                >
-                  {exporting ? (
-                    <><RefreshCw className="w-4 h-4 animate-spin" /> Exportando...</>
-                  ) : (
-                    <><Download className="w-4 h-4" /> Descargar Respaldo Completo</>
-                  )}
-                </button>
-              </div>
-
-              {/* Collection breakdown */}
-              <div className="p-6 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="p-3 bg-[#0055ff] text-white">
-                    <BarChart3 className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="font-black text-lg">Resumen de Datos</div>
-                    <div className="text-sm opacity-50 font-medium">Cantidad de registros por colección</div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {Object.entries(systemStats).map(([col, count]) => (
-                    <div key={col} className="flex items-center justify-between py-2 border-b border-[#1a1a1a]/10 last:border-0">
-                      <div className="flex items-center gap-3">
-                        <div className="text-[#0055ff]">
-                          {collectionIcons[col] || <Database className="w-4 h-4" />}
+                        <div className="font-black text-lg">{userData?.name || 'Usuario'}</div>
+                        <div className="text-sm opacity-50 font-medium">{userData?.email || user.email}</div>
+                        <div className="mt-2 inline-flex items-center gap-1 px-3 py-1 bg-[#0055ff] text-white text-xs font-black uppercase border border-[#1a1a1a]">
+                          {userData?.role === 'admin' ? (
+                            <Shield className="w-3 h-3" />
+                          ) : (
+                            <UserIcon className="w-3 h-3" />
+                          )}
+                          {userData?.role === 'admin' ? 'Administrador' : 'Usuario'}
                         </div>
-                        <span className="text-sm font-bold uppercase">{collectionLabels[col] || col}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-[#0055ff] rounded-full"
-                            style={{ width: `${systemStats.tasks ? Math.round((count / systemStats.tasks) * 100) : 0}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-black w-8 text-right">{count}</span>
                       </div>
                     </div>
-                  ))}
-                </div>
-              </div>
 
-              {/* Danger Zone */}
-              <div className="border-2 border-red-400">
-                <button
-                  onClick={() => setShowDangerZone(!showDangerZone)}
-                  className="w-full flex items-center justify-between p-4 bg-red-50 hover:bg-red-100 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <AlertTriangle className="w-5 h-5 text-red-600" />
-                    <div className="font-black text-sm text-red-800">Zona de Peligro</div>
-                  </div>
-                  {showDangerZone ? <ChevronUp className="w-5 h-5 text-red-600" /> : <ChevronDown className="w-5 h-5 text-red-600" />}
-                </button>
-                <AnimatePresence>
-                  {showDangerZone && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="overflow-hidden"
+                    {/* Form */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                          <UserIcon className="w-3.5 h-3.5" /> Nombre completo
+                        </label>
+                        <input
+                          type="text"
+                          value={profileName}
+                          onChange={(e) => setProfileName(e.target.value)}
+                          className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold text-sm transition-colors"
+                          placeholder="Tu nombre"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                          <Mail className="w-3.5 h-3.5" /> Email
+                        </label>
+                        <input
+                          type="email"
+                          value={profileEmail}
+                          onChange={(e) => setProfileEmail(e.target.value)}
+                          className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold text-sm transition-colors"
+                          placeholder="tu@email.com"
+                        />
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={handleSaveProfile}
+                      disabled={loading}
+                      className="mt-6 px-6 py-3 bg-[#0055ff] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm flex items-center gap-2 hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50"
                     >
-                      <div className="p-6 space-y-4">
-                        <p className="text-sm font-medium text-red-700">
-                          Estas acciones son irreversibles. Asegurate de hacer un respaldo antes de proceder.
-                        </p>
-                        <div className="flex flex-col sm:flex-row gap-3">
+                      <Save className="w-4 h-4" /> {loading ? 'Guardando...' : 'Guardar Cambios'}
+                    </button>
+                  </div>
+
+                  {/* Change Password */}
+                  <div>
+                    <h2 className="text-xl font-black uppercase font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-3 mb-6 flex items-center gap-3">
+                      <Lock className="w-5 h-5" /> Cambiar Contraseña
+                    </h2>
+
+                    <div className="space-y-5 max-w-lg">
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest mb-2">
+                          Contraseña actual
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showCurrentPassword ? 'text' : 'password'}
+                            value={currentPassword}
+                            onChange={(e) => setCurrentPassword(e.target.value)}
+                            className="w-full p-3 pr-12 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold text-sm transition-colors"
+                            placeholder="••••••••"
+                          />
                           <button
-                            onClick={() => navigate('/base-datos')}
-                            className="px-5 py-2.5 bg-red-600 text-white border-2 border-[#1a1a1a] font-black uppercase text-xs flex items-center gap-2 hover:bg-[#1a1a1a] hover:text-red-600 transition-all"
+                            onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity"
                           >
-                            <Trash2 className="w-4 h-4" /> Ir a Base de Datos
+                            {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                           </button>
                         </div>
-                        <p className="text-xs opacity-50">
-                          La gestión avanzada de datos (borrado masivo, etc.) se realiza desde la sección Base de Datos.
-                        </p>
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest mb-2">
+                          Nueva contraseña
+                        </label>
+                        <div className="relative">
+                          <input
+                            type={showPassword ? 'text' : 'password'}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="w-full p-3 pr-12 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold text-sm transition-colors"
+                            placeholder="Mínimo 6 caracteres"
+                          />
+                          <button
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 opacity-50 hover:opacity-100 transition-opacity"
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                          </button>
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-black uppercase tracking-widest mb-2">
+                          Confirmar nueva contraseña
+                        </label>
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold text-sm transition-colors"
+                          placeholder="Repetí la contraseña"
+                        />
+                      </div>
+                      <button
+                        onClick={handleChangePassword}
+                        disabled={loading}
+                        className="px-6 py-3 bg-[#1a1a1a] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm flex items-center gap-2 hover:bg-white hover:text-[#1a1a1a] transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50"
+                      >
+                        <KeyRound className="w-4 h-4" /> {loading ? 'Cambiando...' : 'Cambiar Contraseña'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* PREFERENCIAS TAB */}
+              {activeTab === 'preferencias' && (
+                <div className="space-y-8">
+                  <h2 className="text-xl font-black uppercase font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-3 mb-6 flex items-center gap-3">
+                    <Bell className="w-5 h-5" /> Preferencias del Sistema
+                  </h2>
+
+                  <div className="space-y-6">
+                    {/* Dark Mode */}
+                    <div className="flex items-center justify-between p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-[#1a1a1a] text-white">
+                          {darkMode ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+                        </div>
+                        <div>
+                          <div className="font-black text-sm">Modo Oscuro</div>
+                          <div className="text-xs opacity-50 font-medium">Cambiá la apariencia de la interfaz</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setDarkMode(!darkMode)}
+                        className={`relative w-14 h-7 border-2 border-[#1a1a1a] transition-colors ${darkMode ? 'bg-[#1a1a1a]' : 'bg-gray-300'}`}
+                      >
+                        <div
+                          className={`absolute top-0.5 w-5 h-5 bg-white border border-[#1a1a1a] transition-all ${darkMode ? 'left-[26px]' : 'left-0.5'}`}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Notifications */}
+                    <div className="flex items-center justify-between p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-[#0055ff] text-white">
+                          <Bell className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="font-black text-sm">Notificaciones</div>
+                          <div className="text-xs opacity-50 font-medium">
+                            Recibir alertas y notificaciones del sistema
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setNotificationsEnabled(!notificationsEnabled)}
+                        className={`relative w-14 h-7 border-2 border-[#1a1a1a] transition-colors ${notificationsEnabled ? 'bg-[#0055ff]' : 'bg-gray-300'}`}
+                      >
+                        <div
+                          className={`absolute top-0.5 w-5 h-5 bg-white border border-[#1a1a1a] transition-all ${notificationsEnabled ? 'left-[26px]' : 'left-0.5'}`}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Auto Refresh */}
+                    <div className="flex items-center justify-between p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
+                      <div className="flex items-center gap-4">
+                        <div className="p-2 bg-[#10b981] text-white">
+                          <RefreshCw className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="font-black text-sm">Actualización Automática</div>
+                          <div className="text-xs opacity-50 font-medium">Actualizar datos en tiempo real</div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setAutoRefresh(!autoRefresh)}
+                        className={`relative w-14 h-7 border-2 border-[#1a1a1a] transition-colors ${autoRefresh ? 'bg-[#10b981]' : 'bg-gray-300'}`}
+                      >
+                        <div
+                          className={`absolute top-0.5 w-5 h-5 bg-white border border-[#1a1a1a] transition-all ${autoRefresh ? 'left-[26px]' : 'left-0.5'}`}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Language */}
+                    <div className="p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="p-2 bg-[#f59e0b] text-white">
+                          <Globe className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="font-black text-sm">Idioma</div>
+                          <div className="text-xs opacity-50 font-medium">Seleccioná el idioma de la interfaz</div>
+                        </div>
+                      </div>
+                      <select
+                        value={language}
+                        onChange={(e) => setLanguage(e.target.value)}
+                        className="w-full p-3 border-2 border-[#1a1a1a] bg-white focus:outline-none font-bold text-sm uppercase cursor-pointer"
+                      >
+                        <option value="es">Español</option>
+                        <option value="en">English</option>
+                        <option value="pt">Português</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSavePreferences}
+                    className="px-6 py-3 bg-[#0055ff] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm flex items-center gap-2 hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                  >
+                    <Save className="w-4 h-4" /> Guardar Preferencias
+                  </button>
+                </div>
+              )}
+
+              {/* SISTEMA TAB */}
+              {activeTab === 'sistema' && (
+                <div className="space-y-8">
+                  <h2 className="text-xl font-black uppercase font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-3 mb-6 flex items-center gap-3">
+                    <Shield className="w-5 h-5" /> Estado del Sistema
+                  </h2>
+
+                  {/* Connection Status */}
+                  <div
+                    className={`p-4 border-2 flex items-center gap-4 ${
+                      connectionStatus === 'connected'
+                        ? 'bg-green-50 border-green-400'
+                        : connectionStatus === 'error'
+                          ? 'bg-red-50 border-red-400'
+                          : 'bg-yellow-50 border-yellow-400'
+                    }`}
+                  >
+                    {connectionStatus === 'connected' ? (
+                      <CheckCircle className="w-6 h-6 text-green-600" />
+                    ) : connectionStatus === 'error' ? (
+                      <AlertTriangle className="w-6 h-6 text-red-600" />
+                    ) : (
+                      <RefreshCw className="w-6 h-6 text-yellow-600 animate-spin" />
+                    )}
+                    <div>
+                      <div className="font-black text-sm">
+                        {connectionStatus === 'connected'
+                          ? 'Conectado a Firebase'
+                          : connectionStatus === 'error'
+                            ? 'Error de Conexión'
+                            : 'Verificando Conexión...'}
+                      </div>
+                      <div className="text-xs opacity-60 font-medium">
+                        {connectionStatus === 'connected'
+                          ? 'Todos los servicios operativos'
+                          : connectionStatus === 'error'
+                            ? 'No se pudo conectar con Firestore'
+                            : 'Conectando con los servidores...'}
+                      </div>
+                    </div>
+                    <button
+                      onClick={loadSystemStats}
+                      className="ml-auto px-4 py-2 bg-white border-2 border-[#1a1a1a] text-xs font-black uppercase flex items-center gap-1.5 hover:bg-[#1a1a1a] hover:text-white transition-all"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" /> Actualizar
+                    </button>
+                  </div>
+
+                  {/* Collection Stats */}
+                  <div>
+                    <h3 className="text-sm font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <Database className="w-4 h-4" /> Colecciones de Datos
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {Object.entries(systemStats).map(([col, count]) => (
+                        <div key={col} className="p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a] flex items-center gap-3">
+                          <div className="p-2 bg-[#0055ff] text-white">
+                            {collectionIcons[col] || <Database className="w-5 h-5" />}
+                          </div>
+                          <div>
+                            <div className="text-[10px] font-bold uppercase opacity-50">
+                              {collectionLabels[col] || col}
+                            </div>
+                            <div className="text-2xl font-black font-['Space_Grotesk']">{count}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* System Info */}
+                  <div className="p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
+                    <h3 className="text-sm font-black uppercase tracking-widest mb-4 flex items-center gap-2">
+                      <Info className="w-4 h-4" /> Información del Sistema
+                    </h3>
+                    <div className="space-y-3">
+                      {[
+                        { label: 'Versión', value: '1.0.0' },
+                        { label: 'Framework', value: 'React + Vite + TypeScript' },
+                        { label: 'Base de Datos', value: 'Firebase Firestore' },
+                        { label: 'Storage', value: 'Firebase Storage' },
+                        { label: 'Autenticación', value: 'Firebase Auth (Google)' },
+                        { label: 'Usuario UID', value: user.uid.slice(0, 20) + '...' },
+                        { label: 'Sesión iniciada', value: new Date().toLocaleString('es-ES') },
+                      ].map((item) => (
+                        <div
+                          key={item.label}
+                          className="flex justify-between items-center py-2 border-b border-[#1a1a1a]/10 last:border-0"
+                        >
+                          <span className="text-xs font-bold uppercase opacity-60">{item.label}</span>
+                          <span className="text-xs font-black">{item.value}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* DATOS TAB */}
+              {activeTab === 'datos' && (
+                <div className="space-y-8">
+                  <h2 className="text-xl font-black uppercase font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-3 mb-6 flex items-center gap-3">
+                    <Database className="w-5 h-5" /> Gestión de Datos
+                  </h2>
+
+                  {/* Export */}
+                  <div className="p-6 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-[#10b981] text-white">
+                        <Download className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="font-black text-lg">Exportar Todos los Datos</div>
+                        <div className="text-sm opacity-50 font-medium">
+                          Descargá un respaldo completo en Excel con todas las colecciones
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleExportAllData}
+                      disabled={exporting}
+                      className="px-6 py-3 bg-[#10b981] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm flex items-center gap-2 hover:bg-[#1a1a1a] hover:text-[#10b981] transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50"
+                    >
+                      {exporting ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin" /> Exportando...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4" /> Descargar Respaldo Completo
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Collection breakdown */}
+                  <div className="p-6 bg-[#f5f0e8] border-2 border-[#1a1a1a]">
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="p-3 bg-[#0055ff] text-white">
+                        <BarChart3 className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="font-black text-lg">Resumen de Datos</div>
+                        <div className="text-sm opacity-50 font-medium">Cantidad de registros por colección</div>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      {Object.entries(systemStats).map(([col, count]) => (
+                        <div
+                          key={col}
+                          className="flex items-center justify-between py-2 border-b border-[#1a1a1a]/10 last:border-0"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="text-[#0055ff]">
+                              {collectionIcons[col] || <Database className="w-4 h-4" />}
+                            </div>
+                            <span className="text-sm font-bold uppercase">{collectionLabels[col] || col}</span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
+                              <div
+                                className="h-full bg-[#0055ff] rounded-full"
+                                style={{
+                                  width: `${systemStats.tasks ? Math.round((count / systemStats.tasks) * 100) : 0}%`,
+                                }}
+                              />
+                            </div>
+                            <span className="text-sm font-black w-8 text-right">{count}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Danger Zone */}
+                  <div className="border-2 border-red-400">
+                    <button
+                      onClick={() => setShowDangerZone(!showDangerZone)}
+                      className="w-full flex items-center justify-between p-4 bg-red-50 hover:bg-red-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <AlertTriangle className="w-5 h-5 text-red-600" />
+                        <div className="font-black text-sm text-red-800">Zona de Peligro</div>
+                      </div>
+                      {showDangerZone ? (
+                        <ChevronUp className="w-5 h-5 text-red-600" />
+                      ) : (
+                        <ChevronDown className="w-5 h-5 text-red-600" />
+                      )}
+                    </button>
+                    <AnimatePresence>
+                      {showDangerZone && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="p-6 space-y-4">
+                            <p className="text-sm font-medium text-red-700">
+                              Estas acciones son irreversibles. Asegurate de hacer un respaldo antes de proceder.
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-3">
+                              <button
+                                onClick={() => navigate('/base-datos')}
+                                className="px-5 py-2.5 bg-red-600 text-white border-2 border-[#1a1a1a] font-black uppercase text-xs flex items-center gap-2 hover:bg-[#1a1a1a] hover:text-red-600 transition-all"
+                              >
+                                <Trash2 className="w-4 h-4" /> Ir a Base de Datos
+                              </button>
+                            </div>
+                            <p className="text-xs opacity-50">
+                              La gestión avanzada de datos (borrado masivo, etc.) se realiza desde la sección Base de
+                              Datos.
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </>
+      )}
     </div>
   );
 }

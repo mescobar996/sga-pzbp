@@ -3,7 +3,28 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { signOut, User } from 'firebase/auth';
 import { collection, query, orderBy, limit, onSnapshot, doc, getDoc, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase';
-import { Search, Bell, Settings, User as UserIcon, LogOut, LayoutDashboard, HardHat, ListChecks, BarChart3, Database, PlusSquare, FileText, Menu, X, ChevronRight, ArrowRight, MapPin, Users, Calendar, Clock } from 'lucide-react';
+import {
+  Search,
+  Bell,
+  Settings,
+  User as UserIcon,
+  LogOut,
+  LayoutDashboard,
+  HardHat,
+  ListChecks,
+  BarChart3,
+  Database,
+  PlusSquare,
+  FileText,
+  Menu,
+  X,
+  ChevronRight,
+  ArrowRight,
+  MapPin,
+  Users,
+  Calendar,
+  Clock,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -91,7 +112,7 @@ export default function Layout({ user }: { user: User }) {
           setIsAdmin(true);
         }
       } catch (error) {
-        console.error("Error checking admin status", error);
+        console.error('Error checking admin status', error);
       }
     };
     checkAdmin();
@@ -176,7 +197,7 @@ export default function Layout({ user }: { user: User }) {
             type: 'tarea',
             title: data.title || 'Sin título',
             subtitle: data.priority ? `Prioridad: ${data.priority}` : '',
-            detail: data.dueDate ? `Vence: ${data.dueDate}` : (data.status ? `Estado: ${data.status}` : ''),
+            detail: data.dueDate ? `Vence: ${data.dueDate}` : data.status ? `Estado: ${data.status}` : '',
             route: '/tareas',
             icon: <ListChecks className="w-4 h-4" />,
             color: 'bg-[#0055ff]',
@@ -269,14 +290,50 @@ export default function Layout({ user }: { user: User }) {
 
       // Also match nav sections
       const navItems = [
-        { label: 'panel', route: '/', title: 'Panel de Control', icon: <LayoutDashboard className="w-4 h-4" />, color: 'bg-[#0055ff]' },
-        { label: 'visitas', route: '/visitas', title: 'Visitas Técnicas', icon: <HardHat className="w-4 h-4" />, color: 'bg-[#00cc66]' },
-        { label: 'tareas', route: '/tareas', title: 'Lista de Tareas', icon: <ListChecks className="w-4 h-4" />, color: 'bg-[#0055ff]' },
-        { label: 'novedades', route: '/novedades', title: 'Novedades', icon: <FileText className="w-4 h-4" />, color: 'bg-[#1a1a1a]' },
-        { label: 'reportes', route: '/reportes', title: 'Reportes', icon: <BarChart3 className="w-4 h-4" />, color: 'bg-[#1a1a1a]' },
-        { label: 'base de datos', route: '/base-datos', title: 'Base de Datos', icon: <Database className="w-4 h-4" />, color: 'bg-[#0055ff]' },
+        {
+          label: 'panel',
+          route: '/',
+          title: 'Panel de Control',
+          icon: <LayoutDashboard className="w-4 h-4" />,
+          color: 'bg-[#0055ff]',
+        },
+        {
+          label: 'visitas',
+          route: '/visitas',
+          title: 'Visitas Técnicas',
+          icon: <HardHat className="w-4 h-4" />,
+          color: 'bg-[#00cc66]',
+        },
+        {
+          label: 'tareas',
+          route: '/tareas',
+          title: 'Lista de Tareas',
+          icon: <ListChecks className="w-4 h-4" />,
+          color: 'bg-[#0055ff]',
+        },
+        {
+          label: 'novedades',
+          route: '/novedades',
+          title: 'Novedades',
+          icon: <FileText className="w-4 h-4" />,
+          color: 'bg-[#1a1a1a]',
+        },
+        {
+          label: 'reportes',
+          route: '/reportes',
+          title: 'Reportes',
+          icon: <BarChart3 className="w-4 h-4" />,
+          color: 'bg-[#1a1a1a]',
+        },
+        {
+          label: 'base de datos',
+          route: '/base-datos',
+          title: 'Base de Datos',
+          icon: <Database className="w-4 h-4" />,
+          color: 'bg-[#0055ff]',
+        },
       ];
-      navItems.forEach(item => {
+      navItems.forEach((item) => {
         if (item.label.includes(term) || item.title.toLowerCase().includes(term)) {
           results.unshift({
             id: `nav-${item.route}`,
@@ -328,10 +385,10 @@ export default function Layout({ user }: { user: User }) {
   const handleSearchKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex(prev => Math.min(prev + 1, searchResults.length - 1));
+      setSelectedIndex((prev) => Math.min(prev + 1, searchResults.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex(prev => Math.max(prev - 1, -1));
+      setSelectedIndex((prev) => Math.max(prev - 1, -1));
     } else if (e.key === 'Enter') {
       e.preventDefault();
       if (selectedIndex >= 0 && searchResults[selectedIndex]) {
@@ -359,23 +416,35 @@ export default function Layout({ user }: { user: User }) {
 
   const typeIcon = (type: string) => {
     switch (type) {
-      case 'tarea': return <ListChecks className="w-3.5 h-3.5" />;
-      case 'visita': return <HardHat className="w-3.5 h-3.5" />;
-      case 'novedad': return <FileText className="w-3.5 h-3.5" />;
-      case 'personal': return <Users className="w-3.5 h-3.5" />;
-      case 'ubicacion': return <MapPin className="w-3.5 h-3.5" />;
-      default: return <Search className="w-3.5 h-3.5" />;
+      case 'tarea':
+        return <ListChecks className="w-3.5 h-3.5" />;
+      case 'visita':
+        return <HardHat className="w-3.5 h-3.5" />;
+      case 'novedad':
+        return <FileText className="w-3.5 h-3.5" />;
+      case 'personal':
+        return <Users className="w-3.5 h-3.5" />;
+      case 'ubicacion':
+        return <MapPin className="w-3.5 h-3.5" />;
+      default:
+        return <Search className="w-3.5 h-3.5" />;
     }
   };
 
   const typeLabel = (type: string) => {
     switch (type) {
-      case 'tarea': return 'TAREA';
-      case 'visita': return 'VISITA';
-      case 'novedad': return 'NOVEDAD';
-      case 'personal': return 'PERSONAL';
-      case 'ubicacion': return 'UBICACIÓN';
-      default: return '';
+      case 'tarea':
+        return 'TAREA';
+      case 'visita':
+        return 'VISITA';
+      case 'novedad':
+        return 'NOVEDAD';
+      case 'personal':
+        return 'PERSONAL';
+      case 'ubicacion':
+        return 'UBICACIÓN';
+      default:
+        return '';
     }
   };
 
@@ -401,7 +470,7 @@ export default function Layout({ user }: { user: User }) {
           <div className="flex items-center gap-3 lg:gap-4">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)]"
+              className="lg:hidden p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] cursor-pointer"
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -411,7 +480,7 @@ export default function Layout({ user }: { user: User }) {
               <span className="sm:hidden">PNA</span>
             </span>
           </div>
-          
+
           <div className="flex items-center gap-2 lg:gap-6">
             {/* Desktop Search */}
             <div className="hidden md:block relative" ref={searchRef}>
@@ -425,7 +494,9 @@ export default function Layout({ user }: { user: User }) {
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
-                  onFocus={() => { if (searchResults.length > 0) setSearchOpen(true); }}
+                  onFocus={() => {
+                    if (searchResults.length > 0) setSearchOpen(true);
+                  }}
                   aria-label="Buscar en el sistema"
                   autoComplete="off"
                 />
@@ -473,29 +544,39 @@ export default function Layout({ user }: { user: User }) {
                             </div>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-0.5">
-                                <span className={`text-xs font-black uppercase truncate ${idx === selectedIndex ? 'text-white' : ''}`}>
+                                <span
+                                  className={`text-xs font-black uppercase truncate ${idx === selectedIndex ? 'text-white' : ''}`}
+                                >
                                   {result.title}
                                 </span>
-                                <span className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 border shrink-0 ${
-                                  idx === selectedIndex
-                                    ? 'border-white/30 text-white/70'
-                                    : 'border-[#1a1a1a]/20 opacity-50'
-                                }`}>
+                                <span
+                                  className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 border shrink-0 ${
+                                    idx === selectedIndex
+                                      ? 'border-white/30 text-white/70'
+                                      : 'border-[#1a1a1a]/20 opacity-50'
+                                  }`}
+                                >
                                   {typeLabel(result.type)}
                                 </span>
                               </div>
                               {result.subtitle && (
-                                <p className={`text-[11px] font-medium truncate ${idx === selectedIndex ? 'text-white/80' : 'opacity-60'}`}>
+                                <p
+                                  className={`text-[11px] font-medium truncate ${idx === selectedIndex ? 'text-white/80' : 'opacity-60'}`}
+                                >
                                   {result.subtitle}
                                 </p>
                               )}
                               {result.detail && (
-                                <p className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${idx === selectedIndex ? 'text-white/50' : 'opacity-40'}`}>
+                                <p
+                                  className={`text-[10px] font-bold uppercase tracking-wider mt-0.5 ${idx === selectedIndex ? 'text-white/50' : 'opacity-40'}`}
+                                >
                                   {result.detail}
                                 </p>
                               )}
                             </div>
-                            <ArrowRight className={`w-4 h-4 shrink-0 mt-1 ${idx === selectedIndex ? 'text-white' : 'opacity-20'}`} />
+                            <ArrowRight
+                              className={`w-4 h-4 shrink-0 mt-1 ${idx === selectedIndex ? 'text-white' : 'opacity-20'}`}
+                            />
                           </button>
                         ))
                       )}
@@ -509,7 +590,7 @@ export default function Layout({ user }: { user: User }) {
             <div className="relative" ref={notifRef}>
               <button
                 onClick={handleBellClick}
-                className="relative p-2 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)]"
+                className="relative p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] cursor-pointer"
                 aria-label={`Notificaciones${unreadCount > 0 ? `, ${unreadCount} sin leer` : ''}`}
               >
                 <Bell className="w-5 h-5" />
@@ -531,7 +612,9 @@ export default function Layout({ user }: { user: User }) {
                   >
                     <div className="p-4 border-b-4 border-[#1a1a1a] bg-[#f5f0e8] flex justify-between items-center shrink-0">
                       <h3 className="font-black uppercase tracking-widest text-sm">Notificaciones</h3>
-                      <button onClick={() => setShowNotifications(false)} className="text-sm font-bold underline">Cerrar</button>
+                      <button onClick={() => setShowNotifications(false)} className="text-sm font-bold underline">
+                        Cerrar
+                      </button>
                     </div>
                     <div className="flex flex-col overflow-y-auto">
                       {notifications.length === 0 ? (
@@ -540,13 +623,20 @@ export default function Layout({ user }: { user: User }) {
                           <p className="font-bold text-sm opacity-50">No hay notificaciones</p>
                         </div>
                       ) : (
-                        notifications.slice(0, 10).map(notif => (
-                          <div key={notif.id} className="p-4 border-b-2 border-[#1a1a1a]/10 hover:bg-[#f5f0e8] transition-colors">
+                        notifications.slice(0, 10).map((notif) => (
+                          <div
+                            key={notif.id}
+                            className="p-4 border-b-2 border-[#1a1a1a]/10 hover:bg-[#f5f0e8] transition-colors"
+                          >
                             <div className="flex items-center gap-2 mb-1">
-                              <span className={`text-[10px] font-black px-2 py-0.5 border-2 border-[#1a1a1a] uppercase ${notif.type === 'tarea' ? 'bg-[#0055ff] text-white' : notif.type === 'visita' ? 'bg-[#00cc66] text-white' : 'bg-[#0055ff] text-white'}`}>
+                              <span
+                                className={`text-[10px] font-black px-2 py-0.5 border-2 border-[#1a1a1a] uppercase ${notif.type === 'tarea' ? 'bg-[#0055ff] text-white' : notif.type === 'visita' ? 'bg-[#00cc66] text-white' : 'bg-[#0055ff] text-white'}`}
+                              >
                                 {notif.type}
                               </span>
-                              <span className="text-xs font-bold opacity-50">{new Date(notif.createdAt).toLocaleDateString()}</span>
+                              <span className="text-xs font-bold opacity-50">
+                                {new Date(notif.createdAt).toLocaleDateString()}
+                              </span>
                             </div>
                             <h4 className="font-black text-sm uppercase">{notif.title}</h4>
                             <p className="text-sm font-medium opacity-80 mt-1">{notif.message}</p>
@@ -562,7 +652,7 @@ export default function Layout({ user }: { user: User }) {
             {/* Settings */}
             <button
               onClick={() => navigate('/configuracion')}
-              className="hidden lg:flex p-2 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)]"
+              className="hidden lg:flex p-2.5 min-w-[44px] min-h-[44px] items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] cursor-pointer"
               aria-label="Configuración"
             >
               <Settings className="w-5 h-5" />
@@ -572,7 +662,12 @@ export default function Layout({ user }: { user: User }) {
             <div className="flex items-center gap-2 lg:ml-2">
               <div className="w-9 h-9 lg:w-10 lg:h-10 border-2 border-[#1a1a1a] overflow-hidden shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] bg-[#0055ff] flex items-center justify-center">
                 {user.photoURL ? (
-                  <img src={user.photoURL} alt="Foto de usuario" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                  <img
+                    src={user.photoURL}
+                    alt="Foto de usuario"
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
                 ) : (
                   <UserIcon className="w-5 h-5 lg:w-6 lg:h-6 text-white" />
                 )}
@@ -597,7 +692,7 @@ export default function Layout({ user }: { user: User }) {
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center gap-4 p-4 transition-all duration-150 ${
+                `flex items-center gap-4 p-4 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0055ff] focus-visible:ring-offset-2 ${
                   isActive
                     ? 'bg-[#0055ff] text-white border-2 border-[#1a1a1a] m-2 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)]'
                     : 'text-[#1a1a1a] border-b-2 border-[#1a1a1a]/10 hover:bg-[#0055ff] hover:text-white'
@@ -612,14 +707,14 @@ export default function Layout({ user }: { user: User }) {
         <div className="p-4 border-t-4 border-[#1a1a1a]">
           <button
             onClick={() => navigate('/tareas')}
-            className="w-full bg-[#0055ff] text-white border-2 border-[#1a1a1a] py-3 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] font-black flex items-center justify-center gap-2 hover:bg-[#1a1a1a] hover:text-white transition-colors"
+            className="w-full bg-[#0055ff] text-white border-2 border-[#1a1a1a] py-3 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] font-black flex items-center justify-center gap-2 hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer"
           >
             <PlusSquare className="w-5 h-5" />
             NUEVA TAREA
           </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 text-[#e63b2e] mt-4 p-2 hover:underline font-bold text-sm"
+            className="w-full flex items-center justify-center gap-2 text-[#e63b2e] mt-4 p-3 min-h-[44px] hover:underline font-bold text-sm cursor-pointer"
           >
             <LogOut className="w-5 h-5" />
             <span>Cerrar Sesión</span>
@@ -659,9 +754,9 @@ export default function Layout({ user }: { user: User }) {
                   key={item.to}
                   to={item.to}
                   className={({ isActive }) =>
-                    `flex items-center gap-4 p-4 transition-all duration-150 ${
+                    `flex items-center gap-4 p-4 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0055ff] focus-visible:ring-offset-2 ${
                       isActive
-                        ? 'bg-[#0055ff] text-white border-2 border-[#1a1a1a] m-2'
+                        ? 'bg-[#0055ff] text-white border-2 border-[#1a1a1a] m-2 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)]'
                         : 'text-[#1a1a1a] border-b-2 border-[#1a1a1a]/10 hover:bg-[#0055ff] hover:text-white'
                     }`
                   }
@@ -674,7 +769,10 @@ export default function Layout({ user }: { user: User }) {
             </div>
             <div className="p-4 border-t-4 border-[#1a1a1a]">
               <button
-                onClick={() => { navigate('/tareas'); setMobileMenuOpen(false); }}
+                onClick={() => {
+                  navigate('/tareas');
+                  setMobileMenuOpen(false);
+                }}
                 className="w-full bg-[#0055ff] text-white border-2 border-[#1a1a1a] py-3 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] font-black flex items-center justify-center gap-2 hover:bg-[#1a1a1a] hover:text-white transition-colors"
               >
                 <PlusSquare className="w-5 h-5" />
@@ -700,7 +798,10 @@ export default function Layout({ user }: { user: User }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="lg:hidden fixed inset-0 z-50 bg-black/50 backdrop-blur-sm pt-16"
-            onClick={() => { setSearchOpen(false); setSearchResults([]); }}
+            onClick={() => {
+              setSearchOpen(false);
+              setSearchResults([]);
+            }}
           >
             <motion.div
               initial={{ y: -20, opacity: 0 }}
@@ -714,7 +815,15 @@ export default function Layout({ user }: { user: User }) {
                 <span className="text-xs font-black uppercase tracking-widest">
                   {searchResults.length} resultado{searchResults.length !== 1 ? 's' : ''}
                 </span>
-                <button onClick={() => { setSearchOpen(false); setSearchResults([]); }} className="text-sm font-bold underline">Cerrar</button>
+                <button
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setSearchResults([]);
+                  }}
+                  className="text-sm font-bold underline"
+                >
+                  Cerrar
+                </button>
               </div>
               {searchResults.map((result, idx) => (
                 <button
@@ -728,7 +837,11 @@ export default function Layout({ user }: { user: User }) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-black uppercase truncate">{result.title}</p>
                     {result.subtitle && <p className="text-xs font-medium opacity-60 truncate">{result.subtitle}</p>}
-                    {result.detail && <p className="text-[10px] font-bold uppercase tracking-wider opacity-40 mt-0.5">{result.detail}</p>}
+                    {result.detail && (
+                      <p className="text-[10px] font-bold uppercase tracking-wider opacity-40 mt-0.5">
+                        {result.detail}
+                      </p>
+                    )}
                   </div>
                 </button>
               ))}
