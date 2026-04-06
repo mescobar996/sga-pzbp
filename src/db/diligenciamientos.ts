@@ -65,7 +65,8 @@ export async function deleteDiligenciamiento(id: string): Promise<void> {
 }
 
 export async function uploadDiligenciamientoAttachment(file: File, userId: string): Promise<{ name: string; url: string; type: string; size: number }> {
-  const fileName = `${Date.now()}_${file.name}`;
+  const sanitizedName = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
+  const fileName = `${Date.now()}_${sanitizedName}`;
   const path = `diligenciamientos/${userId}/${fileName}`;
   const { error: uploadError } = await supabase.storage.from('attachments').upload(path, file);
   if (uploadError) throw uploadError;

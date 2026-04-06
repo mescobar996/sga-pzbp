@@ -62,7 +62,8 @@ export async function deleteNovedad(id: string): Promise<void> {
 
 // Storage helpers
 export async function uploadNovedadAttachment(file: File, userId: string): Promise<{ name: string; url: string; type: string; size: number }> {
-  const fileName = `${Date.now()}_${file.name}`;
+  const sanitizedName = file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_');
+  const fileName = `${Date.now()}_${sanitizedName}`;
   const path = `novedades/${userId}/${fileName}`;
   const { error: uploadError } = await supabase.storage.from('attachments').upload(path, file);
   if (uploadError) throw uploadError;
