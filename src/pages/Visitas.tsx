@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Save,
   X,
@@ -14,17 +14,28 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  Paperclip,
+  Upload,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
+import { supabase } from '../db/client';
 import { visitaSchema } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import VisitasMap from '../components/VisitasMap';
-import { getVisitas, addVisita, updateVisita, deleteVisita, onVisitasChange } from '../db/visitas';
+import { getVisitas, addVisita, updateVisita, deleteVisita, uploadVisitaAttachment, onVisitasChange } from '../db/visitas';
 import { getLocations, onLocationsChange } from '../db/locations';
 import { getPersonal, onPersonalChange } from '../db/personal';
 import { addNotification } from '../db/notifications';
 import { getCurrentUserId } from '../db/client';
+
+interface Attachment {
+  name: string;
+  url: string;
+  type: string;
+  path: string;
+  size?: number;
+}
 
 interface Visita {
   id: string;
@@ -36,6 +47,7 @@ interface Visita {
   observaciones?: string;
   createdAt: string;
   authorId: string;
+  attachments?: Attachment[];
 }
 
 function handleError(error: unknown) {
@@ -63,6 +75,59 @@ export default function Visitas() {
   const [selectedResponsables, setSelectedResponsables] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+
+  // Attachments
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [attachmentsToDelete, setAttachmentsToDelete] = useState<Attachment[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Quick upload handler
+  const handleQuickUpload = async (visitaId: string, currentAttachments: Attachment[] = [], file: File) => {
+    try {
+      toast.loading(`Subiendo ${file.name}...`, { id: `upload-${visitaId}` });
+      const userId = getCurrentUserId();
+      const newAttachment = await uploadVisitaAttachment(file, visitaId, userId);
+      const path = `visitas/${visitaId}/${Date.now()}_${file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const fullAttachment = { ...newAttachment, path };
+
+      await updateVisita(visitaId, {
+        attachments: [...(currentAttachments || []), fullAttachment] as any,
+      });
+
+      // Refresh selected visita
+      if (selectedVisita?.id === visitaId) {
+        setSelectedVisita({ ...selectedVisita, attachments: [...(currentAttachments || []), fullAttachment] });
+      }
+
+      toast.success(`Archivo ${file.name} subido`, { id: `upload-${visitaId}` });
+    } catch (error) {
+      console.error('Error quick uploading file:', error);
+      toast.error('Error al subir el archivo.', { id: `upload-${visitaId}` });
+    }
+  };
+
+  const handleDeleteAttachment = async (visitaId: string, attachment: Attachment) => {
+    try {
+      const path = attachment.path || attachment.url.split('/object/public/attachments/')[1] || '';
+      if (path) {
+        await supabase.storage.from('attachments').remove([path]);
+      }
+
+      const currentVisita = visitas.find((v) => v.id === visitaId);
+      const remaining = (currentVisita?.attachments || []).filter((a) => a.url !== attachment.url);
+      await updateVisita(visitaId, { attachments: remaining as any });
+
+      if (selectedVisita?.id === visitaId) {
+        setSelectedVisita({ ...selectedVisita, attachments: remaining });
+      }
+
+      toast.success('Archivo eliminado');
+    } catch (error) {
+      console.error('Error deleting attachment:', error);
+      toast.error('Error al eliminar el archivo');
+    }
+  };
 
   // Filters and Pagination
   const [searchQuery, setSearchQuery] = useState('');
@@ -172,18 +237,35 @@ export default function Visitas() {
       destino: visita.destino,
       fecha: visita.fecha,
       hora: visita.hora,
-      responsable: '', // We use selectedResponsables instead
+      responsable: '',
       observaciones: visita.observaciones || '',
     });
     setSelectedResponsables(visita.responsable ? visita.responsable.split(' Y ') : []);
     setIsEditingVisita(true);
     setEditingVisitaId(visita.id);
+    setPendingFiles([]);
+    setAttachmentsToDelete([]);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDeleteVisita = async (id: string) => {
     if (!window.confirm('¿Estás seguro de que quieres eliminar esta visita?')) return;
     try {
+      // Delete attachments from storage
+      const visitaToDelete = visitas.find((v) => v.id === id);
+      if (visitaToDelete?.attachments) {
+        for (const att of visitaToDelete.attachments) {
+          const path = att.path || att.url.split('/object/public/attachments/')[1] || '';
+          if (path) {
+            try {
+              await supabase.storage.from('attachments').remove([path]);
+            } catch (error) {
+              console.error('Error deleting attachment:', error);
+            }
+          }
+        }
+      }
+
       await deleteVisita(id);
       toast.success('Visita eliminada exitosamente');
       if (selectedVisita?.id === id) {
@@ -477,9 +559,16 @@ export default function Visitas() {
                           <h3 className="font-black uppercase text-sm sm:text-lg truncate pr-2">
                             {visita.origen} &rarr; {visita.destino}
                           </h3>
-                          <span className="text-[10px] sm:text-xs font-bold bg-[#1a1a1a] text-white px-1.5 sm:px-2 py-0.5 sm:py-1 uppercase flex-shrink-0">
-                            {visita.fecha}
-                          </span>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {visita.attachments && visita.attachments.length > 0 && (
+                              <span className="text-[10px] font-bold flex items-center gap-0.5 bg-orange-100 text-orange-700 px-1.5 py-0.5 border border-orange-300" title={`${visita.attachments.length} adjunto(s)`}>
+                                <Paperclip className="w-2.5 h-2.5" /> {visita.attachments.length}
+                              </span>
+                            )}
+                            <span className="text-[10px] sm:text-xs font-bold bg-[#1a1a1a] text-white px-1.5 sm:px-2 py-0.5 sm:py-1 uppercase">
+                              {visita.fecha}
+                            </span>
+                          </div>
                         </div>
                         <p className="text-[10px] sm:text-sm font-bold opacity-70 uppercase truncate">
                           Resp: {visita.responsable}
@@ -487,6 +576,24 @@ export default function Visitas() {
                       </div>
                       <div className="mt-3 sm:mt-4 flex justify-between items-center">
                         <div className="flex gap-1.5 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <label
+                            className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#f5f0e8] transition-colors cursor-pointer"
+                            title="Subir archivo rápido"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <input
+                              type="file"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  handleQuickUpload(visita.id, visita.attachments as any, file);
+                                }
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -499,7 +606,7 @@ export default function Visitas() {
                           </button>
                           {isAdmin && (
                             <button
-                               onClick={(e) => {
+                              onClick={(e) => {
                                 e.stopPropagation();
                                 handleDeleteVisita(visita.id);
                               }}
@@ -613,6 +720,84 @@ export default function Visitas() {
                           {selectedVisita.observaciones}
                         </p>
                       </div>
+                    )}
+                  </div>
+
+                  {/* Attachments Section */}
+                  <div className="border-t-2 border-[#1a1a1a] pt-4 sm:pt-6">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="text-sm sm:text-base font-black uppercase tracking-widest flex items-center gap-2">
+                        <Paperclip className="w-4 h-4 sm:w-5 sm:h-5" /> Adjuntos{' '}
+                        {selectedVisita.attachments && selectedVisita.attachments.length > 0 && (
+                          <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 border border-orange-300">
+                            {selectedVisita.attachments.length}
+                          </span>
+                        )}
+                      </h3>
+                      <label className="cursor-pointer px-3 py-1.5 bg-[#1a1a1a] text-white font-bold uppercase text-[10px] tracking-widest hover:bg-[#333] transition-colors flex items-center gap-2">
+                        <Upload className="w-3.5 h-3.5" /> Subir Archivo
+                        <input
+                          type="file"
+                          className="hidden"
+                          multiple
+                          onChange={async (e) => {
+                            if (!e.target.files || e.target.files.length === 0) return;
+                            setIsUploading(true);
+                            try {
+                              const currentAttachments = selectedVisita.attachments || [];
+                              for (const file of Array.from(e.target.files)) {
+                                const userId = getCurrentUserId();
+                                const newAttachment = await uploadVisitaAttachment(file, selectedVisita.id, userId);
+                                const path = `visitas/${selectedVisita.id}/${Date.now()}_${file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+                                currentAttachments.push({ ...newAttachment, path });
+                              }
+                              await updateVisita(selectedVisita.id, { attachments: currentAttachments as any });
+                              setSelectedVisita({ ...selectedVisita, attachments: currentAttachments });
+                              toast.success(`${e.target.files.length} archivo(s) subido(s)`);
+                            } catch (error) {
+                              console.error('Error uploading attachments:', error);
+                              toast.error('Error al subir archivos');
+                            } finally {
+                              setIsUploading(false);
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                    </div>
+
+                    {selectedVisita.attachments && selectedVisita.attachments.length > 0 ? (
+                      <div className="flex flex-col gap-2">
+                        {selectedVisita.attachments.map((att: Attachment, idx: number) => (
+                          <div
+                            key={`att-${idx}`}
+                            className="flex items-center justify-between p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8]"
+                          >
+                            <a
+                              href={att.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 hover:underline truncate max-w-[80%]"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Paperclip className="w-3.5 h-3.5 sm:w-4 sm:h-4 flex-shrink-0" />
+                              <span className="truncate text-xs sm:text-sm font-medium">{att.name}</span>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteAttachment(selectedVisita.id, att)}
+                              className="p-1.5 hover:bg-[#e63b2e] hover:text-white transition-colors ml-2 flex-shrink-0"
+                              title="Eliminar archivo"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs font-bold uppercase tracking-widest opacity-50 text-center py-6 border-2 border-dashed border-gray-300">
+                        No hay archivos adjuntos
+                      </p>
                     )}
                   </div>
                 </div>

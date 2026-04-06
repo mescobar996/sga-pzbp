@@ -82,6 +82,13 @@ export interface VisitaComment {
   createdAt: string;
 }
 
+export interface VisitaAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
+
 export interface Visita {
   id: string;
   origen: string;
@@ -93,6 +100,7 @@ export interface Visita {
   createdAt: string;
   authorId: string;
   comments?: VisitaComment[];
+  attachments?: VisitaAttachment[];
 }
 
 export interface NovedadAttachment {
