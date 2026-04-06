@@ -933,17 +933,11 @@ export default function Tareas() {
                         <Edit2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-1 sm:ml-2 opacity-50 group-hover:opacity-100 flex-shrink-0" />
                       </button>
 
-                      <div className="mb-2 sm:mb-3">
-                        <label className="block text-[8px] sm:text-[10px] font-bold uppercase tracking-widest opacity-60 mb-1">
-                          Vencimiento:
-                        </label>
-                        <input
-                          type="date"
-                          value={task.dueDate || ''}
-                          onChange={(e) => handleUpdateDueDate(task.id, e.target.value)}
-                          className="w-full p-1 sm:p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-[10px] sm:text-xs cursor-pointer"
-                        />
-                      </div>
+                      {task.dueDate && (
+                        <p className="text-[8px] sm:text-[10px] font-bold opacity-60 uppercase tracking-widest mb-2 sm:mb-3">
+                          Vence: {task.dueDate}
+                        </p>
+                      )}
 
                       <p className="text-[8px] sm:text-[10px] font-bold opacity-60 uppercase tracking-widest mt-auto">
                         Creada: {new Date(task.createdAt).toLocaleDateString()}
