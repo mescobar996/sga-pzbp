@@ -506,19 +506,25 @@ export default function BaseDatos() {
 
       const newRecord: any = {};
       const columns = allowedColumns[tableName] || [];
+      const currentUserId = getCurrentUserId();
 
       Object.keys(record).forEach((key) => {
         let mappedKey = mapping[key] || key;
-        
+
         // Only include the column if it's in our allowed list
         if (columns.length === 0 || columns.includes(mappedKey)) {
           let value = record[key];
-          
+
           // Apply UUID conversion if necessary
           if (uuidColumns.includes(mappedKey)) {
             value = toUUID(value);
           }
-          
+
+          // Replace foreign key author columns with current user to avoid FK violations
+          if (mappedKey === 'author_id') {
+            value = currentUserId || value;
+          }
+
           newRecord[mappedKey] = value;
         }
       });
