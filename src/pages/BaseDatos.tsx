@@ -527,7 +527,7 @@ export default function BaseDatos() {
 
           // Skip empty date fields - PostgreSQL date columns reject empty strings
           if (value === '' && (mappedKey === 'due_date' || mappedKey === 'created_at' || mappedKey === 'fecha' || mappedKey === 'hora' || mappedKey === 'timestamp')) {
-            continue;
+            return;
           }
 
           newRecord[mappedKey] = value;
