@@ -168,6 +168,7 @@ export default function Diligenciamientos() {
         await updateDiligenciamiento(currentDiligenciamiento.id, {
           title: currentDiligenciamiento.title,
           content: currentDiligenciamiento.content,
+          fecha: currentDiligenciamiento.fecha,
           attachments: finalAttachments as any,
         });
         toast.success('Diligenciamiento actualizado');
@@ -175,6 +176,7 @@ export default function Diligenciamientos() {
         await addDiligenciamiento({
           title: currentDiligenciamiento.title,
           content: currentDiligenciamiento.content,
+          fecha: currentDiligenciamiento.fecha,
           attachments: finalAttachments,
         });
 

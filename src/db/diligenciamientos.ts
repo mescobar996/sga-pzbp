@@ -52,7 +52,7 @@ export async function updateDiligenciamiento(id: string, updates: Partial<Dilige
   const mapped: Record<string, any> = {};
   if (updates.title !== undefined) mapped.title = updates.title;
   if (updates.content !== undefined) mapped.content = updates.content;
-  if (updates.fecha !== undefined) mapped.fecha = updates.fecha;
+  if (updates.fecha !== undefined) mapped.fecha = updates.fecha || null;
   if (updates.attachments !== undefined) mapped.attachments = updates.attachments;
 
   const { error } = await supabase.from('diligenciamientos').update(mapped).eq('id', id);
