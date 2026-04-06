@@ -1152,26 +1152,39 @@ export default function Tareas() {
 
             <form onSubmit={handleSaveTask} className="flex flex-col gap-4">
               <div>
-                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Vencimiento</label>
+                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Título</label>
                 <input
-                  type="date"
-                  value={currentTask.dueDate || ''}
+                  type="text"
+                  value={currentTask.title || ''}
                   onChange={(e) => {
-                    setCurrentTask({ ...currentTask, dueDate: e.target.value });
-                    if (formErrors.dueDate)
+                    setCurrentTask({ ...currentTask, title: e.target.value });
+                    if (formErrors.title)
                       setFormErrors((prev) => {
                         const next = { ...prev };
-                        delete next.dueDate;
+                        delete next.title;
                         return next;
                       });
                   }}
-                  className={`w-full p-2 border-2 bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm ${formErrors.dueDate ? 'border-[#e63b2e] bg-red-50' : 'border-[#1a1a1a]'}`}
+                  className={`w-full p-3 border-2 bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-lg transition-colors ${formErrors.title ? 'border-[#e63b2e] bg-red-50' : 'border-[#1a1a1a]'}`}
+                  placeholder="TÍTULO DE LA TAREA..."
+                  required
+                  autoFocus
                 />
-                {formErrors.dueDate && (
+                {formErrors.title && (
                   <p className="text-[#e63b2e] text-xs font-bold mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" /> {formErrors.dueDate}
+                    <AlertCircle className="w-3 h-3" /> {formErrors.title}
                   </p>
                 )}
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Descripción</label>
+                <textarea
+                  value={currentTask.description || ''}
+                  onChange={(e) => setCurrentTask({ ...currentTask, description: e.target.value })}
+                  className="w-full h-24 p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium resize-none transition-colors text-sm"
+                  placeholder="Descripción de la tarea..."
+                />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
