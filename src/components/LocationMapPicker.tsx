@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 import { X, Search, MapPin } from 'lucide-react';
@@ -28,7 +28,6 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lng: number
   });
   return null;
 }
-
 function MapController({ lat, lng }: { lat: number | undefined, lng: number | undefined }) {
   const map = useMapEvents({
     click(e) {
@@ -36,22 +35,21 @@ function MapController({ lat, lng }: { lat: number | undefined, lng: number | un
     }
   });
 
-  import('react').then((React) => {
-    // 1. Force resize on mount for modal
-    React.useEffect(() => {
-      const timer = setTimeout(() => {
-        map.invalidateSize();
-      }, 300);
-      return () => clearTimeout(timer);
-    }, [map]);
+  // 1. Force resize on mount for modal
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [map]);
 
-    // 2. Fly to when coords change
-    React.useEffect(() => {
-      if (lat !== undefined && lng !== undefined) {
-        map.setView([lat, lng], map.getZoom() < 14 ? 14 : map.getZoom());
-      }
-    }, [lat, lng, map]);
-  });
+  // 2. Fly to when coords change
+  React.useEffect(() => {
+    if (lat !== undefined && lng !== undefined) {
+      map.flyTo([lat, lng], 15);
+    }
+  }, [lat, lng, map]);
+
   return null;
 }
 
