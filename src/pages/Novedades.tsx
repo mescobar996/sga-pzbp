@@ -345,12 +345,6 @@ export default function Novedades() {
         <h1 className="text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Novedades</h1>
         <div className="flex gap-4">
           <button
-            onClick={generatePDF}
-            className="px-4 py-3 border-2 border-[#1a1a1a] bg-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-white transition-colors flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-sm"
-          >
-            <Download className="w-4 h-4" /> Reporte PDF
-          </button>
-          <button
             onClick={openNewModal}
             className="px-4 py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-sm"
           >
