@@ -714,7 +714,7 @@ export default function Layout({ user }: { user: User }) {
       </header>
 
       {/* SideNavBar - Desktop */}
-      <nav className="hidden lg:flex fixed left-0 top-20 h-[calc(100vh-80px)] w-64 flex-col z-40 bg-[#f5f0e8] border-r-4 border-[#1a1a1a] font-['Space_Grotesk'] font-bold uppercase">
+      <nav className="hidden lg:flex fixed left-0 top-20 h-[calc(100dvh-80px)] w-64 flex-col z-40 bg-[#f5f0e8] border-r-4 border-[#1a1a1a] font-['Space_Grotesk'] font-bold uppercase">
         <div className="p-6 border-b-2 border-[#1a1a1a]">
           <span className="text-xl font-black block">SGA PZBP - MS</span>
         </div>
@@ -762,7 +762,7 @@ export default function Layout({ user }: { user: User }) {
             animate={{ x: 0 }}
             exit={{ x: '-100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="lg:hidden fixed left-0 top-16 h-[calc(100vh-64px)] w-72 flex flex-col z-50 bg-[#f5f0e8] border-r-4 border-[#1a1a1a] shadow-[8px_0px_0px_0px_rgba(26,26,26,0.2)] font-['Space_Grotesk'] font-bold uppercase"
+            className="lg:hidden fixed left-0 top-16 h-[calc(100dvh-64px)] w-72 flex flex-col z-50 bg-[#f5f0e8] border-r-4 border-[#1a1a1a] shadow-[8px_0px_0px_0px_rgba(26,26,26,0.2)] font-['Space_Grotesk'] font-bold uppercase"
           >
             <div className="p-4 border-b-2 border-[#1a1a1a]">
               {/* Mobile Search */}
