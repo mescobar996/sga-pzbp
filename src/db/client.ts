@@ -43,17 +43,24 @@ supabase.auth.onAuthStateChange(async (_event, session) => {
   _currentUserEmail = session?.user?.email || null;
 
   if (_currentUserId) {
-    try {
-      // Usar timeout para la carga del rol para no bloquear el estado inicial
-      const response = await withTimeout(
-        supabase.from('users').select('role').eq('id', _currentUserId).single(),
-        10000
-      );
-      _currentUserRole = (response as any)?.data?.role || 'user';
-    } catch (err) {
-      console.error('[Auth] Error loading role:', err);
-      _currentUserRole = 'user';
-    }
+    // Load role in background without blocking or strict timeout
+    // Fire and forget - role will be set whenever the query completes
+    supabase
+      .from('users')
+      .select('role')
+      .eq('id', _currentUserId)
+      .single()
+      .then((response) => {
+        if (response?.data?.role) {
+          _currentUserRole = response.data.role;
+        } else {
+          _currentUserRole = 'user';
+        }
+      })
+      .catch((err) => {
+        console.warn('[Auth] Could not load role (falling back to user):', err.message);
+        _currentUserRole = 'user';
+      });
   } else {
     _currentUserRole = null;
   }

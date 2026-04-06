@@ -178,8 +178,8 @@ export default function Dashboard() {
         {/* Charts */}
         <div className="lg:col-span-2 border-2 border-[#1a1a1a] bg-white p-3 sm:p-5 shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)]">
           <h2 className="text-base sm:text-xl font-black uppercase mb-3 sm:mb-4 font-['Space_Grotesk'] border-b-2 border-[#1a1a1a] pb-2 inline-block">Actividad Semanal</h2>
-          <div className="h-48 sm:h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-48 sm:h-64 w-full min-h-[192px] min-w-[300px]">
+            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={192}>
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
                 <XAxis dataKey="name" stroke="#1a1a1a" tick={{ fontFamily: 'Space Grotesk', fontWeight: 'bold', fontSize: 10, fill: '#1a1a1a' }} />
