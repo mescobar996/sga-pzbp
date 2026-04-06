@@ -979,15 +979,15 @@ export default function BaseDatos() {
                   </div>
                 )}
 
-                {/* Preview */}
+                {/* Preview / Summary */}
                 {importMode === 'single' && importPreview.length > 0 && (
                   <div className="mb-5">
                     <label className="block text-xs font-black uppercase tracking-widest mb-2">
                       Vista previa (primeros 3 registros)
                     </label>
-                    <div className="border-2 border-[#1a1a1a] bg-[#f5f0e8] p-3 max-h-40 overflow-y-auto">
+                    <div className="border-2 border-[#1a1a1a] bg-[#f5f0e8] p-3 max-h-40 overflow-y-auto text-[10px] font-mono">
                       {importPreview.slice(0, 3).map((record, idx) => (
-                        <div key={idx} className="mb-2 p-2 bg-white border border-[#1a1a1a] text-[10px] font-mono">
+                        <div key={idx} className="mb-2 p-2 bg-white border border-[#1a1a1a]">
                           <pre className="whitespace-pre-wrap overflow-hidden text-ellipsis">
                             {JSON.stringify(record, null, 2).slice(0, 200)}...
                           </pre>
@@ -997,10 +997,43 @@ export default function BaseDatos() {
                   </div>
                 )}
 
+                {importMode === 'multi' && Object.keys(importDataMap).length > 0 && (
+                  <div className="mb-5">
+                    <label className="block text-xs font-black uppercase tracking-widest mb-2">
+                      Resumen del Backup (Tablas detectadas)
+                    </label>
+                    <div className="border-2 border-[#1a1a1a] bg-[#f5f0e8] p-3 max-h-48 overflow-y-auto">
+                      <div className="grid grid-cols-1 gap-2">
+                        {Object.entries(importDataMap)
+                          .filter(([_, data]) => Array.isArray(data) && data.length > 0)
+                          .map(([table, data]) => (
+                            <div
+                              key={table}
+                              className="flex items-center justify-between p-2 bg-white border-2 border-[#1a1a1a] text-[10px] font-black uppercase"
+                            >
+                              <span className="flex items-center gap-2">
+                                <Server className="w-3 h-3 text-[#0055ff]" />
+                                {table}
+                              </span>
+                              <span className="bg-[#1a1a1a] text-white px-2 py-0.5">
+                                {Array.isArray(data) ? data.length : 0} registros
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Import Button */}
                 <button
                   onClick={handleImportData}
-                  disabled={isImporting || !importFile || importPreview.length === 0}
+                  disabled={
+                    isImporting ||
+                    !importFile ||
+                    (importMode === 'single' && importPreview.length === 0) ||
+                    (importMode === 'multi' && Object.keys(importDataMap).length === 0)
+                  }
                   className="w-full py-4 border-4 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest text-sm hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   {isImporting ? (
@@ -1010,7 +1043,10 @@ export default function BaseDatos() {
                     </>
                   ) : (
                     <>
-                      <Upload className="w-4 h-4" /> Importar {importPreview.length} Registros
+                      <Upload className="w-4 h-4" />
+                      {importMode === 'single'
+                        ? `Importar ${importPreview.length} Registros`
+                        : `Importar ${Object.keys(importDataMap).filter((k) => Array.isArray(importDataMap[k]) && importDataMap[k].length > 0).length} Tablas`}
                     </>
                   )}
                 </button>
