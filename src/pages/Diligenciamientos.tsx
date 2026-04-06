@@ -92,7 +92,15 @@ export default function Diligenciamientos() {
       setDiligenciamientos(data);
       setLoading(false);
     });
-    return unsub;
+
+    // Auto-refresh when user returns to tab
+    const onFocus = () => loadDiligenciamientos();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      unsub();
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   const loadDiligenciamientos = async () => {

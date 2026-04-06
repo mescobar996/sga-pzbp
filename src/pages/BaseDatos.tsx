@@ -113,9 +113,14 @@ export default function BaseDatos() {
     };
     fetchStats();
 
+    // Auto-refresh when user returns to tab
+    const onFocus = () => fetchStats();
+    window.addEventListener('focus', onFocus);
+
     return () => {
       unsubPersonal();
       unsubLocations();
+      window.removeEventListener('focus', onFocus);
     };
   }, []);
 

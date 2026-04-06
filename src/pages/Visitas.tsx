@@ -91,10 +91,22 @@ export default function Visitas() {
       setLoading(false);
     });
 
+    const unsubVisitas = onVisitasChange((data) => {
+      setVisitas(data);
+      setLoading(false);
+    });
+
     loadVisitas();
+
+    // Auto-refresh when user returns to tab
+    const onFocus = () => loadVisitas();
+    window.addEventListener('focus', onFocus);
+
     return () => {
       unsubLocations();
       unsubPersonal();
+      unsubVisitas();
+      window.removeEventListener('focus', onFocus);
     };
   }, []);
 

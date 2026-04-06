@@ -129,9 +129,15 @@ export default function Tareas() {
       setTasks(data as any);
       setLoading(false);
     });
+
+    // Auto-refresh when user returns to tab
+    const onFocus = () => loadTasks();
+    window.addEventListener('focus', onFocus);
+
     return () => {
       clearTimeout(safetyTimeout);
       unsub();
+      window.removeEventListener('focus', onFocus);
     };
   }, []);
 

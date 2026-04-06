@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { Activity, CheckCircle, Clock, AlertTriangle, Newspaper, ArrowRight, HardHat, Plus, TrendingUp } from 'lucide-react';
-import { getTasks } from '../db/tasks';
-import { getVisitas } from '../db/visitas';
-import { getNovedades } from '../db/novedades';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Activity, CheckCircle, Clock, AlertTriangle, Newspaper, ArrowRight, HardHat, Plus, TrendingUp, ClipboardList } from 'lucide-react';
+import { getTasks, onTasksChange } from '../db/tasks';
+import { getVisitas, onVisitasChange } from '../db/visitas';
+import { getNovedades, onNovedadesChange } from '../db/novedades';
 import { withTimeout } from '../db/client';
 import type { Task, Visita, Novedad } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
@@ -40,25 +40,42 @@ export default function Dashboard() {
   const [novedades, setNovedades] = useState<Novedad[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        const [tasksData, visitsData, novedadesData] = await withTimeout(Promise.all([
-          getTasks(),
-          getVisitas(),
-          getNovedades(),
-        ]), 8000);
-        setTasks(tasksData);
-        setVisits(visitsData);
-        setNovedades(novedadesData);
-      } catch (error) {
-        handleFirestoreError(error, 'dashboard');
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
+  const loadAll = useCallback(async () => {
+    try {
+      const [tasksData, visitsData, novedadesData] = await withTimeout(Promise.all([
+        getTasks(),
+        getVisitas(),
+        getNovedades(),
+      ]), 8000);
+      setTasks(tasksData);
+      setVisits(visitsData);
+      setNovedades(novedadesData);
+    } catch (error) {
+      handleFirestoreError(error, 'dashboard');
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadAll();
+
+    // Real-time subscriptions
+    const unsubTasks = onTasksChange((data) => setTasks(data));
+    const unsubVisitas = onVisitasChange((data) => setVisits(data));
+    const unsubNovedades = onNovedadesChange((data) => setNovedades(data));
+
+    // Auto-refresh when user returns to tab
+    const onFocus = () => loadAll();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      unsubTasks();
+      unsubVisitas();
+      unsubNovedades();
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [loadAll]);
 
   const pendingTasks = tasks.filter(t => t.status === 'pendiente' || t.status === 'en_proceso').length;
   const completedTasks = tasks.filter(t => t.status === 'completado').length;

@@ -88,7 +88,15 @@ export default function Novedades() {
       setNovedades(data);
       setLoading(false);
     });
-    return unsub;
+
+    // Auto-refresh when user returns to tab
+    const onFocus = () => loadNovedades();
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      unsub();
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   const loadNovedades = async () => {

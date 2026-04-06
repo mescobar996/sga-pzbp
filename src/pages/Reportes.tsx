@@ -1,4 +1,4 @@
-import { FileText, Download, Database, Eye, BarChart3, Users, HardHat, ListChecks, Newspaper } from 'lucide-react';
+import { FileText, Download, Database, Eye, BarChart3, Users, HardHat, ListChecks, Newspaper, ClipboardList } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../db/client';
@@ -66,6 +66,7 @@ export default function Reportes() {
     if (dataSource === 'todas' || dataSource === 'tareas') data.tareas = await fetchCollection('tasks');
     if (dataSource === 'todas' || dataSource === 'personal') data.personal = await fetchCollection('personal');
     if (dataSource === 'todas' || dataSource === 'novedades') data.novedades = await fetchCollection('novedades');
+    if (dataSource === 'todas' || dataSource === 'diligenciamientos') data.diligenciamientos = await fetchCollection('diligenciamientos');
 
     return data;
   };
@@ -88,7 +89,8 @@ export default function Reportes() {
     const totalTareas = data.tareas?.length || 0;
     const totalPersonal = data.personal?.length || 0;
     const totalNovedades = data.novedades?.length || 0;
-    const totalRecords = totalVisitas + totalTareas + totalPersonal + totalNovedades;
+    const totalDiligenciamientos = data.diligenciamientos?.length || 0;
+    const totalRecords = totalVisitas + totalTareas + totalPersonal + totalNovedades + totalDiligenciamientos;
     const now = new Date().toLocaleString('es-ES');
     const dateStr = new Date().toLocaleDateString('es-ES', {
       weekday: 'long',
@@ -155,6 +157,14 @@ export default function Reportes() {
         type: 'NOVEDAD',
         detail: n.title || 'Sin título',
         color: '#8b5cf6',
+      });
+    });
+    data.diligenciamientos?.slice(0, 2).forEach((d: any) => {
+      recentActivities.push({
+        date: d.createdAt ? new Date(d.createdAt).toLocaleDateString('es-ES') : 'N/A',
+        type: 'DILIGENCIA',
+        detail: d.title || 'Sin título',
+        color: '#f97316',
       });
     });
     recentActivities.sort((a, b) => {
@@ -401,7 +411,7 @@ export default function Reportes() {
         font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 40px;
         text-transform: uppercase; letter-spacing: 0.05em;
       }
-      .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+      .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 28px; }
       .stat-card {
         background: #fff; border: 3px solid #1a1a1a; padding: 16px 12px; text-align: center;
         box-shadow: 4px 4px 0px #1a1a1a;
@@ -508,6 +518,7 @@ export default function Reportes() {
             <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-value">${totalTareas}</div><div class="stat-label">Tareas</div></div>
             <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-value">${totalPersonal}</div><div class="stat-label">Personal</div></div>
             <div class="stat-card"><div class="stat-icon">📰</div><div class="stat-value">${totalNovedades}</div><div class="stat-label">Novedades</div></div>
+            <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-value">${totalDiligenciamientos}</div><div class="stat-label">Diligencias</div></div>
           </div>
           <div class="cover-footer">
             <div><div class="cover-footer-label">Total de registros</div><div class="cover-footer-value" style="font-size:26px;">${totalRecords}</div></div>
@@ -552,6 +563,7 @@ export default function Reportes() {
             ${progressBar('Tareas', totalTareas, totalRecords, '#0055ff')}
             ${progressBar('Personal', totalPersonal, totalRecords, '#8b5cf6')}
             ${progressBar('Novedades', totalNovedades, totalRecords, '#f59e0b')}
+            ${progressBar('Diligencias', totalDiligenciamientos, totalRecords, '#f97316')}
           </div>
           <div class="completion-card"><div class="donut-title">Tasa de Completitud</div>
             <div class="completion-value" style="color:${tasaCompletitud >= 70 ? '#00cc66' : tasaCompletitud >= 40 ? '#f59e0b' : '#e63b2e'};">${tasaCompletitud}%</div>
@@ -896,13 +908,15 @@ export default function Reportes() {
       tareas: 'TAREAS OPERATIVAS',
       personal: 'PERSONAL ACTIVO',
       novedades: 'NOVEDADES',
+      diligenciamientos: 'DILIGENCIAMIENTOS',
     };
 
     const totalVisitas = data.visitas?.length || 0;
     const totalTareas = data.tareas?.length || 0;
     const totalPersonal = data.personal?.length || 0;
     const totalNovedades = data.novedades?.length || 0;
-    const totalRecords = totalVisitas + totalTareas + totalPersonal + totalNovedades;
+    const totalDiligenciamientos = data.diligenciamientos?.length || 0;
+    const totalRecords = totalVisitas + totalTareas + totalPersonal + totalNovedades + totalDiligenciamientos;
     const tareasCompletadas = data.tareas?.filter((t: any) => t.status === 'completado').length || 0;
     const tasaCompletitud = totalTareas > 0 ? Math.round((tareasCompletadas / totalTareas) * 100) : 0;
     const tareasVencidas =
@@ -1165,6 +1179,7 @@ export default function Reportes() {
     tareas: <ListChecks className="w-4 h-4" />,
     personal: <Users className="w-4 h-4" />,
     novedades: <Newspaper className="w-4 h-4" />,
+    diligenciamientos: <ClipboardList className="w-4 h-4" />,
   };
 
   const sourceLabels: Record<string, string> = {
@@ -1172,6 +1187,7 @@ export default function Reportes() {
     tareas: 'TAREAS OPERATIVAS',
     personal: 'PERSONAL ACTIVO',
     novedades: 'NOVEDADES',
+    diligenciamientos: 'DILIGENCIAMIENTOS',
   };
 
   const formatValue = (val: any, key: string): string => {
@@ -1296,6 +1312,7 @@ export default function Reportes() {
                 <option value="tareas">Tareas Operativas</option>
                 <option value="personal">Personal Activo</option>
                 <option value="novedades">Novedades</option>
+                <option value="diligenciamientos">Diligenciamientos</option>
               </select>
             </div>
 
