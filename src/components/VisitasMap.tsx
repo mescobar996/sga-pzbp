@@ -1,8 +1,9 @@
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { MapPin, ArrowRight, User, Calendar, Clock } from 'lucide-react';
-import React, { useEffect } from 'react';
+import { MapPin, ArrowRight, User, Calendar, Clock, Flame } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import HeatmapLayer from './HeatmapLayer';
 
 function MapResizer() {
   const map = useMap();
@@ -96,6 +97,28 @@ export default function VisitasMap({ visitas, locations }: VisitasMapProps) {
     };
   }).filter(v => v.origCoords || v.destCoords); // Keep if they have at least one valid coordinate
 
+  // Build heatmap points: [lat, lng, intensity]
+  // Intensity based on visit frequency at each location
+  const locationVisitCount = new Map<string, number>();
+  mapVisitas.forEach(v => {
+    if (v.origCoords) {
+      const key = `${v.origCoords.lat},${v.origCoords.lng}`;
+      locationVisitCount.set(key, (locationVisitCount.get(key) || 0) + 1);
+    }
+    if (v.destCoords) {
+      const key = `${v.destCoords.lat},${v.destCoords.lng}`;
+      locationVisitCount.set(key, (locationVisitCount.get(key) || 0) + 1);
+    }
+  });
+
+  const heatmapPoints: [number, number, number][] = [];
+  locationVisitCount.forEach((count, key) => {
+    const [lat, lng] = key.split(',').map(Number);
+    heatmapPoints.push([lat, lng, Math.min(count, 5)]); // Cap intensity at 5
+  });
+
+  const [showHeatmap, setShowHeatmap] = useState(false);
+
   if (mapVisitas.length === 0) {
     return (
       <div className="w-full h-full min-h-[400px] flex items-center justify-center bg-[#f5f0e8] border-2 sm:border-4 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
@@ -109,6 +132,22 @@ export default function VisitasMap({ visitas, locations }: VisitasMapProps) {
 
   return (
     <div className="w-full h-[500px] sm:h-[600px] border-2 sm:border-4 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] relative z-0">
+      {/* Heatmap Toggle */}
+      {heatmapPoints.length > 0 && (
+        <div className="absolute top-3 right-3 z-[1000] flex gap-2">
+          <button
+            onClick={() => setShowHeatmap(!showHeatmap)}
+            className={`px-3 py-1.5 border-2 border-[#1a1a1a] font-black uppercase text-xs tracking-widest shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] flex items-center gap-1.5 transition-all ${
+              showHeatmap
+                ? 'bg-[#e63b2e] text-white hover:bg-[#1a1a1a] hover:text-[#e63b2e]'
+                : 'bg-white text-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white'
+            }`}
+          >
+            <Flame className="w-3.5 h-3.5" /> {showHeatmap ? 'Ocultar Calor' : 'Ver Calor'}
+          </button>
+        </div>
+      )}
+
       <MapContainer
         center={center}
         zoom={11}
@@ -120,6 +159,10 @@ export default function VisitasMap({ visitas, locations }: VisitasMapProps) {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+
+        {showHeatmap && heatmapPoints.length > 0 && (
+          <HeatmapLayer points={heatmapPoints} radius={30} blur={20} maxZoom={15} />
+        )}
 
         {mapVisitas.map((visita, idx) => {
           const hasBoth = visita.origCoords && visita.destCoords;
