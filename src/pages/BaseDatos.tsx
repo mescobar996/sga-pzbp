@@ -449,11 +449,11 @@ export default function BaseDatos() {
     setImportStatus('Iniciando proceso...');
 
     // Helper to map camelCase fields from old backups to snake_case Supabase columns
-    const mapRecord = (record: any) => {
+    const mapRecord = (record: any, tableName: string) => {
       const mapping: Record<string, string> = {
         authorId: 'author_id',
         authorName: 'author_name',
-        createdAt: 'created_at',
+        createdAt: tableName === 'task_history' ? 'timestamp' : 'created_at',
         dueDate: 'due_date',
         photoURL: 'photo_url',
         taskId: 'task_id',
@@ -464,11 +464,37 @@ export default function BaseDatos() {
         assignedTo: 'assigned_to',
       };
 
+      // Define allowed columns for each table to avoid 400 errors due to unknown columns
+      const allowedColumns: Record<string, string[]> = {
+        users: ['id', 'name', 'email', 'role', 'photo_url', 'created_at'],
+        locations: ['id', 'name', 'type', 'status', 'latitude', 'longitude', 'author_id', 'created_at'],
+        personal: ['id', 'name', 'role', 'status', 'author_id', 'created_at'],
+        tasks: ['id', 'title', 'description', 'priority', 'status', 'due_date', 'author_id', 'assigned_to', 'tags', 'attachments', 'subtasks', 'comments', 'recurrence', 'created_at'],
+        visitas: ['id', 'origen', 'destino', 'fecha', 'hora', 'responsable', 'observaciones', 'comments', 'author_id', 'created_at'],
+        novedades: ['id', 'title', 'content', 'author_id', 'author_name', 'attachments', 'created_at'],
+        task_history: ['id', 'task_id', 'task_title', 'action', 'user_id', 'user_email', 'timestamp'],
+        notifications: ['id', 'title', 'message', 'type', 'author_id', 'recipient_id', 'created_at'],
+      };
+
       const newRecord: any = {};
+      const columns = allowedColumns[tableName] || [];
+
       Object.keys(record).forEach((key) => {
-        const newKey = mapping[key] || key;
-        newRecord[newKey] = record[key];
+        const mappedKey = mapping[key] || key;
+        // Only include the column if it's in our allowed list (or if we don't have a list for this table)
+        if (columns.length === 0 || columns.includes(mappedKey)) {
+          newRecord[mappedKey] = record[key];
+        }
       });
+
+      // Ensure mandatory columns have some value if they are missing
+      if (columns.includes('created_at') && !newRecord.created_at) {
+        newRecord.created_at = new Date().toISOString();
+      }
+      if (columns.includes('timestamp') && !newRecord.timestamp) {
+        newRecord.timestamp = new Date().toISOString();
+      }
+
       return newRecord;
     };
 
@@ -481,8 +507,8 @@ export default function BaseDatos() {
           const rawRecords = importDataMap[table];
           if (!rawRecords || !Array.isArray(rawRecords) || rawRecords.length === 0) continue;
 
-          // Map records before upsert
-          const records = rawRecords.map(mapRecord);
+          // Map and filter records before upsert
+          const records = rawRecords.map(r => mapRecord(r, table));
 
           setImportStatus(`Importando ${table.toUpperCase()} (${records.length} registros)...`);
           
@@ -490,7 +516,8 @@ export default function BaseDatos() {
           
           if (error) {
             console.error(`Error en ${table}:`, error);
-            toast.error(`Error en tabla ${table}: ${error.message}`);
+            toast.error(`Error en tabla ${table}: ${error.message} (${error.code})`);
+            // Continue with other tables even if one fails
           } else {
             totalSuccess += records.length;
           }
@@ -500,15 +527,15 @@ export default function BaseDatos() {
       } else {
         setImportStatus(`Importando ${importPreview.length} registros a ${importCollection}...`);
         
-        // Map records before upsert
-        const records = importPreview.map(mapRecord);
+        // Map and filter records before upsert
+        const records = importPreview.map(r => mapRecord(r, importCollection));
 
         // Single table import with upsert to prevent duplicates
         const { error } = await supabase.from(importCollection).upsert(records, { onConflict: 'id' });
         
         if (error) {
           console.error('Error importing records:', error);
-          toast.error(`Error al importar: ${error.message}`);
+          toast.error(`Error al importar: ${error.message} (${error.code})`);
         } else {
           toast.success(`Importación completada: ${importPreview.length} registros actualizados`);
         }
