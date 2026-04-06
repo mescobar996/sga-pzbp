@@ -41,6 +41,9 @@ export default function BaseDatos() {
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importCollection, setImportCollection] = useState('tasks');
   const [importPreview, setImportPreview] = useState<any[]>([]);
+  const [importMode, setImportMode] = useState<'single' | 'multi'>('single');
+  const [importDataMap, setImportDataMap] = useState<Record<string, any[]>>({});
+  const [importStatus, setImportStatus] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Data states
@@ -382,6 +385,9 @@ export default function BaseDatos() {
     const file = e.target.files?.[0];
     if (!file) return;
     setImportFile(file);
+    setImportStatus('');
+    setImportMode('single');
+    setImportDataMap({});
 
     const ext = file.name.split('.').pop()?.toLowerCase();
     const reader = new FileReader();
@@ -390,9 +396,22 @@ export default function BaseDatos() {
       reader.onload = (event) => {
         try {
           const data = JSON.parse(event.target?.result as string);
-          const records = Array.isArray(data) ? data : data.registros || data.records || data.datos || [];
-          setImportPreview(records);
-          toast.success(`${records.length} registros encontrados en el archivo`);
+          
+          // Detect multi-table backup
+          const multiTableKeys = ['tasks', 'visitas', 'novedades', 'personal', 'locations', 'users'];
+          const isMultiTable = !Array.isArray(data) && multiTableKeys.some(key => key in data);
+
+          if (isMultiTable) {
+            setImportMode('multi');
+            setImportDataMap(data);
+            const totalRecords = Object.values(data).reduce((acc: number, curr: any) => acc + (Array.isArray(curr) ? curr.length : 0), 0);
+            setImportPreview([]); 
+            toast.success(`Backup multi-tabla detectado: ${totalRecords} registros totales`);
+          } else {
+            const records = Array.isArray(data) ? data : data.registros || data.records || data.datos || [];
+            setImportPreview(records);
+            toast.success(`${records.length} registros encontrados en el archivo`);
+          }
         } catch {
           toast.error('Error al leer el archivo JSON');
           setImportFile(null);
@@ -421,37 +440,55 @@ export default function BaseDatos() {
   };
 
   const handleImportData = async () => {
-    if (!importFile || importPreview.length === 0) {
+    if (!importFile || (importMode === 'single' && importPreview.length === 0)) {
       toast.error('Seleccioná un archivo con datos');
       return;
     }
 
     setIsImporting(true);
+    setImportStatus('Iniciando proceso...');
+
     try {
-      let successCount = 0;
-      let errorCount = 0;
+      if (importMode === 'multi') {
+        const order = ['users', 'locations', 'personal', 'tasks', 'visitas', 'novedades', 'task_history', 'notifications'];
+        let totalSuccess = 0;
 
-      for (const record of importPreview) {
-        try {
-          const docData = { ...record };
-          // Ensure required fields
-          if (!docData.authorId) docData.authorId = getCurrentUserId();
-          if (!docData.createdAt) docData.createdAt = new Date().toISOString();
+        for (const table of order) {
+          const records = importDataMap[table];
+          if (!records || !Array.isArray(records) || records.length === 0) continue;
 
-          await supabase.from(importCollection).insert(docData);
-          successCount++;
-        } catch (err) {
-          console.error('Error importing record:', err);
-          errorCount++;
+          setImportStatus(`Importando ${table.toUpperCase()} (${records.length} registros)...`);
+          
+          const { error } = await supabase.from(table).upsert(records, { onConflict: 'id' });
+          
+          if (error) {
+            console.error(`Error en ${table}:`, error);
+            toast.error(`Error en tabla ${table}: ${error.message}`);
+          } else {
+            totalSuccess += records.length;
+          }
+        }
+        
+        toast.success(`Restauración masiva completada: ${totalSuccess} registros actualizados`);
+      } else {
+        setImportStatus(`Importando ${importPreview.length} registros a ${importCollection}...`);
+        
+        // Single table import with upsert to prevent duplicates
+        const { error } = await supabase.from(importCollection).upsert(importPreview, { onConflict: 'id' });
+        
+        if (error) {
+          console.error('Error importing records:', error);
+          toast.error(`Error al importar: ${error.message}`);
+        } else {
+          toast.success(`Importación completada: ${importPreview.length} registros actualizados`);
         }
       }
 
-      toast.success(
-        `Importación completada: ${successCount} registros importados${errorCount > 0 ? `, ${errorCount} errores` : ''}`,
-      );
       setIsImportModalOpen(false);
       setImportFile(null);
       setImportPreview([]);
+      setImportDataMap({});
+      setImportStatus('');
       setImportCollection('tasks');
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (error) {
@@ -895,24 +932,26 @@ export default function BaseDatos() {
                 </div>
 
                 {/* Collection Selector */}
-                <div className="mb-5">
-                  <label className="block text-xs font-black uppercase tracking-widest mb-2">
-                    Colección de destino
-                  </label>
-                  <select
-                    value={importCollection}
-                    onChange={(e) => setImportCollection(e.target.value)}
-                    className="w-full p-3 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold uppercase text-sm transition-colors"
-                  >
-                    <option value="tasks">Tareas Operativas</option>
-                    <option value="visitas">Visitas Técnicas</option>
-                    <option value="novedades">Novedades</option>
-                    <option value="personal">Personal</option>
-                    <option value="locations">Ubicaciones</option>
-                    <option value="task_history">Historial de Tareas</option>
-                    <option value="notifications">Notificaciones</option>
-                  </select>
-                </div>
+                {importMode === 'single' && (
+                  <div className="mb-5">
+                    <label className="block text-xs font-black uppercase tracking-widest mb-2">
+                      Colección de destino
+                    </label>
+                    <select
+                      value={importCollection}
+                      onChange={(e) => setImportCollection(e.target.value)}
+                      className="w-full p-3 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold uppercase text-sm transition-colors"
+                    >
+                      <option value="tasks">Tareas Operativas</option>
+                      <option value="visitas">Visitas Técnicas</option>
+                      <option value="novedades">Novedades</option>
+                      <option value="personal">Personal</option>
+                      <option value="locations">Ubicaciones</option>
+                      <option value="task_history">Historial de Tareas</option>
+                      <option value="notifications">Notificaciones</option>
+                    </select>
+                  </div>
+                )}
 
                 {/* File Upload */}
                 <div className="mb-5">
@@ -927,13 +966,21 @@ export default function BaseDatos() {
                   <p className="text-[10px] font-bold opacity-50 mt-2">Formatos soportados: JSON, Excel (.xlsx), CSV</p>
                   {importFile && (
                     <div className="mt-2 p-2 bg-green-50 border-2 border-green-400 text-green-800 text-xs font-bold flex items-center gap-2">
-                      <FileJson className="w-4 h-4" /> {importFile.name} ({importPreview.length} registros)
+                      <FileJson className="w-4 h-4" /> {importFile.name} {importMode === 'single' ? `(${importPreview.length} registros)` : '(Backup Full)'}
                     </div>
                   )}
                 </div>
 
+                {/* Status Indicator */}
+                {importStatus && (
+                  <div className="mb-5 p-3 border-4 border-[#0055ff] bg-[#0055ff]/10 text-[#0055ff] text-xs font-black uppercase tracking-widest flex items-center gap-3">
+                    <div className="w-3 h-3 border-2 border-[#0055ff] border-t-transparent rounded-full animate-spin"></div>
+                    {importStatus}
+                  </div>
+                )}
+
                 {/* Preview */}
-                {importPreview.length > 0 && (
+                {importMode === 'single' && importPreview.length > 0 && (
                   <div className="mb-5">
                     <label className="block text-xs font-black uppercase tracking-widest mb-2">
                       Vista previa (primeros 3 registros)
