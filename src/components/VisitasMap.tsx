@@ -70,17 +70,18 @@ export default function VisitasMap({ visitas, locations }: VisitasMapProps) {
   // Convert names to uppercase for robust matching, as Visitas stores them in uppercase
   const locMap = new Map<string, { lat: number; lng: number }>();
   locations.forEach(l => {
-    if (l.latitude !== undefined && l.longitude !== undefined) {
+    // Strict check: must be finite numbers (rejects null, undefined, NaN, Infinity)
+    if (typeof l.latitude === 'number' && typeof l.longitude === 'number' && isFinite(l.latitude) && isFinite(l.longitude)) {
       locMap.set(l.name.toUpperCase(), { lat: l.latitude, lng: l.longitude });
     }
   });
 
-  // Calculate default center
+  // Calculate default center - always use validated coordinates
   let center: [number, number] = [-34.6037, -58.3816]; // Default to Buenos Aires
   if (locations.length > 0) {
-    const validLoc = locations.find(l => l.latitude !== undefined && l.longitude !== undefined);
+    const validLoc = locations.find(l => typeof l.latitude === 'number' && typeof l.longitude === 'number' && isFinite(l.latitude) && isFinite(l.longitude));
     if (validLoc) {
-      center = [validLoc.latitude!, validLoc.longitude!];
+      center = [validLoc.latitude as number, validLoc.longitude as number];
     }
   }
 

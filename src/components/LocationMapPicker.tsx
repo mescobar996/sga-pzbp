@@ -60,9 +60,9 @@ export default function LocationMapPicker({
   initialLat,
   initialLng,
 }: LocationMapPickerProps) {
-  // Normalize null to undefined to prevent Leaflet errors
-  const safeLat = initialLat ?? undefined;
-  const safeLng = initialLng ?? undefined;
+  // Normalize null/NaN to undefined to prevent Leaflet errors
+  const safeLat = typeof initialLat === 'number' && isFinite(initialLat) ? initialLat : undefined;
+  const safeLng = typeof initialLng === 'number' && isFinite(initialLng) ? initialLng : undefined;
   const [lat, setLat] = useState<number | undefined>(safeLat);
   const [lng, setLng] = useState<number | undefined>(safeLng);
   const [searchQuery, setSearchQuery] = useState('');
@@ -79,7 +79,7 @@ export default function LocationMapPicker({
     setSearching(true);
     const result = await geocodeAddress(query);
     setSearching(false);
-    if (result) {
+    if (result && typeof result.lat === 'number' && isFinite(result.lat) && typeof result.lng === 'number' && isFinite(result.lng)) {
       setLat(result.lat);
       setLng(result.lng);
     }
@@ -171,7 +171,11 @@ export default function LocationMapPicker({
                   type="number"
                   step="any"
                   value={lat ?? ''}
-                  onChange={(e) => setLat(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const num = raw ? parseFloat(raw) : undefined;
+                    setLat(num !== undefined && isFinite(num) ? num : undefined);
+                  }}
                   placeholder="-34.6037"
                   className="w-full p-2 border-2 border-[#1a1a1a] bg-white focus:outline-none font-bold text-sm font-mono"
                   aria-label="Latitud"
@@ -183,7 +187,11 @@ export default function LocationMapPicker({
                   type="number"
                   step="any"
                   value={lng ?? ''}
-                  onChange={(e) => setLng(e.target.value ? parseFloat(e.target.value) : undefined)}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    const num = raw ? parseFloat(raw) : undefined;
+                    setLng(num !== undefined && isFinite(num) ? num : undefined);
+                  }}
                   placeholder="-58.3816"
                   className="w-full p-2 border-2 border-[#1a1a1a] bg-white focus:outline-none font-bold text-sm font-mono"
                   aria-label="Longitud"
