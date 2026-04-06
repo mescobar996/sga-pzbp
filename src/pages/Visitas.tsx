@@ -135,6 +135,12 @@ export default function Visitas() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [responsableFilter, setResponsableFilter] = useState('todos');
+  const [sortBy, setSortBy] = useState('fecha_desc');
+  const [appliedFilters, setAppliedFilters] = useState({
+    searchQuery: '',
+    dateFrom: '',
+    dateTo: '',
+  });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
@@ -321,17 +327,23 @@ export default function Visitas() {
     () =>
       visitas.filter((v) => {
         const matchesSearch =
-          v.origen.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          v.destino.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (v.observaciones && v.observaciones.toLowerCase().includes(searchQuery.toLowerCase()));
+          v.origen.toLowerCase().includes(appliedFilters.searchQuery.toLowerCase()) ||
+          v.destino.toLowerCase().includes(appliedFilters.searchQuery.toLowerCase()) ||
+          (v.observaciones && v.observaciones.toLowerCase().includes(appliedFilters.searchQuery.toLowerCase()));
         const matchesResponsable =
           responsableFilter === 'todos' || (v.responsable && v.responsable.split(' Y ').includes(responsableFilter));
-        const matchesDateFrom = !dateFrom || v.fecha >= dateFrom;
-        const matchesDateTo = !dateTo || v.fecha <= dateTo;
+        const matchesDateFrom = !appliedFilters.dateFrom || v.fecha >= appliedFilters.dateFrom;
+        const matchesDateTo = !appliedFilters.dateTo || v.fecha <= appliedFilters.dateTo;
 
         return matchesSearch && matchesResponsable && matchesDateFrom && matchesDateTo;
+      }).sort((a, b) => {
+        if (sortBy === 'fecha_desc') return b.fecha.localeCompare(a.fecha);
+        if (sortBy === 'fecha_asc') return a.fecha.localeCompare(b.fecha);
+        if (sortBy === 'origen_az') return a.origen.localeCompare(b.origen, 'es');
+        if (sortBy === 'origen_za') return b.origen.localeCompare(a.origen, 'es');
+        return 0;
       }),
-    [visitas, searchQuery, responsableFilter, dateFrom, dateTo],
+    [visitas, responsableFilter, appliedFilters, sortBy],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredVisitas.length / itemsPerPage));
@@ -340,7 +352,7 @@ export default function Visitas() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, dateFrom, dateTo, responsableFilter]);
+  }, [appliedFilters, responsableFilter, sortBy]);
 
   return (
     <div className="font-['Inter'] max-w-6xl mx-auto">
@@ -635,7 +647,7 @@ export default function Visitas() {
 
             {/* Filters */}
             <div className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 mb-4 sm:mb-6 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1a1a1a] opacity-50" />
@@ -648,22 +660,6 @@ export default function Visitas() {
                     placeholder="BUSCAR..."
                     className="w-full pl-9 sm:pl-10 p-2 sm:p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-xs transition-colors"
                   />
-                </div>
-                <div>
-                  <select
-                    value={responsableFilter}
-                    onChange={(e) => setResponsableFilter(e.target.value)}
-                    className="w-full p-2 sm:p-3 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors"
-                  >
-                    <option value="todos">TODOS LOS RESPONSABLES</option>
-                    {Array.from(new Set(visitas.flatMap((v) => (v.responsable ? v.responsable.split(' Y ') : [])))).map(
-                      (resp) => (
-                        <option key={resp} value={resp}>
-                          {resp}
-                        </option>
-                      ),
-                    )}
-                  </select>
                 </div>
                 <div>
                   <input
@@ -683,7 +679,77 @@ export default function Visitas() {
                     title="Fecha Hasta"
                   />
                 </div>
+                <div>
+                  <button
+                    onClick={() => setAppliedFilters({ searchQuery, dateFrom, dateTo })}
+                    className="w-full min-h-[38px] p-2 sm:p-3 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-[#0055ff] transition-colors text-[10px] sm:text-xs flex items-center justify-center gap-1.5"
+                  >
+                    <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Filtrar
+                  </button>
+                </div>
+                <div>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full p-2 sm:p-3 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors cursor-pointer"
+                  >
+                    <option value="fecha_desc">Fecha (Más reciente)</option>
+                    <option value="fecha_asc">Fecha (Más antiguo)</option>
+                    <option value="origen_az">Origen (A-Z)</option>
+                    <option value="origen_za">Origen (Z-A)</option>
+                  </select>
+                </div>
               </div>
+              {/* Responsable filter - second row */}
+              <div className="mt-3 sm:mt-4">
+                <select
+                  value={responsableFilter}
+                  onChange={(e) => setResponsableFilter(e.target.value)}
+                  className="w-full p-2 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors"
+                >
+                  <option value="todos">TODOS LOS RESPONSABLES</option>
+                  {Array.from(new Set(visitas.flatMap((v) => (v.responsable ? v.responsable.split(' Y ') : [])))).map(
+                    (resp) => (
+                      <option key={resp} value={resp}>
+                        {resp}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </div>
+
+              {/* Active filter badges */}
+              {(appliedFilters.searchQuery || appliedFilters.dateFrom || appliedFilters.dateTo) && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-bold uppercase opacity-60">Filtros activos:</span>
+                  {appliedFilters.searchQuery && (
+                    <span className="text-[10px] font-bold bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5">
+                      Búsqueda: {appliedFilters.searchQuery}
+                    </span>
+                  )}
+                  {appliedFilters.dateFrom && (
+                    <span className="text-[10px] font-bold bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5">
+                      Desde: {appliedFilters.dateFrom}
+                    </span>
+                  )}
+                  {appliedFilters.dateTo && (
+                    <span className="text-[10px] font-bold bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5">
+                      Hasta: {appliedFilters.dateTo}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      setSearchQuery('');
+                      setDateFrom('');
+                      setDateTo('');
+                      setAppliedFilters({ searchQuery: '', dateFrom: '', dateTo: '' });
+                    }}
+                    className="text-[10px] font-bold text-[#e63b2e] hover:underline ml-1"
+                  >
+                    Limpiar
+                  </button>
+                </div>
+              )}
             </div>
 
             {viewMode === 'list' ? (

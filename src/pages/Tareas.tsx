@@ -78,6 +78,10 @@ export default function Tareas() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('fecha_desc');
+  const [appliedFilters, setAppliedFilters] = useState({
+    searchQuery: '',
+  });
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendiente' | 'en_proceso' | 'completado'>('todos');
   const [priorityFilter, setPriorityFilter] = useState<'todos' | 'alta' | 'media' | 'baja'>('todos');
   const [tagFilter, setTagFilter] = useState<string>('todos');
@@ -489,7 +493,7 @@ export default function Tareas() {
   const filteredTasks = useMemo(
     () =>
       tasks.filter((task) => {
-        const query = searchQuery.toLowerCase();
+        const query = appliedFilters.searchQuery.toLowerCase();
         const matchesSearch =
           task.title.toLowerCase().includes(query) ||
           (task.description && task.description.toLowerCase().includes(query));
@@ -498,14 +502,29 @@ export default function Tareas() {
         const matchesTag = tagFilter === 'todos' || (task.tags && task.tags.includes(tagFilter));
 
         return matchesSearch && matchesStatus && matchesPriority && matchesTag;
+      }).sort((a, b) => {
+        if (sortBy === 'fecha_desc') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        if (sortBy === 'fecha_asc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        if (sortBy === 'titulo_az') return a.title.localeCompare(b.title, 'es');
+        if (sortBy === 'titulo_za') return b.title.localeCompare(a.title, 'es');
+        if (sortBy === 'prioridad') {
+          const order = { alta: 0, media: 1, baja: 2 };
+          return (order[a.priority] ?? 3) - (order[b.priority] ?? 3);
+        }
+        if (sortBy === 'vencimiento') {
+          const dateA = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+          const dateB = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+          return dateA - dateB;
+        }
+        return 0;
       }),
-    [tasks, searchQuery, statusFilter, priorityFilter, tagFilter],
+    [tasks, statusFilter, priorityFilter, tagFilter, appliedFilters, sortBy],
   );
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPageGrid(1);
-  }, [searchQuery, statusFilter, priorityFilter, tagFilter]);
+  }, [appliedFilters, statusFilter, priorityFilter, tagFilter, sortBy]);
 
   const totalPagesGrid = Math.max(1, Math.ceil(filteredTasks.length / itemsPerPageGrid));
   const paginatedGridTasks = filteredTasks.slice(
@@ -665,8 +684,65 @@ export default function Tareas() {
               </option>
             ))}
           </select>
+
+          <button
+            onClick={() => setAppliedFilters({ searchQuery })}
+            className="min-h-[38px] p-2 sm:p-3 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-[#0055ff] transition-colors text-[10px] sm:text-xs flex items-center justify-center gap-1.5 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]"
+          >
+            <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Filtrar
+          </button>
+
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-[10px] sm:text-sm"
+          >
+            <option value="fecha_desc">Fecha (Más reciente)</option>
+            <option value="fecha_asc">Fecha (Más antiguo)</option>
+            <option value="titulo_az">Título (A-Z)</option>
+            <option value="titulo_za">Título (Z-A)</option>
+            <option value="prioridad">Prioridad</option>
+            <option value="vencimiento">Vencimiento</option>
+          </select>
         </div>
       </div>
+
+      {/* Active filter badges */}
+      {appliedFilters.searchQuery && (
+        <div className="mt-3 flex flex-wrap items-center gap-2">
+          <span className="text-[10px] font-bold uppercase opacity-60">Filtros activos:</span>
+          <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
+            Búsqueda: {appliedFilters.searchQuery}
+          </span>
+          {statusFilter !== 'todos' && (
+            <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
+              Estado: {statusFilter.replace('_', ' ')}
+            </span>
+          )}
+          {priorityFilter !== 'todos' && (
+            <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
+              Prioridad: {priorityFilter}
+            </span>
+          )}
+          {tagFilter !== 'todos' && (
+            <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
+              Etiqueta: {tagFilter}
+            </span>
+          )}
+          <button
+            onClick={() => {
+              setSearchQuery('');
+              setStatusFilter('todos');
+              setPriorityFilter('todos');
+              setTagFilter('todos');
+              setAppliedFilters({ searchQuery: '' });
+            }}
+            className="text-[10px] font-bold text-[#e63b2e] hover:underline ml-1"
+          >
+            Limpiar
+          </button>
+        </div>
+      )}
 
       {/* Task List / Calendar View */}
       {viewMode === 'kanban' ? (
