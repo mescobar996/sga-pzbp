@@ -13,6 +13,7 @@ function mapDiligenciamiento(row: Record<string, any>): Diligenciamiento {
     id: row.id,
     title: row.title,
     content: row.content || '',
+    fecha: row.fecha || '',
     createdAt: row.created_at || '',
     authorId: row.author_id || '',
     authorName: row.author_name || '',
@@ -29,6 +30,7 @@ export async function getDiligenciamientos(): Promise<Diligenciamiento[]> {
 export async function addDiligenciamiento(diligenciamiento: {
   title: string;
   content: string;
+  fecha?: string;
   attachments?: DiligenciamientoAttachment[];
 }): Promise<void> {
   const userId = getCurrentUserId();
@@ -38,6 +40,7 @@ export async function addDiligenciamiento(diligenciamiento: {
   const { error } = await supabase.from('diligenciamientos').insert({
     title: diligenciamiento.title,
     content: diligenciamiento.content,
+    fecha: diligenciamiento.fecha || null,
     author_id: userId,
     author_name: authorName,
     attachments: diligenciamiento.attachments || [],
@@ -49,6 +52,7 @@ export async function updateDiligenciamiento(id: string, updates: Partial<Dilige
   const mapped: Record<string, any> = {};
   if (updates.title !== undefined) mapped.title = updates.title;
   if (updates.content !== undefined) mapped.content = updates.content;
+  if (updates.fecha !== undefined) mapped.fecha = updates.fecha;
   if (updates.attachments !== undefined) mapped.attachments = updates.attachments;
 
   const { error } = await supabase.from('diligenciamientos').update(mapped).eq('id', id);

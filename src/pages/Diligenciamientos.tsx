@@ -72,6 +72,7 @@ export default function Diligenciamientos() {
   const [currentDiligenciamiento, setCurrentDiligenciamiento] = useState<Partial<Diligenciamiento>>({
     title: '',
     content: '',
+    fecha: '',
   });
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [attachmentsToDelete, setAttachmentsToDelete] = useState<Attachment[]>([]);
@@ -116,7 +117,7 @@ export default function Diligenciamientos() {
   };
 
   const openNewModal = () => {
-    setCurrentDiligenciamiento({ title: '', content: '', attachments: [] });
+    setCurrentDiligenciamiento({ title: '', content: '', fecha: '', attachments: [] });
     setPendingFiles([]);
     setAttachmentsToDelete([]);
     setIsEditing(false);
@@ -212,20 +213,24 @@ export default function Diligenciamientos() {
       d.title.toLowerCase().includes(appliedFilters.searchQuery.toLowerCase()) ||
       d.content.toLowerCase().includes(appliedFilters.searchQuery.toLowerCase());
 
+    const itemDate = d.fecha ? new Date(d.fecha) : new Date(d.createdAt);
+
     let matchesDateFrom = true;
     if (appliedFilters.dateFrom) {
-      matchesDateFrom = new Date(d.createdAt) >= new Date(appliedFilters.dateFrom + 'T00:00:00');
+      matchesDateFrom = itemDate >= new Date(appliedFilters.dateFrom + 'T00:00:00');
     }
 
     let matchesDateTo = true;
     if (appliedFilters.dateTo) {
-      matchesDateTo = new Date(d.createdAt) <= new Date(appliedFilters.dateTo + 'T23:59:59');
+      matchesDateTo = itemDate <= new Date(appliedFilters.dateTo + 'T23:59:59');
     }
 
     return matchesSearch && matchesDateFrom && matchesDateTo;
   }).sort((a, b) => {
-    if (sortBy === 'fecha_desc') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    if (sortBy === 'fecha_asc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    const dateA = a.fecha ? new Date(a.fecha) : new Date(a.createdAt);
+    const dateB = b.fecha ? new Date(b.fecha) : new Date(b.createdAt);
+    if (sortBy === 'fecha_desc') return dateB.getTime() - dateA.getTime();
+    if (sortBy === 'fecha_asc') return dateA.getTime() - dateB.getTime();
     if (sortBy === 'titulo_az') return a.title.localeCompare(b.title, 'es');
     if (sortBy === 'titulo_za') return b.title.localeCompare(a.title, 'es');
     return 0;
@@ -366,7 +371,7 @@ export default function Diligenciamientos() {
                       {d.title}
                     </h3>
                     <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest opacity-60">
-                      <span>{new Date(d.createdAt).toLocaleString()}</span>
+                      <span>{d.fecha ? new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-ES') : new Date(d.createdAt).toLocaleString()}</span>
                       <span>•</span>
                       <span>Por: {d.authorName}</span>
                     </div>
@@ -480,6 +485,16 @@ export default function Diligenciamientos() {
                   placeholder="TÍTULO DEL DILIGENCIAMIENTO..."
                   required
                   autoFocus
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Fecha</label>
+                <input
+                  type="date"
+                  value={currentDiligenciamiento.fecha || ''}
+                  onChange={(e) => setCurrentDiligenciamiento({ ...currentDiligenciamiento, fecha: e.target.value })}
+                  className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors"
                 />
               </div>
 
