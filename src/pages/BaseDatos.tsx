@@ -750,8 +750,8 @@ export default function BaseDatos() {
                   name: l.name,
                   type: l.type,
                   status: l.status,
-                  latitude: l.latitude,
-                  longitude: l.longitude,
+                  latitude: l.latitude ?? undefined,
+                  longitude: l.longitude ?? undefined,
                 });
                 setIsLocationModalOpen(true);
               }}
