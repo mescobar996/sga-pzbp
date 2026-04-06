@@ -127,6 +127,17 @@ export default function Novedades() {
     setIsModalOpen(true);
   };
 
+  const handleCloseModal = () => {
+    const hasChanges =
+      currentNovedad.title?.trim() ||
+      currentNovedad.content?.trim() ||
+      pendingFiles.length > 0;
+    if (hasChanges && !isUploading) {
+      if (!window.confirm('¿Tenés cambios sin guardar? Si cerrás, se van a perder.')) return;
+    }
+    setIsModalOpen(false);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentNovedad.title?.trim() || !currentNovedad.content?.trim()) return;
@@ -384,6 +395,7 @@ export default function Novedades() {
                 }
               }}
               placeholder="BUSCAR NOVEDADES..."
+              autocomplete="off"
               className="w-full pl-10 p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
             />
           </div>
@@ -718,7 +730,7 @@ export default function Novedades() {
               <div className="flex justify-end gap-4 mt-4">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => handleCloseModal()}
                   className="px-4 py-3 border-2 border-[#1a1a1a] bg-white font-black uppercase tracking-widest hover:bg-gray-100 transition-colors text-sm"
                 >
                   Cancelar

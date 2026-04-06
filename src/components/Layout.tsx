@@ -510,6 +510,7 @@ export default function Layout({ user }: { user: User }) {
                   className="bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-wider outline-none w-48 lg:w-64 text-[#1a1a1a] placeholder:text-[#1a1a1a]/40"
                   placeholder="BUSCAR EN TODO EL SISTEMA..."
                   type="text"
+                  autocomplete="off"
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
@@ -772,6 +773,7 @@ export default function Layout({ user }: { user: User }) {
                   className="bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-wider outline-none w-full text-[#1a1a1a] placeholder:text-[#1a1a1a]/40"
                   placeholder="BUSCAR..."
                   type="text"
+                  autocomplete="off"
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyDown={handleSearchKeyDown}

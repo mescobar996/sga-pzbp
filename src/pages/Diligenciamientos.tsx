@@ -132,6 +132,17 @@ export default function Diligenciamientos() {
     setIsModalOpen(true);
   };
 
+  const handleCloseModal = () => {
+    const hasChanges =
+      currentDiligenciamiento.title?.trim() ||
+      currentDiligenciamiento.content?.trim() ||
+      pendingFiles.length > 0;
+    if (hasChanges && !isUploading) {
+      if (!window.confirm('¿Tenés cambios sin guardar? Si cerrás, se van a perder.')) return;
+    }
+    setIsModalOpen(false);
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentDiligenciamiento.title?.trim() || !currentDiligenciamiento.content?.trim()) return;
@@ -274,6 +285,7 @@ export default function Diligenciamientos() {
                 }
               }}
               placeholder="BUSCAR DILIGENCIAMIENTOS..."
+              autocomplete="off"
               className="w-full pl-10 p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
             />
           </div>
@@ -615,7 +627,7 @@ export default function Diligenciamientos() {
               <div className="flex justify-end gap-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => handleCloseModal()}
                   className="px-4 py-3 border-2 border-[#1a1a1a] bg-white font-black uppercase tracking-widest hover:bg-[#f5f0e8] transition-colors text-sm"
                 >
                   Cancelar

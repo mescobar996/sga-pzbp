@@ -231,6 +231,17 @@ export default function Tareas() {
     setIsModalOpen(true);
   };
 
+  const handleCloseTaskModal = () => {
+    const hasChanges =
+      currentTask.title?.trim() ||
+      currentTask.description?.trim() ||
+      pendingFiles.length > 0;
+    if (hasChanges && !isUploading) {
+      if (!window.confirm('¿Tenés cambios sin guardar? Si cerrás, se van a perder.')) return;
+    }
+    setIsModalOpen(false);
+  };
+
   const handleSaveTask = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
@@ -614,6 +625,7 @@ export default function Tareas() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="BUSCAR TAREAS..."
+            autocomplete="off"
             className="w-full pl-9 sm:pl-10 p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] text-[10px] sm:text-sm"
           />
         </div>
@@ -1499,7 +1511,7 @@ export default function Tareas() {
               <div className="flex justify-end gap-3 mt-2">
                 <button
                   type="button"
-                  onClick={() => setIsModalOpen(false)}
+                  onClick={() => handleCloseTaskModal()}
                   className="px-4 py-2 border-2 border-[#1a1a1a] bg-white font-black uppercase tracking-widest hover:bg-gray-100 transition-colors text-sm"
                 >
                   Cancelar
