@@ -448,14 +448,41 @@ export default function BaseDatos() {
     setIsImporting(true);
     setImportStatus('Iniciando proceso...');
 
+    // Helper to map camelCase fields from old backups to snake_case Supabase columns
+    const mapRecord = (record: any) => {
+      const mapping: Record<string, string> = {
+        authorId: 'author_id',
+        authorName: 'author_name',
+        createdAt: 'created_at',
+        dueDate: 'due_date',
+        photoURL: 'photo_url',
+        taskId: 'task_id',
+        taskTitle: 'task_title',
+        userId: 'user_id',
+        userEmail: 'user_email',
+        recipientId: 'recipient_id',
+        assignedTo: 'assigned_to',
+      };
+
+      const newRecord: any = {};
+      Object.keys(record).forEach((key) => {
+        const newKey = mapping[key] || key;
+        newRecord[newKey] = record[key];
+      });
+      return newRecord;
+    };
+
     try {
       if (importMode === 'multi') {
         const order = ['users', 'locations', 'personal', 'tasks', 'visitas', 'novedades', 'task_history', 'notifications'];
         let totalSuccess = 0;
 
         for (const table of order) {
-          const records = importDataMap[table];
-          if (!records || !Array.isArray(records) || records.length === 0) continue;
+          const rawRecords = importDataMap[table];
+          if (!rawRecords || !Array.isArray(rawRecords) || rawRecords.length === 0) continue;
+
+          // Map records before upsert
+          const records = rawRecords.map(mapRecord);
 
           setImportStatus(`Importando ${table.toUpperCase()} (${records.length} registros)...`);
           
@@ -473,8 +500,11 @@ export default function BaseDatos() {
       } else {
         setImportStatus(`Importando ${importPreview.length} registros a ${importCollection}...`);
         
+        // Map records before upsert
+        const records = importPreview.map(mapRecord);
+
         // Single table import with upsert to prevent duplicates
-        const { error } = await supabase.from(importCollection).upsert(importPreview, { onConflict: 'id' });
+        const { error } = await supabase.from(importCollection).upsert(records, { onConflict: 'id' });
         
         if (error) {
           console.error('Error importing records:', error);
