@@ -54,6 +54,7 @@ export default function Novedades() {
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [sortBy, setSortBy] = useState('fecha_desc');
   const [appliedFilters, setAppliedFilters] = useState({
     searchQuery: '',
     dateFrom: '',
@@ -342,6 +343,12 @@ export default function Novedades() {
     }
 
     return matchesSearch && matchesDateFrom && matchesDateTo;
+  }).sort((a, b) => {
+    if (sortBy === 'fecha_desc') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    if (sortBy === 'fecha_asc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    if (sortBy === 'titulo_az') return a.title.localeCompare(b.title, 'es');
+    if (sortBy === 'titulo_za') return b.title.localeCompare(a.title, 'es');
+    return 0;
   });
 
   const totalPages = Math.ceil(filteredNovedades.length / itemsPerPage);
@@ -362,7 +369,7 @@ export default function Novedades() {
       </div>
 
       <div className="mb-6 bg-white border-2 border-[#1a1a1a] p-4 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <div className="relative md:col-span-1">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Search className="w-4 h-4 text-[#1a1a1a] opacity-50" />
@@ -401,12 +408,55 @@ export default function Novedades() {
           <div>
             <button
               onClick={() => setAppliedFilters({ searchQuery, dateFrom, dateTo })}
-              className="w-full h-full p-2 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center justify-center gap-2 text-xs"
+              className="w-full min-h-[38px] p-2 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center justify-center gap-2 text-xs"
             >
               <Filter className="w-4 h-4" /> Filtrar
             </button>
           </div>
+          <div>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-xs"
+            >
+              <option value="fecha_desc">Fecha (Más reciente)</option>
+              <option value="fecha_asc">Fecha (Más antiguo)</option>
+              <option value="titulo_az">Título (A-Z)</option>
+              <option value="titulo_za">Título (Z-A)</option>
+            </select>
+          </div>
         </div>
+        {(appliedFilters.searchQuery || appliedFilters.dateFrom || appliedFilters.dateTo) && (
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase opacity-60">Filtros activos:</span>
+            {appliedFilters.searchQuery && (
+              <span className="text-[10px] font-bold bg-[#f5f0e8] border border-[#1a1a1a] px-2 py-0.5 uppercase">
+                &quot;{appliedFilters.searchQuery}&quot;
+              </span>
+            )}
+            {appliedFilters.dateFrom && (
+              <span className="text-[10px] font-bold bg-[#f5f0e8] border border-[#1a1a1a] px-2 py-0.5 uppercase">
+                Desde: {appliedFilters.dateFrom}
+              </span>
+            )}
+            {appliedFilters.dateTo && (
+              <span className="text-[10px] font-bold bg-[#f5f0e8] border border-[#1a1a1a] px-2 py-0.5 uppercase">
+                Hasta: {appliedFilters.dateTo}
+              </span>
+            )}
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setDateFrom('');
+                setDateTo('');
+                setAppliedFilters({ searchQuery: '', dateFrom: '', dateTo: '' });
+              }}
+              className="text-[10px] font-bold text-[#e63b2e] hover:underline uppercase ml-auto"
+            >
+              Limpiar
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col gap-4">
