@@ -14,6 +14,7 @@ import Tareas from './pages/Tareas';
 import Reportes from './pages/Reportes';
 import BaseDatos from './pages/BaseDatos';
 import Novedades from './pages/Novedades';
+import Diligenciamientos from './pages/Diligenciamientos';
 import Configuracion from './pages/Configuracion';
 import DebugDB from './pages/DebugDB';
 import Login from './pages/Login';
@@ -62,6 +63,14 @@ function AnimatedRoutes({ user }: { user: User | null }) {
             element={
               <PageTransition>
                 <Tareas />
+              </PageTransition>
+            }
+          />
+          <Route
+            path="diligenciamientos"
+            element={
+              <PageTransition>
+                <Diligenciamientos />
               </PageTransition>
             }
           />

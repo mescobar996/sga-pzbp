@@ -112,6 +112,23 @@ export interface Novedad {
   attachments?: NovedadAttachment[];
 }
 
+export interface DiligenciamientoAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
+
+export interface Diligenciamiento {
+  id: string;
+  title: string;
+  content: string;
+  createdAt: string;
+  authorId: string;
+  authorName: string;
+  attachments?: DiligenciamientoAttachment[];
+}
+
 export interface AppNotification {
   id: string;
   title: string;
