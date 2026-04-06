@@ -17,6 +17,7 @@ import {
   Columns,
   History,
   CheckSquare,
+  Filter,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
