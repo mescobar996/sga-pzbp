@@ -1,7 +1,7 @@
 import { supabase } from '../db/client';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Shield, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 
 export default function Login() {
@@ -30,9 +30,7 @@ export default function Login() {
         transition={{ duration: 0.4 }}
         className="bg-white p-8 lg:p-12 border-4 border-[#1a1a1a] shadow-[12px_12px_0px_0px_rgba(26,26,26,0.3)] max-w-md w-full text-center"
       >
-        <div className="w-20 h-20 mx-auto mb-6 border-4 border-[#1a1a1a] bg-[#0055ff] flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(26,26,26,0.3)]">
-          <Shield className="w-10 h-10 text-white" />
-        </div>
+        <img src="/pwa-192x192.png" alt="Logo PZBP" className="w-20 h-20 mx-auto mb-6 object-contain" />
 
         <h1 className="text-3xl lg:text-4xl font-black uppercase mb-2 tracking-tighter">SGA PZBP - MS</h1>
         <h2 className="text-base lg:text-lg font-bold uppercase mb-2 opacity-70">Prefectura Naval Argentina</h2>
