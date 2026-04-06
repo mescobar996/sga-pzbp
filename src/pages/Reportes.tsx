@@ -750,6 +750,31 @@ export default function Reportes() {
           : ''
       }
 
+      ${
+        totalDiligenciamientos > 0
+          ? `
+      <div class="section" style="padding-top:0;">
+        <div class="section-divider"><div class="section-divider-accent" style="background:#f97316;"></div><div class="section-divider-title">Diligenciamientos</div><div class="section-divider-count">${totalDiligenciamientos} registros</div></div>
+        ${data.diligenciamientos
+          .map((d: any, idx: number) =>
+            dataCard(
+              d.title || 'Sin título',
+              idx + 1,
+              '#f97316',
+              [
+                { label: 'Fecha', value: d.fecha ? new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-ES') : (d.createdAt ? new Date(d.createdAt).toLocaleString('es-ES') : 'N/A') },
+                { label: 'Autor', value: d.authorName || 'N/A' },
+                { label: 'Título', value: d.title || 'Sin título' },
+                { label: 'Detalle', value: d.content || '—' },
+              ],
+              attachmentsBlock(d.attachments, '#f97316'),
+            ),
+          )
+          .join('')}
+      </div>`
+          : ''
+      }
+
       <div class="report-footer">
         <div class="report-footer-brand">SGA PZBP — Prefectura Naval Argentina</div>
         <div class="report-footer-date">Generado el ${now}</div>
@@ -1256,6 +1281,13 @@ export default function Reportes() {
         { field: 'title', label: 'TÍTULO', width: 'min-w-[150px]' },
         { field: 'authorName', label: 'AUTOR', width: 'w-36' },
         { field: 'content', label: 'CONTENIDO', width: 'min-w-[220px]' },
+        { field: 'attachments', label: 'ADJUNTOS', width: 'w-20' },
+      ],
+      diligenciamientos: [
+        { field: 'fecha', label: 'FECHA', width: 'w-32' },
+        { field: 'title', label: 'TÍTULO', width: 'min-w-[150px]' },
+        { field: 'authorName', label: 'AUTOR', width: 'w-36' },
+        { field: 'content', label: 'DETALLE', width: 'min-w-[220px]' },
         { field: 'attachments', label: 'ADJUNTOS', width: 'w-20' },
       ],
     };
