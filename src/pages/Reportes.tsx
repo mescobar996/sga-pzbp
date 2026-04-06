@@ -77,7 +77,7 @@ export default function Reportes() {
       setDataPreview(data);
       setShowPreview(true);
     } catch (error) {
-      toast.error('Error al cargar la vista previa');
+      toast.error('ERROR AL CARGAR LA VISTA PREVIA');
     } finally {
       setIsLoadingPreview(false);
     }
@@ -754,7 +754,7 @@ export default function Reportes() {
     overlay.innerHTML = `
       <div style="position:sticky;top:0;z-index:10;background:#fff;padding:16px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e5e7eb;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
         <div>
-          <div style="font-size:16px;font-weight:800;color:#111827;">Vista previa del reporte</div>
+          <div style="font-size:16px;font-weight:800;color:#111827;">VISTA PREVIA DEL REPORTE</div>
           <div style="font-size:12px;color:#6b7280;margin-top:2px;">Revisá y descargá el PDF</div>
         </div>
         <div style="display:flex;gap:10px;">
@@ -974,7 +974,7 @@ export default function Reportes() {
                     val = JSON.stringify(val).slice(0, 40);
                   }
                 } else {
-                  val = `${val.length} elemento(s)`;
+                  val = `${val.length} ELEMENTO(S)`;
                 }
               } else {
                 val = JSON.stringify(val).slice(0, 40);
@@ -1179,13 +1179,13 @@ export default function Reportes() {
     if (typeof val === 'object') {
       if (Array.isArray(val)) {
         if (val.length === 0) return '';
-        if (key === 'comments') return `${val.length} comentario${val.length > 1 ? 's' : ''}`;
+        if (key === 'comments') return `${val.length} COMENTARIO${val.length > 1 ? 'S' : ''}`;
         if (key === 'subtasks') {
           const done = val.filter((s: any) => s.completed).length;
           return `${done}/${val.length}`;
         }
         if (key === 'attachments' || key === 'tags') return `${val.length}`;
-        return `${val.length} elemento(s)`;
+        return `${val.length} ELEMENTO(S)`;
       }
       if (key === 'createdAt' || key === 'timestamp') {
         try {
@@ -1194,7 +1194,7 @@ export default function Reportes() {
           return String(val).slice(0, 30);
         }
       }
-      return JSON.stringify(val).slice(0, 40);
+      return JSON.stringify(val).slice(0, 40).toUpperCase();
     }
     if (key === 'createdAt' || key === 'timestamp') {
       try {
@@ -1204,7 +1204,7 @@ export default function Reportes() {
         /* fall through */
       }
     }
-    return String(val);
+    return String(val).toUpperCase();
   };
 
   const getColumnConfig = (key: string): { field: string; label: string; width: string }[] => {
@@ -1269,7 +1269,7 @@ export default function Reportes() {
         {totalRecords > 0 && showPreview && (
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-[#0055ff]" />
-            <span className="text-sm font-black">{totalRecords} registros</span>
+            <span className="text-sm font-black uppercase">{totalRecords} REGISTROS</span>
           </div>
         )}
       </div>
@@ -1337,7 +1337,7 @@ export default function Reportes() {
               disabled={isLoadingPreview}
               className="w-full py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#f5f0e8] transition-all flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 text-sm"
             >
-              <Eye className="w-4 h-4" /> {isLoadingPreview ? 'Cargando...' : 'Vista Previa'}
+              <Eye className="w-4 h-4" /> {isLoadingPreview ? 'CARGANDO...' : 'VISTA PREVIA'}
             </button>
           </div>
         </div>
@@ -1351,7 +1351,7 @@ export default function Reportes() {
               className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] p-6"
             >
               <h2 className="text-lg font-black uppercase mb-4 font-['Space_Grotesk'] border-b-2 border-[#1a1a1a] pb-2">
-                Vista Previa de Datos
+                VISTA PREVIA DE DATOS
               </h2>
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
@@ -1380,8 +1380,8 @@ export default function Reportes() {
                           {sourceIcons[key] || <Database className="w-4 h-4" />}
                           {sourceLabels[key] || key.toUpperCase()}
                         </h3>
-                        <span className="text-xs font-bold opacity-50 bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5">
-                          {records.length} registro{records.length !== 1 ? 's' : ''}
+                        <span className="text-xs font-bold opacity-50 bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5 uppercase">
+                          {records.length} REGISTRO{records.length !== 1 ? 'S' : ''}
                         </span>
                       </div>
 
@@ -1419,7 +1419,7 @@ export default function Reportes() {
                                         col.field === 'attachments';
 
                                       return (
-                                        <td key={col.field} className="p-3">
+                                        <td key={col.field} className="p-3 uppercase">
                                           {isBadge && typeof rawVal === 'string' && rawVal ? (
                                             <span
                                               className={`inline-block px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border border-[#1a1a1a] ${col.field === 'priority' ? getPriorityBadge(rawVal) : getStatusBadge(rawVal)}`}
@@ -1427,12 +1427,12 @@ export default function Reportes() {
                                               {rawVal.replace('_', ' ')}
                                             </span>
                                           ) : isCount && Array.isArray(rawVal) && rawVal.length > 0 ? (
-                                            <span className="inline-block px-2 py-0.5 text-[10px] font-black tracking-wider border border-[#1a1a1a] bg-[#f5f0e8]">
+                                            <span className="inline-block px-2 py-0.5 text-[10px] font-black tracking-wider border border-[#1a1a1a] bg-[#f5f0e8] uppercase">
                                               {col.field === 'subtasks' ? displayVal : `${rawVal.length}`}
                                             </span>
                                           ) : (
                                             <span
-                                              className="text-xs font-medium truncate block max-w-[250px]"
+                                              className="text-xs font-medium uppercase truncate block max-w-[250px]"
                                               title={String(rawVal ?? '')}
                                             >
                                               {displayVal || '—'}
@@ -1474,7 +1474,7 @@ export default function Reportes() {
                                       .map((val: any, i) => (
                                         <td
                                           key={i}
-                                          className="p-3 text-xs font-medium truncate max-w-[200px]"
+                                          className="p-3 text-xs font-medium uppercase truncate max-w-[200px]"
                                           title={String(val ?? '')}
                                         >
                                           {formatValue(val, Object.keys(record)[i])}
@@ -1504,9 +1504,9 @@ export default function Reportes() {
           ) : (
             <div className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] p-12 flex flex-col items-center justify-center text-center">
               <BarChart3 className="w-16 h-16 mb-4 opacity-20" />
-              <h3 className="text-lg font-black uppercase mb-2">Sin Vista Previa</h3>
-              <p className="text-sm font-medium opacity-50 max-w-sm mb-4">
-                Configura los filtros y haz clic en "Vista Previa" para ver los datos antes de generar el reporte.
+              <h3 className="text-lg font-black uppercase mb-2">SIN VISTA PREVIA</h3>
+              <p className="text-sm font-medium opacity-50 max-w-sm mb-4 uppercase">
+                CONFIGURA LOS FILTROS Y HAZ CLIC EN "VISTA PREVIA" PARA VER LOS DATOS ANTES DE GENERAR EL REPORTE.
               </p>
               <button
                 onClick={loadPreview}
