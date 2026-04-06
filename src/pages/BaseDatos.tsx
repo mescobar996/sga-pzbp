@@ -525,6 +525,11 @@ export default function BaseDatos() {
             value = currentUserId || value;
           }
 
+          // Skip empty date fields - PostgreSQL date columns reject empty strings
+          if (value === '' && (mappedKey === 'due_date' || mappedKey === 'created_at' || mappedKey === 'fecha' || mappedKey === 'hora' || mappedKey === 'timestamp')) {
+            continue;
+          }
+
           newRecord[mappedKey] = value;
         }
       });
