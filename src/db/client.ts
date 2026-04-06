@@ -47,7 +47,7 @@ supabase.auth.onAuthStateChange(async (_event, session) => {
       // Usar timeout para la carga del rol para no bloquear el estado inicial
       const response = await withTimeout(
         supabase.from('users').select('role').eq('id', _currentUserId).single(),
-        3000
+        10000
       );
       _currentUserRole = (response as any)?.data?.role || 'user';
     } catch (err) {

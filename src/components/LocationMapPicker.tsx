@@ -45,7 +45,7 @@ function MapController({ lat, lng }: { lat: number | undefined, lng: number | un
 
   // 2. Fly to when coords change
   React.useEffect(() => {
-    if (lat !== undefined && lng !== undefined) {
+    if (typeof lat === 'number' && typeof lng === 'number' && isFinite(lat) && isFinite(lng)) {
       map.flyTo([lat, lng], 15);
     }
   }, [lat, lng, map]);
@@ -60,8 +60,11 @@ export default function LocationMapPicker({
   initialLat,
   initialLng,
 }: LocationMapPickerProps) {
-  const [lat, setLat] = useState<number | undefined>(initialLat);
-  const [lng, setLng] = useState<number | undefined>(initialLng);
+  // Normalize null to undefined to prevent Leaflet errors
+  const safeLat = initialLat ?? undefined;
+  const safeLng = initialLng ?? undefined;
+  const [lat, setLat] = useState<number | undefined>(safeLat);
+  const [lng, setLng] = useState<number | undefined>(safeLng);
   const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -98,7 +101,9 @@ export default function LocationMapPicker({
 
   if (!isOpen) return null;
 
-  const center: [number, number] = lat !== undefined && lng !== undefined ? [lat, lng] : [-34.6037, -58.3816];
+  // Strict validation: only use lat/lng if they are valid finite numbers
+  const hasValidCoords = typeof lat === 'number' && typeof lng === 'number' && isFinite(lat) && isFinite(lng);
+  const center: [number, number] = hasValidCoords ? [lat, lng] : [-34.6037, -58.3816];
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
@@ -133,7 +138,7 @@ export default function LocationMapPicker({
         <div className="flex-1 min-h-[400px] relative bg-[#e5e5e5] z-0 overflow-hidden">
           <MapContainer
             center={center}
-            zoom={lat !== undefined ? 14 : 6}
+            zoom={hasValidCoords ? 14 : 6}
             style={{ width: '100%', height: '400px', zIndex: 0 }}
             scrollWheelZoom={true}
           >
