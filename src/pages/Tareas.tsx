@@ -963,10 +963,10 @@ export default function Tareas() {
 
                     <div className="flex justify-end gap-1.5 sm:gap-2 mt-auto pt-2 sm:pt-3 border-t-2 border-[#1a1a1a]/10">
                       <label
-                        className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
                         title="Subir archivo rápido"
                       >
-                        <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                        <Upload className="w-5 h-5 sm:w-4 sm:h-4" />
                         <input
                           type="file"
                           className="hidden"
@@ -982,10 +982,10 @@ export default function Tareas() {
                       {isAdmin && (
                         <button
                           onClick={() => handleDeleteTask(task.id)}
-                          className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors opacity-0 group-hover:opacity-100"
                           title="Eliminar tarea"
                         >
-                          <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                          <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
                         </button>
                       )}
                     </div>
@@ -1222,7 +1222,7 @@ export default function Tareas() {
                     type="date"
                     value={currentTask.dueDate || ''}
                     onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
-                    className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
+                    className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-base sm:text-sm"
                   />
                 </div>
 
@@ -1454,10 +1454,10 @@ export default function Tareas() {
                             <button
                               type="button"
                               onClick={() => setAttachmentsToDelete([...attachmentsToDelete, att])}
-                              className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors"
+                              className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#e63b2e] hover:text-white transition-colors"
                               title="Eliminar archivo"
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-5 h-5" />
                             </button>
                           </div>
                         ))}

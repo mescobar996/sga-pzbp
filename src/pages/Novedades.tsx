@@ -392,7 +392,7 @@ export default function Novedades() {
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
+              className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
               title="Fecha Desde"
             />
           </div>
@@ -401,7 +401,7 @@ export default function Novedades() {
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
+              className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
               title="Fecha Hasta"
             />
           </div>
@@ -669,10 +669,10 @@ export default function Novedades() {
                         <button
                           type="button"
                           onClick={() => setAttachmentsToDelete([...attachmentsToDelete, att])}
-                          className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors"
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#e63b2e] hover:text-white transition-colors"
                           title="Eliminar archivo"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-5 h-5" />
                         </button>
                       </div>
                     ))}

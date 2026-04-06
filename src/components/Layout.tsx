@@ -533,7 +533,7 @@ export default function Layout({ user }: { user: User }) {
                     exit={{ opacity: 0, y: -4 }}
                     transition={{ duration: 0.15 }}
                     className="absolute top-full left-0 right-0 mt-2 bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,0.3)] z-50 max-h-[70vh] overflow-hidden flex flex-col"
-                    style={{ minWidth: '480px' }}
+                    style={{ minWidth: 'min(480px, calc(100vw - 32px))' }}
                   >
                     <div className="p-3 border-b-4 border-[#1a1a1a] bg-[#f5f0e8] flex justify-between items-center shrink-0">
                       <span className="text-xs font-black uppercase tracking-widest">

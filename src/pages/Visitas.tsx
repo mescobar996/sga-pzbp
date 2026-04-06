@@ -398,7 +398,7 @@ export default function Visitas() {
                   required
                   value={formData.fecha}
                   onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
-                  className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
+                  className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-base sm:text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -408,7 +408,7 @@ export default function Visitas() {
                   required
                   value={formData.hora}
                   onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
-                  className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
+                  className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-base sm:text-sm"
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
@@ -533,10 +533,10 @@ export default function Visitas() {
                         <button
                           type="button"
                           onClick={() => setAttachmentsToDelete([...attachmentsToDelete, att])}
-                          className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors ml-2"
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#e63b2e] hover:text-white transition-colors ml-2"
                           title="Eliminar archivo"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-5 h-5" />
                         </button>
                       </div>
                     ))}
@@ -654,7 +654,7 @@ export default function Visitas() {
                     type="date"
                     value={dateFrom}
                     onChange={(e) => setDateFrom(e.target.value)}
-                    className="w-full p-2 sm:p-3 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors"
+                    className="w-full p-2.5 sm:p-3 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-xs sm:text-sm transition-colors"
                     title="Fecha Desde"
                   />
                 </div>
@@ -663,7 +663,7 @@ export default function Visitas() {
                     type="date"
                     value={dateTo}
                     onChange={(e) => setDateTo(e.target.value)}
-                    className="w-full p-2 sm:p-3 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors"
+                    className="w-full p-2.5 sm:p-3 border-2 sm:border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-xs sm:text-sm transition-colors"
                     title="Fecha Hasta"
                   />
                 </div>
@@ -702,11 +702,11 @@ export default function Visitas() {
                       <div className="mt-3 sm:mt-4 flex justify-between items-center">
                         <div className="flex gap-1.5 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <label
-                            className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#f5f0e8] transition-colors cursor-pointer"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#f5f0e8] transition-colors cursor-pointer"
                             title="Subir archivo rápido"
                             onClick={(e) => e.stopPropagation()}
                           >
-                            <Upload className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <Upload className="w-5 h-5 sm:w-4 sm:h-4" />
                             <input
                               type="file"
                               className="hidden"
@@ -724,10 +724,10 @@ export default function Visitas() {
                               e.stopPropagation();
                               handleEditVisita(visita);
                             }}
-                            className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
                             title="Editar"
                           >
-                            <Edit2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                            <Edit2 className="w-5 h-5 sm:w-4 sm:h-4" />
                           </button>
                           {isAdmin && (
                             <button
@@ -735,10 +735,10 @@ export default function Visitas() {
                                 e.stopPropagation();
                                 handleDeleteVisita(visita.id);
                               }}
-                              className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
+                              className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
                               title="Eliminar"
                             >
-                              <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                              <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
                             </button>
                           )}
                         </div>
@@ -911,10 +911,10 @@ export default function Visitas() {
                             <button
                               type="button"
                               onClick={() => handleDeleteAttachment(selectedVisita.id, att)}
-                              className="p-1.5 hover:bg-[#e63b2e] hover:text-white transition-colors ml-2 flex-shrink-0"
+                              className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#e63b2e] hover:text-white transition-colors ml-2 flex-shrink-0"
                               title="Eliminar archivo"
                             >
-                              <X className="w-4 h-4" />
+                              <X className="w-5 h-5" />
                             </button>
                           </div>
                         ))}
