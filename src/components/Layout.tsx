@@ -715,9 +715,8 @@ export default function Layout({ user }: { user: User }) {
 
       {/* SideNavBar - Desktop */}
       <nav className="hidden lg:flex fixed left-0 top-20 h-[calc(100vh-80px)] w-64 flex-col z-40 bg-[#f5f0e8] border-r-4 border-[#1a1a1a] font-['Space_Grotesk'] font-bold uppercase">
-        <div className="p-6 border-b-2 border-[#1a1a1a] flex flex-col items-center gap-3">
-          <img src="/pwa-192x192.png" alt="Logo PZBP" className="w-16 h-16 object-contain" />
-          <span className="text-lg font-black block text-center leading-tight">SGA PZBP - MS</span>
+        <div className="p-6 border-b-2 border-[#1a1a1a]">
+          <span className="text-xl font-black block">SGA PZBP - MS</span>
         </div>
         <div className="flex-1 overflow-y-auto py-4">
           {navItems.map((item) => (
@@ -765,11 +764,7 @@ export default function Layout({ user }: { user: User }) {
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="lg:hidden fixed left-0 top-16 h-[calc(100vh-64px)] w-72 flex flex-col z-50 bg-[#f5f0e8] border-r-4 border-[#1a1a1a] shadow-[8px_0px_0px_0px_rgba(26,26,26,0.2)] font-['Space_Grotesk'] font-bold uppercase"
           >
-            <div className="p-4 border-b-2 border-[#1a1a1a] flex flex-col gap-3">
-              <div className="flex items-center gap-3">
-                <img src="/pwa-96x96.png" alt="" className="w-10 h-10 object-contain flex-shrink-0" />
-                <span className="text-sm font-black tracking-tighter">SGA PZBP - MS</span>
-              </div>
+            <div className="p-4 border-b-2 border-[#1a1a1a]">
               {/* Mobile Search */}
               <div className="flex items-center bg-white border-2 border-[#1a1a1a] px-3 py-2">
                 <Search className="text-[#1a1a1a] mr-2 w-4 h-4" />
