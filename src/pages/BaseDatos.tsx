@@ -464,6 +464,34 @@ export default function BaseDatos() {
         assignedTo: 'assigned_to',
       };
 
+      // Define columns that must be UUIDs in the database
+      const uuidColumns = [
+        'id', 
+        'author_id', 
+        'assigned_to', 
+        'user_id', 
+        'task_id', 
+        'recipient_id'
+      ];
+
+      // Helper to convert any string to a deterministic valid UUID format
+      const toUUID = (str: any) => {
+        if (!str || typeof str !== 'string') return str;
+        // Check if already a valid UUID
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (uuidRegex.test(str)) return str;
+
+        // Otherwise, convert to deterministic hex string
+        let hex = '';
+        for (let i = 0; i < str.length; i++) {
+          hex += str.charCodeAt(i).toString(16);
+        }
+        // Pad or truncate to 32 hex chars
+        hex = (hex + '00000000000000000000000000000000').slice(0, 32);
+        // Format as xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+      };
+
       // Define allowed columns for each table to avoid 400 errors due to unknown columns
       const allowedColumns: Record<string, string[]> = {
         users: ['id', 'name', 'email', 'role', 'photo_url', 'created_at'],
@@ -480,10 +508,18 @@ export default function BaseDatos() {
       const columns = allowedColumns[tableName] || [];
 
       Object.keys(record).forEach((key) => {
-        const mappedKey = mapping[key] || key;
-        // Only include the column if it's in our allowed list (or if we don't have a list for this table)
+        let mappedKey = mapping[key] || key;
+        
+        // Only include the column if it's in our allowed list
         if (columns.length === 0 || columns.includes(mappedKey)) {
-          newRecord[mappedKey] = record[key];
+          let value = record[key];
+          
+          // Apply UUID conversion if necessary
+          if (uuidColumns.includes(mappedKey)) {
+            value = toUUID(value);
+          }
+          
+          newRecord[mappedKey] = value;
         }
       });
 
