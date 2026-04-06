@@ -198,14 +198,32 @@ export default function Visitas() {
       return;
     }
 
+    const finalFormData = {
+      ...result.data,
+      responsable: selectedResponsables.join(' Y '),
+    };
+
     try {
-      const finalFormData = {
-        ...result.data,
-        responsable: selectedResponsables.join(' Y '),
-      };
+      let finalAttachments: Attachment[] = [];
 
       if (isEditingVisita && editingVisitaId) {
-        await updateVisita(editingVisitaId, finalFormData);
+        // Get existing attachments, filter out deleted ones
+        const existingVisita = visitas.find((v) => v.id === editingVisitaId);
+        finalAttachments = (existingVisita?.attachments || []).filter(
+          (a) => !attachmentsToDelete.find((d) => d.url === a.url),
+        );
+
+        // Upload pending files
+        if (pendingFiles.length > 0) {
+          for (const file of pendingFiles) {
+            const userId = getCurrentUserId();
+            const newAttachment = await uploadVisitaAttachment(file, editingVisitaId, userId);
+            const path = `visitas/${editingVisitaId}/${Date.now()}_${file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+            finalAttachments.push({ ...newAttachment, path });
+          }
+        }
+
+        await updateVisita(editingVisitaId, { ...finalFormData, attachments: finalAttachments as any });
         toast.success('Visita actualizada exitosamente');
         setIsEditingVisita(false);
         setEditingVisitaId(null);
@@ -213,7 +231,22 @@ export default function Visitas() {
         await addVisita({
           ...finalFormData,
           comments: [],
+          attachments: [],
         });
+
+        // Get the newly created visita ID (first from top, since they're ordered by created_at desc)
+        const allVisitas = await getVisitas();
+        const newVisita = allVisitas.find((v) => v.origen === finalFormData.origen && v.fecha === finalFormData.fecha && v.hora === finalFormData.hora);
+
+        if (newVisita && pendingFiles.length > 0) {
+          for (const file of pendingFiles) {
+            const userId = getCurrentUserId();
+            const newAttachment = await uploadVisitaAttachment(file, newVisita.id, userId);
+            const path = `visitas/${newVisita.id}/${Date.now()}_${file.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+            finalAttachments.push({ ...newAttachment, path });
+          }
+          await updateVisita(newVisita.id, { attachments: finalAttachments as any });
+        }
 
         await addNotification({
           title: 'Nueva Visita Técnica',
@@ -225,6 +258,8 @@ export default function Visitas() {
       }
       setFormData({ origen: '', destino: '', fecha: '', hora: '', responsable: '', observaciones: '' });
       setSelectedResponsables([]);
+      setPendingFiles([]);
+      setAttachmentsToDelete([]);
     } catch (error) {
       toast.error(isEditingVisita ? 'Error al actualizar la visita' : 'Error al registrar la visita');
       handleError(error);
@@ -241,6 +276,7 @@ export default function Visitas() {
       observaciones: visita.observaciones || '',
     });
     setSelectedResponsables(visita.responsable ? visita.responsable.split(' Y ') : []);
+    setSelectedVisita(visita); // So the attachments section can see them
     setIsEditingVisita(true);
     setEditingVisitaId(visita.id);
     setPendingFiles([]);
@@ -448,6 +484,93 @@ export default function Visitas() {
                   placeholder="Detalles adicionales..."
                 />
               </div>
+
+              {/* Attachments Section */}
+              <div className="md:col-span-2 border-2 border-[#1a1a1a] p-3 sm:p-4 bg-white">
+                <div className="flex justify-between items-center mb-3">
+                  <label className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                    <Paperclip className="w-4 h-4" /> Archivos Adjuntos
+                    {isEditingVisita && editingVisitaId && selectedVisita?.id === editingVisitaId && (
+                      <span className="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-0.5 border border-orange-300">
+                        {(selectedVisita.attachments?.length || 0) - attachmentsToDelete.length + pendingFiles.length}
+                      </span>
+                    )}
+                  </label>
+                  <label className="cursor-pointer px-3 py-1.5 bg-[#1a1a1a] text-white font-bold uppercase text-[10px] tracking-widest hover:bg-[#333] transition-colors flex items-center gap-2">
+                    <Upload className="w-3.5 h-3.5" /> Subir Archivos
+                    <input
+                      type="file"
+                      className="hidden"
+                      multiple
+                      onChange={(e) => {
+                        if (e.target.files) {
+                          setPendingFiles([...pendingFiles, ...Array.from(e.target.files)]);
+                        }
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  {/* Existing Attachments (when editing) */}
+                  {isEditingVisita && editingVisitaId && selectedVisita?.attachments
+                    ?.filter((a: any) => !attachmentsToDelete.find((d) => d.url === a.url))
+                    .map((att: Attachment, idx: number) => (
+                      <div
+                        key={`att-${idx}`}
+                        className="flex items-center justify-between p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8]"
+                      >
+                        <a
+                          href={att.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 hover:underline truncate max-w-[80%]"
+                        >
+                          <Paperclip className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="truncate text-xs font-medium">{att.name}</span>
+                        </a>
+                        <button
+                          type="button"
+                          onClick={() => setAttachmentsToDelete([...attachmentsToDelete, att])}
+                          className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors ml-2"
+                          title="Eliminar archivo"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+
+                  {/* Pending Attachments */}
+                  {pendingFiles.map((file, idx) => (
+                    <div
+                      key={`pending-${idx}`}
+                      className="flex items-center justify-between p-2 border-2 border-dashed border-[#1a1a1a] bg-gray-50"
+                    >
+                      <div className="flex items-center gap-2 truncate max-w-[80%] opacity-70">
+                        <Paperclip className="w-4 h-4 flex-shrink-0" />
+                        <span className="truncate text-sm font-medium">{file.name} <span className="opacity-50">(Pendiente)</span></span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPendingFiles(pendingFiles.filter((_, i) => i !== idx))}
+                        className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors"
+                        title="Cancelar subida"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {(!isEditingVisita || !selectedVisita?.attachments || selectedVisita.attachments.length === 0 ||
+                    selectedVisita.attachments.length === attachmentsToDelete.length) &&
+                    pendingFiles.length === 0 && (
+                      <p className="text-xs font-bold uppercase tracking-widest opacity-50 text-center py-4">
+                        {isEditingVisita ? 'No hay archivos adjuntos' : 'Sube archivos antes de guardar'}
+                      </p>
+                    )}
+                </div>
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end border-t-2 border-[#1a1a1a] pt-4 sm:pt-6">
@@ -457,6 +580,8 @@ export default function Visitas() {
                   setFormData({ origen: '', destino: '', fecha: '', hora: '', responsable: '', observaciones: '' });
                   setIsEditingVisita(false);
                   setEditingVisitaId(null);
+                  setPendingFiles([]);
+                  setAttachmentsToDelete([]);
                 }}
                 className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#e63b2e] hover:text-white transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm"
               >
