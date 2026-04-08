@@ -13,7 +13,6 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
-  Filter,
   Paperclip,
   Upload,
 } from 'lucide-react';
@@ -136,11 +135,6 @@ export default function Visitas() {
   const [dateTo, setDateTo] = useState('');
   const [responsableFilter, setResponsableFilter] = useState('todos');
   const [sortBy, setSortBy] = useState('fecha_desc');
-  const [appliedFilters, setAppliedFilters] = useState({
-    searchQuery: '',
-    dateFrom: '',
-    dateTo: '',
-  });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
@@ -327,13 +321,13 @@ export default function Visitas() {
     () =>
       visitas.filter((v) => {
         const matchesSearch =
-          v.origen.toLowerCase().includes(appliedFilters.searchQuery.toLowerCase()) ||
-          v.destino.toLowerCase().includes(appliedFilters.searchQuery.toLowerCase()) ||
-          (v.observaciones && v.observaciones.toLowerCase().includes(appliedFilters.searchQuery.toLowerCase()));
+          v.origen.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          v.destino.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (v.observaciones && v.observaciones.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesResponsable =
           responsableFilter === 'todos' || (v.responsable && v.responsable.split(' Y ').includes(responsableFilter));
-        const matchesDateFrom = !appliedFilters.dateFrom || v.fecha >= appliedFilters.dateFrom;
-        const matchesDateTo = !appliedFilters.dateTo || v.fecha <= appliedFilters.dateTo;
+        const matchesDateFrom = !dateFrom || v.fecha >= dateFrom;
+        const matchesDateTo = !dateTo || v.fecha <= dateTo;
 
         return matchesSearch && matchesResponsable && matchesDateFrom && matchesDateTo;
       }).sort((a, b) => {
@@ -343,7 +337,7 @@ export default function Visitas() {
         if (sortBy === 'origen_za') return b.origen.localeCompare(a.origen, 'es');
         return 0;
       }),
-    [visitas, responsableFilter, appliedFilters, sortBy],
+    [visitas, responsableFilter, searchQuery, dateFrom, dateTo, sortBy],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredVisitas.length / itemsPerPage));
@@ -352,7 +346,7 @@ export default function Visitas() {
   // Reset to page 1 when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [appliedFilters, responsableFilter, sortBy]);
+  }, [searchQuery, dateFrom, dateTo, responsableFilter, sortBy]);
 
   return (
     <div className="font-['Inter'] max-w-6xl mx-auto">
@@ -680,14 +674,6 @@ export default function Visitas() {
                   />
                 </div>
                 <div>
-                  <button
-                    onClick={() => setAppliedFilters({ searchQuery, dateFrom, dateTo })}
-                    className="w-full min-h-[38px] p-2 sm:p-3 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-[#0055ff] transition-colors text-[10px] sm:text-xs flex items-center justify-center gap-1.5"
-                  >
-                    <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Filtrar
-                  </button>
-                </div>
-                <div>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
@@ -719,22 +705,22 @@ export default function Visitas() {
               </div>
 
               {/* Active filter badges */}
-              {(appliedFilters.searchQuery || appliedFilters.dateFrom || appliedFilters.dateTo) && (
+              {(searchQuery || dateFrom || dateTo) && (
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   <span className="text-[10px] font-bold uppercase opacity-60">Filtros activos:</span>
-                  {appliedFilters.searchQuery && (
+                  {searchQuery && (
                     <span className="text-[10px] font-bold bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5">
-                      Búsqueda: {appliedFilters.searchQuery}
+                      Búsqueda: {searchQuery}
                     </span>
                   )}
-                  {appliedFilters.dateFrom && (
+                  {dateFrom && (
                     <span className="text-[10px] font-bold bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5">
-                      Desde: {appliedFilters.dateFrom}
+                      Desde: {dateFrom}
                     </span>
                   )}
-                  {appliedFilters.dateTo && (
+                  {dateTo && (
                     <span className="text-[10px] font-bold bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5">
-                      Hasta: {appliedFilters.dateTo}
+                      Hasta: {dateTo}
                     </span>
                   )}
                   <button
@@ -742,7 +728,6 @@ export default function Visitas() {
                       setSearchQuery('');
                       setDateFrom('');
                       setDateTo('');
-                      setAppliedFilters({ searchQuery: '', dateFrom: '', dateTo: '' });
                     }}
                     className="text-[10px] font-bold text-[#e63b2e] hover:underline ml-1"
                   >

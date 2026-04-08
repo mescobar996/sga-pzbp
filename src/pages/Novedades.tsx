@@ -14,7 +14,6 @@ import {
   Video,
   ChevronLeft,
   ChevronRight,
-  Filter,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -55,11 +54,6 @@ export default function Novedades() {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [sortBy, setSortBy] = useState('fecha_desc');
-  const [appliedFilters, setAppliedFilters] = useState({
-    searchQuery: '',
-    dateFrom: '',
-    dateTo: '',
-  });
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
@@ -336,21 +330,21 @@ export default function Novedades() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [appliedFilters]);
+  }, [searchQuery, dateFrom, dateTo]);
 
   const filteredNovedades = novedades.filter((n) => {
     const matchesSearch =
-      n.title.toLowerCase().includes(appliedFilters.searchQuery.toLowerCase()) ||
-      n.content.toLowerCase().includes(appliedFilters.searchQuery.toLowerCase());
+      n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      n.content.toLowerCase().includes(searchQuery.toLowerCase());
 
     let matchesDateFrom = true;
-    if (appliedFilters.dateFrom) {
-      matchesDateFrom = new Date(n.createdAt) >= new Date(appliedFilters.dateFrom + 'T00:00:00');
+    if (dateFrom) {
+      matchesDateFrom = new Date(n.createdAt) >= new Date(dateFrom + 'T00:00:00');
     }
 
     let matchesDateTo = true;
-    if (appliedFilters.dateTo) {
-      matchesDateTo = new Date(n.createdAt) <= new Date(appliedFilters.dateTo + 'T23:59:59');
+    if (dateTo) {
+      matchesDateTo = new Date(n.createdAt) <= new Date(dateTo + 'T23:59:59');
     }
 
     return matchesSearch && matchesDateFrom && matchesDateTo;
@@ -389,11 +383,6 @@ export default function Novedades() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setAppliedFilters({ searchQuery, dateFrom, dateTo });
-                }
-              }}
               placeholder="BUSCAR NOVEDADES..."
               autocomplete="off"
               className="w-full pl-10 p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
@@ -418,14 +407,6 @@ export default function Novedades() {
             />
           </div>
           <div>
-            <button
-              onClick={() => setAppliedFilters({ searchQuery, dateFrom, dateTo })}
-              className="w-full min-h-[38px] p-2 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center justify-center gap-2 text-xs"
-            >
-              <Filter className="w-4 h-4" /> Filtrar
-            </button>
-          </div>
-          <div>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
@@ -438,22 +419,22 @@ export default function Novedades() {
             </select>
           </div>
         </div>
-        {(appliedFilters.searchQuery || appliedFilters.dateFrom || appliedFilters.dateTo) && (
+        {(searchQuery || dateFrom || dateTo) && (
           <div className="mt-3 flex items-center gap-2">
             <span className="text-[10px] font-bold uppercase opacity-60">Filtros activos:</span>
-            {appliedFilters.searchQuery && (
+            {searchQuery && (
               <span className="text-[10px] font-bold bg-[#f5f0e8] border border-[#1a1a1a] px-2 py-0.5 uppercase">
-                &quot;{appliedFilters.searchQuery}&quot;
+                &quot;{searchQuery}&quot;
               </span>
             )}
-            {appliedFilters.dateFrom && (
+            {dateFrom && (
               <span className="text-[10px] font-bold bg-[#f5f0e8] border border-[#1a1a1a] px-2 py-0.5 uppercase">
-                Desde: {appliedFilters.dateFrom}
+                Desde: {dateFrom}
               </span>
             )}
-            {appliedFilters.dateTo && (
+            {dateTo && (
               <span className="text-[10px] font-bold bg-[#f5f0e8] border border-[#1a1a1a] px-2 py-0.5 uppercase">
-                Hasta: {appliedFilters.dateTo}
+                Hasta: {dateTo}
               </span>
             )}
             <button
@@ -461,7 +442,6 @@ export default function Novedades() {
                 setSearchQuery('');
                 setDateFrom('');
                 setDateTo('');
-                setAppliedFilters({ searchQuery: '', dateFrom: '', dateTo: '' });
               }}
               className="text-[10px] font-bold text-[#e63b2e] hover:underline uppercase ml-auto"
             >

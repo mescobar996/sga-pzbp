@@ -17,7 +17,6 @@ import {
   Columns,
   History,
   CheckSquare,
-  Filter,
   List,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -81,9 +80,6 @@ export default function Tareas() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('fecha_desc');
-  const [appliedFilters, setAppliedFilters] = useState({
-    searchQuery: '',
-  });
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendiente' | 'en_proceso' | 'completado'>('todos');
   const [priorityFilter, setPriorityFilter] = useState<'todos' | 'alta' | 'media' | 'baja'>('todos');
   const [tagFilter, setTagFilter] = useState<string>('todos');
@@ -124,6 +120,7 @@ export default function Tareas() {
   const [isUploading, setIsUploading] = useState(false);
   const [activeTab, setActiveTab] = useState<'description' | 'subtasks' | 'attachments'>('description');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [isFormatsDropdownOpen, setIsFormatsDropdownOpen] = useState(false);
 
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
@@ -495,7 +492,7 @@ export default function Tareas() {
   const filteredTasks = useMemo(
     () =>
       tasks.filter((task) => {
-        const query = appliedFilters.searchQuery.toLowerCase();
+        const query = searchQuery.toLowerCase();
         const matchesSearch =
           task.title.toLowerCase().includes(query) ||
           (task.description && task.description.toLowerCase().includes(query));
@@ -520,13 +517,13 @@ export default function Tareas() {
         }
         return 0;
       }),
-    [tasks, statusFilter, priorityFilter, tagFilter, appliedFilters, sortBy],
+    [tasks, statusFilter, priorityFilter, tagFilter, searchQuery, sortBy],
   );
 
   // Reset page when filters change
   useEffect(() => {
     setCurrentPageList(1);
-  }, [appliedFilters, statusFilter, priorityFilter, tagFilter, sortBy]);
+  }, [searchQuery, statusFilter, priorityFilter, tagFilter, sortBy]);
 
   const totalPagesList = Math.max(1, Math.ceil(filteredTasks.length / itemsPerPageList));
   const paginatedListTasks = filteredTasks.slice(
@@ -594,34 +591,58 @@ export default function Tareas() {
         <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">
           Lista de Tareas
         </h1>
-        <div className="flex border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] bg-white">
+        <div className="relative">
           <button
-            onClick={() => setViewMode('list')}
-            className={`p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 font-bold uppercase transition-colors text-[10px] sm:text-xs ${viewMode === 'list' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
+            onClick={() => setIsFormatsDropdownOpen(!isFormatsDropdownOpen)}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 border-2 border-[#1a1a1a] bg-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-white transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none text-[10px] sm:text-xs min-w-[140px] justify-between"
           >
-            <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Lista</span>
+            <div className="flex items-center gap-2">
+              <Columns className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>Formatos</span>
+            </div>
+            <motion.div
+              animate={{ rotate: isFormatsDropdownOpen ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4 rotate-[-90deg]" />
+            </motion.div>
           </button>
-          <div className="w-0.5 bg-[#1a1a1a]"></div>
-          <button
-            onClick={() => setViewMode('kanban')}
-            className={`p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 font-bold uppercase transition-colors text-[10px] sm:text-xs ${viewMode === 'kanban' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
-          >
-            <Columns className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Kanban</span>
-          </button>
-          <div className="w-0.5 bg-[#1a1a1a]"></div>
-          <button
-            onClick={() => setViewMode('calendar')}
-            className={`p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 font-bold uppercase transition-colors text-[10px] sm:text-xs ${viewMode === 'calendar' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
-          >
-            <CalendarIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Calendario</span>
-          </button>
-          <div className="w-0.5 bg-[#1a1a1a]"></div>
-          <button
-            onClick={() => setViewMode('history')}
-            className={`p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 font-bold uppercase transition-colors text-[10px] sm:text-xs ${viewMode === 'history' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
-          >
-            <History className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Historial</span>
-          </button>
+
+          <AnimatePresence>
+            {isFormatsDropdownOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute right-0 mt-2 w-full min-w-[160px] bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] z-[60] overflow-hidden"
+              >
+                <div className="flex flex-col">
+                  {[
+                    { id: 'list', label: 'Lista', icon: List },
+                    { id: 'kanban', label: 'Kanban', icon: Columns },
+                    { id: 'calendar', label: 'Calendario', icon: CalendarIcon },
+                    { id: 'history', label: 'Historial', icon: History }
+                  ].map((mode) => (
+                    <button
+                      key={mode.id}
+                      onClick={() => {
+                        setViewMode(mode.id as any);
+                        setIsFormatsDropdownOpen(false);
+                      }}
+                      className={`flex items-center gap-3 px-4 py-3 font-black uppercase text-[10px] sm:text-xs text-left transition-colors border-b-2 last:border-b-0 border-[#1a1a1a]/10 ${
+                        viewMode === mode.id 
+                        ? 'bg-[#1a1a1a] text-white' 
+                        : 'hover:bg-[#f5f0e8] text-[#1a1a1a]'
+                      }`}
+                    >
+                      <mode.icon className="w-4 h-4" />
+                      {mode.label}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
@@ -687,13 +708,6 @@ export default function Tareas() {
             ))}
           </select>
 
-          <button
-            onClick={() => setAppliedFilters({ searchQuery })}
-            className="min-h-[38px] p-2 sm:p-3 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-[#0055ff] transition-colors text-[10px] sm:text-xs flex items-center justify-center gap-1.5 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]"
-          >
-            <Filter className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Filtrar
-          </button>
-
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -710,12 +724,14 @@ export default function Tareas() {
       </div>
 
       {/* Active filter badges */}
-      {appliedFilters.searchQuery && (
+      {(searchQuery || statusFilter !== 'todos' || priorityFilter !== 'todos' || tagFilter !== 'todos') && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-bold uppercase opacity-60">Filtros activos:</span>
-          <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
-            Búsqueda: {appliedFilters.searchQuery}
-          </span>
+          {searchQuery && (
+            <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
+              Búsqueda: {searchQuery}
+            </span>
+          )}
           {statusFilter !== 'todos' && (
             <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
               Estado: {statusFilter.replace('_', ' ')}
@@ -737,7 +753,6 @@ export default function Tareas() {
               setStatusFilter('todos');
               setPriorityFilter('todos');
               setTagFilter('todos');
-              setAppliedFilters({ searchQuery: '' });
             }}
             className="text-[10px] font-bold text-[#e63b2e] hover:underline ml-1"
           >
@@ -919,10 +934,10 @@ export default function Tareas() {
                     exit={{ opacity: 0, x: 20 }}
                     whileHover={task.status !== 'completado' ? { x: 4 } : {}}
                     transition={{ duration: 0.2 }}
-                    className="p-3 sm:p-4 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4"
+                    className="p-3 sm:p-4 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4 min-h-[100px] max-h-[100px] overflow-hidden"
                   >
-                    <div className="flex flex-1 items-start md:items-center gap-3 sm:gap-4 w-full">
-                      <div className="flex flex-col items-center gap-1">
+                    <div className="flex flex-1 items-start md:items-center gap-3 sm:gap-4 w-full h-full overflow-hidden">
+                      <div className="flex flex-col items-center gap-1 shrink-0">
                         <div className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
                           {getStatusIcon(task.status)}
                         </div>
@@ -937,10 +952,10 @@ export default function Tareas() {
                         </select>
                       </div>
 
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <div className="flex-1 min-w-0 h-full flex flex-col justify-center">
+                        <div className="flex flex-wrap items-center gap-2 mb-1 overflow-hidden">
                           <h3
-                            className={`text-base sm:text-lg font-black uppercase tracking-tight font-['Space_Grotesk'] truncate relative ${task.status === 'completado' ? 'text-gray-500' : ''}`}
+                            className={`text-base sm:text-lg font-black uppercase tracking-tight font-['Space_Grotesk'] truncate relative shrink-0 max-w-[70%] ${task.status === 'completado' ? 'text-gray-500' : ''}`}
                           >
                             {task.title}
                             {task.status === 'completado' && (
@@ -953,11 +968,11 @@ export default function Tareas() {
                             )}
                           </h3>
                           {task.tags && task.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1">
+                            <div className="flex flex-wrap gap-1 overflow-hidden h-5">
                               {task.tags.map((tag) => (
                                 <span
                                   key={tag}
-                                  className="px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[8px] font-bold uppercase tracking-widest"
+                                  className="px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[8px] font-bold uppercase tracking-widest truncate max-w-[60px]"
                                 >
                                   {tag}
                                 </span>
@@ -966,8 +981,8 @@ export default function Tareas() {
                           )}
                         </div>
                         
-                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
-                          <p className={`text-[10px] sm:text-xs font-medium line-clamp-1 opacity-70 ${task.status === 'completado' ? 'line-through' : ''}`}>
+                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 overflow-hidden">
+                          <p className={`text-[10px] sm:text-xs font-medium truncate opacity-70 ${task.status === 'completado' ? 'line-through' : ''}`}>
                             {task.description || 'Sin descripción'}
                           </p>
                           <div className="flex items-center gap-3 shrink-0">
@@ -991,7 +1006,7 @@ export default function Tareas() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end mt-2 md:mt-0 pt-2 md:pt-0 border-t-2 md:border-t-0 border-[#1a1a1a]/10">
+                    <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end mt-2 md:mt-0 pt-2 md:pt-0 border-t-2 md:border-t-0 border-[#1a1a1a]/10 h-full">
                       <select
                         value={task.status}
                         onChange={(e) =>
@@ -1228,16 +1243,6 @@ export default function Tareas() {
                 )}
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Descripción</label>
-                <textarea
-                  value={currentTask.description || ''}
-                  onChange={(e) => setCurrentTask({ ...currentTask, description: e.target.value })}
-                  className="w-full h-24 p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium resize-none transition-colors text-sm"
-                  placeholder="Descripción de la tarea..."
-                />
-              </div>
-
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Estado</label>
@@ -1355,7 +1360,7 @@ export default function Tareas() {
                             return next;
                           });
                       }}
-                      className={`w-full h-40 p-3 border-2 bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium resize-none transition-colors text-sm ${formErrors.description ? 'border-[#e63b2e] bg-red-50' : 'border-[#1a1a1a]'}`}
+                      className={`w-full h-64 p-3 border-2 bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium resize-none transition-colors text-sm ${formErrors.description ? 'border-[#e63b2e] bg-red-50' : 'border-[#1a1a1a]'}`}
                       placeholder="Escribe la descripción de la tarea aquí..."
                     />
                     {formErrors.description && (
