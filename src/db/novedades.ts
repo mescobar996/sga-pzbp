@@ -13,6 +13,7 @@ function mapNovedad(row: Record<string, any>): Novedad {
     id: row.id,
     title: row.title,
     content: row.content || '',
+    fecha: row.fecha || '',
     createdAt: row.created_at || '',
     authorId: row.author_id || '',
     authorName: row.author_name || '',
@@ -29,6 +30,7 @@ export async function getNovedades(): Promise<Novedad[]> {
 export async function addNovedad(novedad: {
   title: string;
   content: string;
+  fecha?: string;
   attachments?: NovedadAttachment[];
 }): Promise<void> {
   const userId = getCurrentUserId();
@@ -38,6 +40,7 @@ export async function addNovedad(novedad: {
   const { error } = await supabase.from('novedades').insert({
     title: novedad.title,
     content: novedad.content,
+    fecha: novedad.fecha || new Date().toISOString().split('T')[0],
     author_id: userId,
     author_name: authorName,
     attachments: novedad.attachments || [],
@@ -49,6 +52,7 @@ export async function updateNovedad(id: string, updates: Partial<Novedad>): Prom
   const mapped: Record<string, any> = {};
   if (updates.title !== undefined) mapped.title = updates.title;
   if (updates.content !== undefined) mapped.content = updates.content;
+  if (updates.fecha !== undefined) mapped.fecha = updates.fecha;
   if (updates.attachments !== undefined) mapped.attachments = updates.attachments;
 
   const { error } = await supabase.from('novedades').update(mapped).eq('id', id);

@@ -496,7 +496,7 @@ export default function Tareas() {
         const matchesSearch =
           task.title.toLowerCase().includes(query) ||
           (task.description && task.description.toLowerCase().includes(query));
-        const matchesStatus = statusFilter === 'todos' || task.status === statusFilter;
+        const matchesStatus = statusFilter === 'todos' ? task.status !== 'completado' : task.status === statusFilter;
         const matchesPriority = priorityFilter === 'todos' || task.priority === priorityFilter;
         const matchesTag = tagFilter === 'todos' || (task.tags && task.tags.includes(tagFilter));
 
@@ -681,7 +681,6 @@ export default function Tareas() {
             <option value="todos">Todos los estados</option>
             <option value="pendiente">Pendiente</option>
             <option value="en_proceso">En Proceso</option>
-            <option value="completado">Completado</option>
           </select>
 
           <select
@@ -764,7 +763,7 @@ export default function Tareas() {
       {/* Task List / Calendar View */}
       {viewMode === 'kanban' ? (
         <div className="flex flex-col md:flex-row gap-3 sm:gap-4 overflow-x-auto pb-4 min-h-[400px] sm:min-h-[600px]">
-          {(['pendiente', 'en_proceso', 'completado'] as const).map((status) => (
+          {(['pendiente', 'en_proceso'] as const).map((status) => (
             <div
               key={status}
               className="flex-1 min-w-[240px] sm:min-w-[280px] bg-gray-50 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col"

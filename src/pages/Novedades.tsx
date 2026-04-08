@@ -14,6 +14,9 @@ import {
   Video,
   ChevronLeft,
   ChevronRight,
+  Calendar,
+  User,
+  Clock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -62,6 +65,7 @@ export default function Novedades() {
   const [currentNovedad, setCurrentNovedad] = useState<Partial<Novedad>>({
     title: '',
     content: '',
+    fecha: new Date().toISOString().split('T')[0],
   });
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [attachmentsToDelete, setAttachmentsToDelete] = useState<Attachment[]>([]);
@@ -106,7 +110,12 @@ export default function Novedades() {
   };
 
   const openNewModal = () => {
-    setCurrentNovedad({ title: '', content: '', attachments: [] });
+    setCurrentNovedad({
+      title: '',
+      content: '',
+      fecha: new Date().toISOString().split('T')[0],
+      attachments: [],
+    });
     setPendingFiles([]);
     setAttachmentsToDelete([]);
     setIsEditing(false);
@@ -114,7 +123,10 @@ export default function Novedades() {
   };
 
   const openEditModal = (novedad: Novedad) => {
-    setCurrentNovedad(novedad);
+    setCurrentNovedad({
+      ...novedad,
+      fecha: novedad.fecha || new Date(novedad.createdAt).toISOString().split('T')[0],
+    });
     setPendingFiles([]);
     setAttachmentsToDelete([]);
     setIsEditing(true);
@@ -168,6 +180,7 @@ export default function Novedades() {
         await updateNovedad(currentNovedad.id, {
           title: currentNovedad.title,
           content: currentNovedad.content,
+          fecha: currentNovedad.fecha,
           attachments: finalAttachments as any,
         });
         toast.success('Novedad actualizada');
@@ -175,6 +188,7 @@ export default function Novedades() {
         await addNovedad({
           title: currentNovedad.title,
           content: currentNovedad.content,
+          fecha: currentNovedad.fecha,
           attachments: finalAttachments,
         });
 
@@ -337,20 +351,24 @@ export default function Novedades() {
       n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       n.content.toLowerCase().includes(searchQuery.toLowerCase());
 
+    const itemDate = n.fecha ? new Date(n.fecha) : new Date(n.createdAt);
+
     let matchesDateFrom = true;
     if (dateFrom) {
-      matchesDateFrom = new Date(n.createdAt) >= new Date(dateFrom + 'T00:00:00');
+      matchesDateFrom = itemDate >= new Date(dateFrom + 'T00:00:00');
     }
 
     let matchesDateTo = true;
     if (dateTo) {
-      matchesDateTo = new Date(n.createdAt) <= new Date(dateTo + 'T23:59:59');
+      matchesDateTo = itemDate <= new Date(dateTo + 'T23:59:59');
     }
 
     return matchesSearch && matchesDateFrom && matchesDateTo;
   }).sort((a, b) => {
-    if (sortBy === 'fecha_desc') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    if (sortBy === 'fecha_asc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    const dateA = a.fecha ? new Date(a.fecha) : new Date(a.createdAt);
+    const dateB = b.fecha ? new Date(b.fecha) : new Date(b.createdAt);
+    if (sortBy === 'fecha_desc') return dateB.getTime() - dateA.getTime();
+    if (sortBy === 'fecha_asc') return dateA.getTime() - dateB.getTime();
     if (sortBy === 'titulo_az') return a.title.localeCompare(b.title, 'es');
     if (sortBy === 'titulo_za') return b.title.localeCompare(a.title, 'es');
     return 0;
@@ -474,10 +492,18 @@ export default function Novedades() {
                     <h3 className="text-xl font-black uppercase tracking-tight font-['Space_Grotesk'] mb-1">
                       {novedad.title}
                     </h3>
-                    <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest opacity-60">
-                      <span>{new Date(novedad.createdAt).toLocaleString()}</span>
+                    <div className="flex flex-wrap items-center gap-3 text-[10px] font-bold uppercase tracking-widest opacity-60">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" /> {novedad.fecha || new Date(novedad.createdAt).toLocaleDateString()}
+                      </span>
                       <span>•</span>
-                      <span>Por: {novedad.authorName}</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> {new Date(novedad.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3" /> {novedad.authorName}
+                      </span>
                     </div>
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -588,10 +614,21 @@ export default function Novedades() {
                   className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-lg transition-colors"
                   placeholder="TÍTULO DE LA NOVEDAD..."
                   required
-                  autoFocus
                 />
-              </div>
+                </div>
 
+                <div>
+                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Fecha</label>
+                <input
+                  type="date"
+                  value={currentNovedad.fecha || ''}
+                  onChange={(e) => setCurrentNovedad({ ...currentNovedad, fecha: e.target.value })}
+                  className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-sm"
+                  required
+                />
+                </div>
+
+                <div>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">
                   Contenido (Nota)

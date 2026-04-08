@@ -333,8 +333,8 @@ export default function Visitas() {
       }).sort((a, b) => {
         if (sortBy === 'fecha_desc') return b.fecha.localeCompare(a.fecha);
         if (sortBy === 'fecha_asc') return a.fecha.localeCompare(b.fecha);
-        if (sortBy === 'origen_az') return a.origen.localeCompare(b.origen, 'es');
-        if (sortBy === 'origen_za') return b.origen.localeCompare(a.origen, 'es');
+        if (sortBy === 'titulo_az') return a.origen.localeCompare(b.origen, 'es');
+        if (sortBy === 'titulo_za') return b.origen.localeCompare(a.origen, 'es');
         return 0;
       }),
     [visitas, responsableFilter, searchQuery, dateFrom, dateTo, sortBy],
@@ -681,8 +681,8 @@ export default function Visitas() {
                   >
                     <option value="fecha_desc">Fecha (Más reciente)</option>
                     <option value="fecha_asc">Fecha (Más antiguo)</option>
-                    <option value="origen_az">Origen (A-Z)</option>
-                    <option value="origen_za">Origen (Z-A)</option>
+                    <option value="titulo_az">Origen (A-Z)</option>
+                    <option value="titulo_za">Origen (Z-A)</option>
                   </select>
                 </div>
               </div>

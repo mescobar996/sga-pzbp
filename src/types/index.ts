@@ -114,6 +114,7 @@ export interface Novedad {
   id: string;
   title: string;
   content: string;
+  fecha?: string;
   createdAt: string;
   authorId: string;
   authorName: string;
