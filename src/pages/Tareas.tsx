@@ -18,6 +18,7 @@ import {
   History,
   CheckSquare,
   Filter,
+  List,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -86,13 +87,13 @@ export default function Tareas() {
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendiente' | 'en_proceso' | 'completado'>('todos');
   const [priorityFilter, setPriorityFilter] = useState<'todos' | 'alta' | 'media' | 'baja'>('todos');
   const [tagFilter, setTagFilter] = useState<string>('todos');
-  const [viewMode, setViewMode] = useState<'grid' | 'calendar' | 'kanban' | 'history'>('kanban');
+  const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'kanban' | 'history'>('list');
   const [historyEvents, setHistoryEvents] = useState<TaskHistoryEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Pagination State
-  const [currentPageGrid, setCurrentPageGrid] = useState(1);
-  const itemsPerPageGrid = 6;
+  const [currentPageList, setCurrentPageList] = useState(1);
+  const itemsPerPageList = 10;
   const [currentPageHistory, setCurrentPageHistory] = useState(1);
   const itemsPerPageHistory = 10;
 
@@ -524,13 +525,13 @@ export default function Tareas() {
 
   // Reset page when filters change
   useEffect(() => {
-    setCurrentPageGrid(1);
+    setCurrentPageList(1);
   }, [appliedFilters, statusFilter, priorityFilter, tagFilter, sortBy]);
 
-  const totalPagesGrid = Math.max(1, Math.ceil(filteredTasks.length / itemsPerPageGrid));
-  const paginatedGridTasks = filteredTasks.slice(
-    (currentPageGrid - 1) * itemsPerPageGrid,
-    currentPageGrid * itemsPerPageGrid,
+  const totalPagesList = Math.max(1, Math.ceil(filteredTasks.length / itemsPerPageList));
+  const paginatedListTasks = filteredTasks.slice(
+    (currentPageList - 1) * itemsPerPageList,
+    currentPageList * itemsPerPageList,
   );
 
   const totalPagesHistory = Math.max(1, Math.ceil(historyEvents.length / itemsPerPageHistory));
@@ -595,10 +596,10 @@ export default function Tareas() {
         </h1>
         <div className="flex border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] bg-white">
           <button
-            onClick={() => setViewMode('grid')}
-            className={`p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 font-bold uppercase transition-colors text-[10px] sm:text-xs ${viewMode === 'grid' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
+            onClick={() => setViewMode('list')}
+            className={`p-1.5 sm:p-2 flex items-center gap-1.5 sm:gap-2 font-bold uppercase transition-colors text-[10px] sm:text-xs ${viewMode === 'list' ? 'bg-[#1a1a1a] text-white' : 'hover:bg-gray-100'}`}
           >
-            <LayoutGrid className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Grid</span>
+            <List className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> <span className="hidden sm:inline">Lista</span>
           </button>
           <div className="w-0.5 bg-[#1a1a1a]"></div>
           <button
@@ -888,174 +889,134 @@ export default function Tareas() {
             </div>
           )}
         </div>
-      ) : viewMode === 'grid' ? (
+      ) : viewMode === 'list' ? (
         <div className="flex flex-col gap-3 sm:gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+          <div className="flex flex-col gap-3 sm:gap-4">
             {loading ? (
-              <div className="col-span-full text-center p-6 sm:p-8 font-black uppercase text-base sm:text-xl animate-pulse">
+              <div className="text-center p-6 sm:p-8 font-black uppercase text-base sm:text-xl animate-pulse">
                 Cargando tareas...
               </div>
             ) : tasks.length === 0 ? (
-              <div className="col-span-full text-center p-6 sm:p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-base sm:text-xl opacity-50">
+              <div className="text-center p-6 sm:p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-base sm:text-xl opacity-50">
                 No hay tareas pendientes
               </div>
-            ) : paginatedGridTasks.length === 0 ? (
-              <div className="col-span-full text-center p-6 sm:p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-base sm:text-xl opacity-50">
+            ) : paginatedListTasks.length === 0 ? (
+              <div className="text-center p-6 sm:p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-base sm:text-xl opacity-50">
                 No se encontraron tareas para "{searchQuery}"
               </div>
             ) : (
               <AnimatePresence mode="popLayout">
-                {paginatedGridTasks.map((task) => (
+                {paginatedListTasks.map((task) => (
                   <motion.div
                     key={task.id}
                     layout
-                    initial={{ opacity: 0, scale: 0.9 }}
+                    initial={{ opacity: 0, x: -20 }}
                     animate={{
                       opacity: task.status === 'completado' ? 0.7 : 1,
-                      scale: 1,
+                      x: 0,
                       backgroundColor: task.status === 'completado' ? '#e5e7eb' : '#ffffff',
                     }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                    whileHover={task.status !== 'completado' ? { y: -4 } : {}}
-                    transition={{ duration: 0.3 }}
-                    className="p-3 sm:p-4 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col justify-between group relative"
+                    exit={{ opacity: 0, x: 20 }}
+                    whileHover={task.status !== 'completado' ? { x: 4 } : {}}
+                    transition={{ duration: 0.2 }}
+                    className="p-3 sm:p-4 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4"
                   >
-                    <div className="flex justify-between items-start mb-2 sm:mb-4 gap-2">
-                      <select
-                        value={task.priority}
-                        onChange={(e) => handleUpdatePriority(task.id, e.target.value as 'alta' | 'media' | 'baja')}
-                        className={`px-1.5 sm:px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[8px] sm:text-[10px] tracking-widest cursor-pointer focus:outline-none ${getPriorityColor(task.priority)}`}
-                      >
-                        <option value="alta" className="bg-[#e63b2e] text-white">
-                          ALTA
-                        </option>
-                        <option value="media" className="bg-[#0055ff] text-white">
-                          MEDIA
-                        </option>
-                        <option value="baja" className="bg-[#00cc66] text-white">
-                          BAJA
-                        </option>
-                      </select>
-
-                      <div className="flex items-center gap-1">
-                        <select
-                          value={task.status}
-                          onChange={(e) =>
-                            handleUpdateStatus(task.id, e.target.value as 'pendiente' | 'en_proceso' | 'completado')
-                          }
-                          className="px-1.5 sm:px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[8px] sm:text-[10px] tracking-widest cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
-                        >
-                          <option value="pendiente">PENDIENTE</option>
-                          <option value="en_proceso">EN PROCESO</option>
-                          <option value="completado">COMPLETADO</option>
-                        </select>
-                        <div className="p-0.5 sm:p-1 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
+                    <div className="flex flex-1 items-start md:items-center gap-3 sm:gap-4 w-full">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
                           {getStatusIcon(task.status)}
+                        </div>
+                        <select
+                          value={task.priority}
+                          onChange={(e) => handleUpdatePriority(task.id, e.target.value as 'alta' | 'media' | 'baja')}
+                          className={`px-1.5 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[8px] tracking-widest cursor-pointer focus:outline-none ${getPriorityColor(task.priority)}`}
+                        >
+                          <option value="alta">A</option>
+                          <option value="media">M</option>
+                          <option value="baja">B</option>
+                        </select>
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-1">
+                          <h3
+                            className={`text-base sm:text-lg font-black uppercase tracking-tight font-['Space_Grotesk'] truncate relative ${task.status === 'completado' ? 'text-gray-500' : ''}`}
+                          >
+                            {task.title}
+                            {task.status === 'completado' && (
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: '100%' }}
+                                transition={{ duration: 0.3, ease: 'easeOut' }}
+                                className="absolute top-1/2 left-0 h-1 bg-gray-500 -translate-y-1/2"
+                              />
+                            )}
+                          </h3>
+                          {task.tags && task.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {task.tags.map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[8px] font-bold uppercase tracking-widest"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                          <p className={`text-[10px] sm:text-xs font-medium line-clamp-1 opacity-70 ${task.status === 'completado' ? 'line-through' : ''}`}>
+                            {task.description || 'Sin descripción'}
+                          </p>
+                          <div className="flex items-center gap-3 shrink-0">
+                            {task.dueDate && (
+                              <span className="text-[9px] font-bold opacity-60 uppercase tracking-widest flex items-center gap-1">
+                                <CalendarIcon className="w-2.5 h-2.5" /> {task.dueDate}
+                              </span>
+                            )}
+                            {task.subtasks && task.subtasks.length > 0 && (
+                              <span className="text-[9px] font-bold opacity-60 uppercase tracking-widest flex items-center gap-1">
+                                <CheckSquare className="w-2.5 h-2.5" /> {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
+                              </span>
+                            )}
+                            {task.attachments && task.attachments.length > 0 && (
+                              <span className="text-[9px] font-bold opacity-60 uppercase tracking-widest flex items-center gap-1">
+                                <Paperclip className="w-2.5 h-2.5" /> {task.attachments.length}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
 
-                    <div className="mb-2 sm:mb-4 flex-1 flex flex-col">
-                      <h3
-                        className={`text-base sm:text-xl font-black uppercase tracking-tight font-['Space_Grotesk'] line-clamp-2 relative w-fit ${task.status === 'completado' ? 'text-gray-500' : ''}`}
-                        title={task.title}
+                    <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end mt-2 md:mt-0 pt-2 md:pt-0 border-t-2 md:border-t-0 border-[#1a1a1a]/10">
+                      <select
+                        value={task.status}
+                        onChange={(e) =>
+                          handleUpdateStatus(task.id, e.target.value as 'pendiente' | 'en_proceso' | 'completado')
+                        }
+                        className="px-2 py-1 border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-widest cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
                       >
-                        {task.title}
-                        {task.status === 'completado' && (
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: '100%' }}
-                            transition={{ duration: 0.3, ease: 'easeOut' }}
-                            className="absolute top-1/2 left-0 h-1 bg-gray-500 -translate-y-1/2"
-                          />
-                        )}
-                      </h3>
-
-                      {task.tags && task.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-1.5 sm:mt-2">
-                          {task.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="px-1 sm:px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[8px] sm:text-[9px] font-bold uppercase tracking-widest"
-                            >
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
+                        <option value="pendiente">PENDIENTE</option>
+                        <option value="en_proceso">PROCESO</option>
+                        <option value="completado">HECHO</option>
+                      </select>
 
                       <button
                         onClick={() => openEditTaskModal(task)}
-                        className={`mt-2 sm:mt-3 mb-2 sm:mb-3 p-1.5 sm:p-2 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors text-left flex justify-between items-center group flex-1 ${task.status === 'completado' ? 'bg-gray-300' : 'bg-[#f5f0e8]'}`}
+                        className="p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                        title="Editar tarea"
                       >
-                        <div className="flex-1 overflow-hidden relative">
-                          {task.description ? (
-                            <p
-                              className={`text-[10px] sm:text-xs font-medium line-clamp-2 relative w-fit ${task.status === 'completado' ? 'text-gray-600' : ''}`}
-                            >
-                              {task.description}
-                              {task.status === 'completado' && (
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: '100%' }}
-                                  transition={{ duration: 0.3, ease: 'easeOut', delay: 0.1 }}
-                                  className="absolute top-1/2 left-0 h-[2px] bg-gray-600 -translate-y-1/2"
-                                />
-                              )}
-                            </p>
-                          ) : (
-                            <span
-                              className={`text-[10px] sm:text-xs font-bold uppercase tracking-widest opacity-50 relative w-fit ${task.status === 'completado' ? 'text-gray-600' : ''}`}
-                            >
-                              Añadir Descripción...
-                              {task.status === 'completado' && (
-                                <motion.div
-                                  initial={{ width: 0 }}
-                                  animate={{ width: '100%' }}
-                                  transition={{ duration: 0.3, ease: 'easeOut', delay: 0.1 }}
-                                  className="absolute top-1/2 left-0 h-[2px] bg-gray-600 -translate-y-1/2"
-                                />
-                              )}
-                            </span>
-                          )}
-                        </div>
-                        <Edit2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 ml-1 sm:ml-2 opacity-50 group-hover:opacity-100 flex-shrink-0" />
+                        <Edit2 className="w-4 h-4" />
                       </button>
 
-                      {task.dueDate && (
-                        <p className="text-[8px] sm:text-[10px] font-bold opacity-60 uppercase tracking-widest mb-2 sm:mb-3">
-                          Vence: {task.dueDate}
-                        </p>
-                      )}
-
-                      <p className="text-[8px] sm:text-[10px] font-bold opacity-60 uppercase tracking-widest mt-auto">
-                        Creada: {new Date(task.createdAt).toLocaleDateString()}
-                      </p>
-                      {task.subtasks && task.subtasks.length > 0 && (
-                        <div
-                          className="flex items-center gap-1 mt-1.5 sm:mt-2 text-[8px] sm:text-xs font-bold opacity-60 uppercase tracking-widest"
-                          title={`${task.subtasks.length} subtareas`}
-                        >
-                          <CheckSquare className="w-2.5 h-2.5 sm:w-3 sm:h-3" />{' '}
-                          {task.subtasks.filter((st) => st.completed).length}/{task.subtasks.length}
-                        </div>
-                      )}
-                      {task.attachments && task.attachments.length > 0 && (
-                        <div
-                          className="flex items-center gap-1 mt-1.5 sm:mt-2 text-[8px] sm:text-xs font-bold opacity-60 uppercase tracking-widest"
-                          title={`${task.attachments.length} archivos adjuntos`}
-                        >
-                          <Paperclip className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {task.attachments.length}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex justify-end gap-1.5 sm:gap-2 mt-auto pt-2 sm:pt-3 border-t-2 border-[#1a1a1a]/10">
                       <label
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors opacity-0 group-hover:opacity-100 cursor-pointer"
+                        className="p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer"
                         title="Subir archivo rápido"
                       >
-                        <Upload className="w-5 h-5 sm:w-4 sm:h-4" />
+                        <Upload className="w-4 h-4" />
                         <input
                           type="file"
                           className="hidden"
@@ -1068,13 +1029,14 @@ export default function Tareas() {
                           }}
                         />
                       </label>
+
                       {isAdmin && (
                         <button
                           onClick={() => handleDeleteTask(task.id)}
-                          className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                          className="p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors"
                           title="Eliminar tarea"
                         >
-                          <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       )}
                     </div>
@@ -1084,22 +1046,22 @@ export default function Tareas() {
             )}
           </div>
 
-          {/* Grid Pagination */}
-          {totalPagesGrid > 1 && (
+          {/* List Pagination */}
+          {totalPagesList > 1 && (
             <div className="flex justify-center items-center gap-3 mt-6">
               <button
-                onClick={() => setCurrentPageGrid((p) => Math.max(1, p - 1))}
-                disabled={currentPageGrid === 1}
+                onClick={() => setCurrentPageList((p) => Math.max(1, p - 1))}
+                disabled={currentPageList === 1}
                 className="p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronLeft className="w-5 h-5" />
               </button>
               <span className="font-black uppercase tracking-widest text-sm">
-                Página {currentPageGrid} de {totalPagesGrid}
+                Página {currentPageList} de {totalPagesList}
               </span>
               <button
-                onClick={() => setCurrentPageGrid((p) => Math.min(totalPagesGrid, p + 1))}
-                disabled={currentPageGrid === totalPagesGrid}
+                onClick={() => setCurrentPageList((p) => Math.min(totalPagesList, p + 1))}
+                disabled={currentPageList === totalPagesList}
                 className="p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <ChevronRight className="w-5 h-5" />
