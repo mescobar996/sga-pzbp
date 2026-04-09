@@ -667,7 +667,7 @@ export default function Tareas() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="BUSCAR TAREAS..."
-            autocomplete="off"
+            autoComplete="off"
             className="w-full pl-9 sm:pl-10 p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] text-[10px] sm:text-sm"
           />
         </div>

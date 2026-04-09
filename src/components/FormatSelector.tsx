@@ -16,14 +16,14 @@ const formatConfig: Record<ReportFormat, { label: string; icon: typeof FileText;
 
 export const FormatSelector = memo(function FormatSelector({ value, onChange }: FormatSelectorProps) {
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-col sm:flex-row gap-2">
       {(Object.entries(formatConfig) as [ReportFormat, (typeof formatConfig)[ReportFormat]][]).map(
         ([format, { label, icon: Icon, accent }]) => (
           <button
             key={format}
             type="button"
             onClick={() => onChange(format)}
-            className={`flex-1 py-3 border-2 border-[#1a1a1a] font-black uppercase tracking-widest transition-all text-xs flex items-center justify-center gap-2 ${
+            className={`flex-1 min-h-[44px] py-2.5 sm:py-3 border-2 border-[#1a1a1a] font-black uppercase tracking-widest transition-all text-xs flex items-center justify-center gap-2 ${
               value === format
                 ? 'bg-[#1a1a1a] text-white'
                 : 'text-white hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none'

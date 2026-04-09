@@ -131,19 +131,19 @@ export default function VisitasMap({ visitas, locations }: VisitasMapProps) {
   }
 
   return (
-    <div className="w-full h-[500px] sm:h-[600px] border-2 sm:border-4 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] relative z-0">
+    <div className="w-full h-[350px] sm:h-[500px] lg:h-[600px] border-2 sm:border-4 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] relative z-0">
       {/* Heatmap Toggle */}
       {heatmapPoints.length > 0 && (
         <div className="absolute top-3 right-3 z-[1000] flex gap-2">
           <button
             onClick={() => setShowHeatmap(!showHeatmap)}
-            className={`px-3 py-1.5 border-2 border-[#1a1a1a] font-black uppercase text-xs tracking-widest shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] flex items-center gap-1.5 transition-all ${
+            className={`min-h-[44px] px-3 py-2 border-2 border-[#1a1a1a] font-black uppercase text-xs tracking-widest shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] flex items-center gap-1.5 transition-all ${
               showHeatmap
                 ? 'bg-[#e63b2e] text-white hover:bg-[#1a1a1a] hover:text-[#e63b2e]'
                 : 'bg-white text-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white'
             }`}
           >
-            <Flame className="w-3.5 h-3.5" /> {showHeatmap ? 'Ocultar Calor' : 'Ver Calor'}
+            <Flame className="w-4 h-4" /> {showHeatmap ? 'Ocultar Calor' : 'Ver Calor'}
           </button>
         </div>
       )}
@@ -184,16 +184,16 @@ export default function VisitasMap({ visitas, locations }: VisitasMapProps) {
                 <Marker position={[visita.origCoords.lat, visita.origCoords.lng]} icon={originIcon}>
                   <Popup>
                     <div className="font-['Inter']">
-                      <p className="text-[10px] font-bold uppercase text-[#00cc66] mb-1">Origen</p>
+                      <p className="text-xs font-bold uppercase text-[#00cc66] mb-1">Origen</p>
                       <h4 className="font-black uppercase text-sm mb-2">{visita.origen}</h4>
-                      <div className="flex gap-1 text-[10px] mb-1">
-                        <Calendar className="w-3 h-3" /> {visita.fecha} <Clock className="w-3 h-3 ml-1" /> {visita.hora}
+                      <div className="flex gap-1 text-xs mb-1">
+                        <Calendar className="w-3.5 h-3.5" /> {visita.fecha} <Clock className="w-3.5 h-3.5 ml-1" /> {visita.hora}
                       </div>
-                      <div className="flex gap-1 text-[10px] font-bold">
-                        <User className="w-3 h-3" /> {visita.responsable}
+                      <div className="flex gap-1 text-xs font-bold">
+                        <User className="w-3.5 h-3.5" /> {visita.responsable}
                       </div>
                       {hasBoth && (
-                        <p className="text-[10px] mt-2 opacity-70 border-t pt-1">
+                        <p className="text-xs mt-2 opacity-70 border-t pt-1">
                           Destino: {visita.destino}
                         </p>
                       )}
@@ -207,16 +207,16 @@ export default function VisitasMap({ visitas, locations }: VisitasMapProps) {
                 <Marker position={[visita.destCoords.lat, visita.destCoords.lng]} icon={destIcon}>
                   <Popup>
                     <div className="font-['Inter']">
-                      <p className="text-[10px] font-bold uppercase text-[#e63b2e] mb-1">Destino</p>
+                      <p className="text-xs font-bold uppercase text-[#e63b2e] mb-1">Destino</p>
                       <h4 className="font-black uppercase text-sm mb-2">{visita.destino}</h4>
-                      <div className="flex gap-1 text-[10px] mb-1">
-                        <Calendar className="w-3 h-3" /> {visita.fecha} <Clock className="w-3 h-3 ml-1" /> {visita.hora}
+                      <div className="flex gap-1 text-xs mb-1">
+                        <Calendar className="w-3.5 h-3.5" /> {visita.fecha} <Clock className="w-3.5 h-3.5 ml-1" /> {visita.hora}
                       </div>
-                      <div className="flex gap-1 text-[10px] font-bold">
-                        <User className="w-3 h-3" /> {visita.responsable}
+                      <div className="flex gap-1 text-xs font-bold">
+                        <User className="w-3.5 h-3.5" /> {visita.responsable}
                       </div>
                       {hasBoth && (
-                        <p className="text-[10px] mt-2 opacity-70 border-t pt-1">
+                        <p className="text-xs mt-2 opacity-70 border-t pt-1">
                           Origen: {visita.origen}
                         </p>
                       )}

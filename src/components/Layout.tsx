@@ -508,9 +508,9 @@ export default function Layout({ user }: { user: User }) {
                 <input
                   ref={searchInputRef}
                   className="bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-wider outline-none w-48 lg:w-64 text-[#1a1a1a] placeholder:text-[#1a1a1a]/40"
-                  placeholder="BUSCAR EN TODO EL SISTEMA..."
+                  placeholder="BUSCAR..."
                   type="text"
-                  autocomplete="off"
+                  autoComplete="off"
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
@@ -570,7 +570,7 @@ export default function Layout({ user }: { user: User }) {
                                   {result.title}
                                 </span>
                                 <span
-                                  className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 border shrink-0 ${
+                                  className={`text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 border shrink-0 ${
                                     idx === selectedIndex
                                       ? 'border-white/30 text-white/70'
                                       : 'border-[#1a1a1a]/20 opacity-50'
@@ -581,7 +581,7 @@ export default function Layout({ user }: { user: User }) {
                               </div>
                               {result.subtitle && (
                                 <p
-                                  className={`text-[11px] font-medium truncate ${idx === selectedIndex ? 'text-white/80' : 'opacity-60'}`}
+                                  className={`text-xs font-medium truncate ${idx === selectedIndex ? 'text-white/80' : 'opacity-60'}`}
                                 >
                                   {result.subtitle}
                                 </p>
@@ -628,11 +628,11 @@ export default function Layout({ user }: { user: User }) {
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -8, scale: 0.95 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute top-full right-0 mt-2 w-80 bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,0.3)] z-50 max-h-96 flex flex-col"
+                    className="absolute top-full right-0 mt-2 w-80 max-w-[calc(100vw-16px)] bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,0.3)] z-50 max-h-96 flex flex-col"
                   >
-                    <div className="p-4 border-b-4 border-[#1a1a1a] bg-[#f5f0e8] flex justify-between items-center shrink-0">
-                      <h3 className="font-black uppercase tracking-widest text-sm">Notificaciones</h3>
-                      <button onClick={() => setShowNotifications(false)} className="text-sm font-bold underline">
+                    <div className="p-3 sm:p-4 border-b-4 border-[#1a1a1a] bg-[#f5f0e8] flex justify-between items-center shrink-0">
+                      <h3 className="font-black uppercase tracking-widest text-xs sm:text-sm">Notificaciones</h3>
+                      <button onClick={() => setShowNotifications(false)} className="text-xs sm:text-sm font-bold underline">
                         Cerrar
                       </button>
                     </div>
@@ -646,20 +646,20 @@ export default function Layout({ user }: { user: User }) {
                         notifications.slice(0, 10).map((notif) => (
                           <div
                             key={notif.id}
-                            className="p-4 border-b-2 border-[#1a1a1a]/10 hover:bg-[#f5f0e8] transition-colors"
+                            className="p-3 sm:p-4 border-b-2 border-[#1a1a1a]/10 hover:bg-[#f5f0e8] transition-colors"
                           >
                             <div className="flex items-center gap-2 mb-1">
                               <span
-                                className={`text-[10px] font-black px-2 py-0.5 border-2 border-[#1a1a1a] uppercase ${notif.type === 'tarea' ? 'bg-[#0055ff] text-white' : notif.type === 'visita' ? 'bg-[#00cc66] text-white' : 'bg-[#0055ff] text-white'}`}
+                                className={`text-[10px] sm:text-xs font-black px-2 py-0.5 border-2 border-[#1a1a1a] uppercase ${notif.type === 'tarea' ? 'bg-[#0055ff] text-white' : notif.type === 'visita' ? 'bg-[#00cc66] text-white' : 'bg-[#0055ff] text-white'}`}
                               >
                                 {notif.type}
                               </span>
-                              <span className="text-xs font-bold opacity-50">
+                              <span className="text-[10px] sm:text-xs font-bold opacity-50">
                                 {new Date(notif.createdAt).toLocaleDateString()}
                               </span>
                             </div>
-                            <h4 className="font-black text-sm uppercase">{notif.title}</h4>
-                            <p className="text-sm font-medium opacity-80 mt-1">{notif.message}</p>
+                            <h4 className="font-black text-xs sm:text-sm uppercase">{notif.title}</h4>
+                            <p className="text-xs sm:text-sm font-medium opacity-80 mt-1">{notif.message}</p>
                           </div>
                         ))
                       )}
@@ -807,14 +807,24 @@ export default function Layout({ user }: { user: User }) {
                   navigate('/tareas');
                   setMobileMenuOpen(false);
                 }}
-                className="w-full bg-[#0055ff] text-white border-2 border-[#1a1a1a] py-3 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] font-black flex items-center justify-center gap-2 hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                className="w-full bg-[#0055ff] text-white border-2 border-[#1a1a1a] py-3 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] font-black flex items-center justify-center gap-2 hover:bg-[#1a1a1a] hover:text-white transition-colors min-h-[44px]"
               >
                 <PlusSquare className="w-5 h-5" />
                 NUEVA TAREA
               </button>
               <button
+                onClick={() => {
+                  navigate('/configuracion');
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 text-[#1a1a1a] mt-3 p-3 min-h-[44px] border-2 border-[#1a1a1a] bg-white hover:bg-[#f5f0e8] transition-colors font-bold text-sm"
+              >
+                <Settings className="w-5 h-5" />
+                <span>Configuración</span>
+              </button>
+              <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 text-[#e63b2e] mt-4 p-2 hover:underline font-bold text-sm"
+                className="w-full flex items-center justify-center gap-2 text-[#e63b2e] mt-3 p-3 min-h-[44px] hover:underline font-bold text-sm"
               >
                 <LogOut className="w-5 h-5" />
                 <span>Cerrar Sesión</span>

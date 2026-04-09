@@ -64,25 +64,25 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
     >
       <div className="flex justify-between items-start mb-1.5 sm:mb-2">
         <span
-          className={`px-1.5 sm:px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[8px] sm:text-[9px] tracking-widest ${getPriorityColor(task.priority)}`}
+          className={`px-1.5 sm:px-2 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[10px] sm:text-xs tracking-wider ${getPriorityColor(task.priority)}`}
         >
           {task.priority}
         </span>
-        <div className="flex gap-0.5 sm:gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-0.5 sm:gap-1">
           <button
             onClick={() => onEdit(task)}
-            className="p-1 hover:bg-[#1a1a1a] hover:text-white transition-colors"
+            className="min-w-[32px] min-h-[32px] sm:min-w-[28px] sm:min-h-[28px] flex items-center justify-center p-1 hover:bg-[#1a1a1a] hover:text-white transition-colors rounded"
             title="Editar"
           >
-            <Edit2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+            <Edit2 className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
           </button>
           {isAdmin && (
             <button
               onClick={() => onDelete(task.id)}
-              className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors"
+              className="min-w-[32px] min-h-[32px] sm:min-w-[28px] sm:min-h-[28px] flex items-center justify-center p-1 hover:bg-[#e63b2e] hover:text-white transition-colors rounded"
               title="Eliminar"
             >
-              <Trash2 className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+              <Trash2 className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
             </button>
           )}
         </div>
@@ -97,7 +97,7 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
           {task.tags.map((tag: string) => (
             <span
               key={tag}
-              className="px-1 sm:px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[8px] sm:text-[9px] font-bold uppercase tracking-widest"
+              className="px-1 sm:px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[10px] sm:text-[10px] font-bold uppercase tracking-wider"
             >
               {tag}
             </span>
@@ -105,19 +105,19 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
         </div>
       )}
       {task.dueDate && (
-        <p className="text-[8px] sm:text-[10px] font-bold opacity-60 uppercase tracking-widest mb-1.5 sm:mb-2">
+        <p className="text-[10px] sm:text-[10px] font-bold opacity-60 uppercase tracking-wider mb-1.5 sm:mb-2">
           Vence: {task.dueDate}
         </p>
       )}
       {task.subtasks && task.subtasks.length > 0 && (
-        <div className="flex items-center gap-1 text-[8px] sm:text-[10px] font-bold opacity-60 uppercase tracking-widest mb-1.5 sm:mb-2">
-          <CheckSquare className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {task.subtasks.filter((st: any) => st.completed).length}/
+        <div className="flex items-center gap-1 text-[10px] sm:text-[10px] font-bold opacity-60 uppercase tracking-wider mb-1.5 sm:mb-2">
+          <CheckSquare className="w-3 h-3 sm:w-3 sm:h-3" /> {task.subtasks.filter((st: any) => st.completed).length}/
           {task.subtasks.length}
         </div>
       )}
       {task.attachments && task.attachments.length > 0 && (
-        <div className="flex items-center gap-1 text-[8px] sm:text-[10px] font-bold opacity-60 uppercase tracking-widest">
-          <Paperclip className="w-2.5 h-2.5 sm:w-3 sm:h-3" /> {task.attachments.length}
+        <div className="flex items-center gap-1 text-[10px] sm:text-[10px] font-bold opacity-60 uppercase tracking-wider">
+          <Paperclip className="w-3 h-3 sm:w-3 sm:h-3" /> {task.attachments.length}
         </div>
       )}
     </div>
