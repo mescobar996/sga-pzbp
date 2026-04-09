@@ -427,7 +427,7 @@ export default function Visitas() {
                   <input
                     type="text"
                     list="personal-list"
-                    autocomplete="name"
+                    autoComplete="name"
                     value={formData.responsable}
                     onChange={(e) => {
                       const val = e.target.value.toUpperCase();
@@ -650,7 +650,7 @@ export default function Visitas() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    autocomplete="off"
+                    autoComplete="off"
                     placeholder="BUSCAR..."
                     className="w-full pl-9 sm:pl-10 p-2 sm:p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-xs transition-colors"
                   />

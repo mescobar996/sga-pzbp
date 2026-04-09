@@ -274,7 +274,7 @@ export default function Diligenciamientos() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="BUSCAR DILIGENCIAMIENTOS..."
-              autocomplete="off"
+              autoComplete="off"
               className="w-full pl-10 p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
             />
           </div>
