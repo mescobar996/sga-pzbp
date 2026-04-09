@@ -40,7 +40,7 @@ export function DataTable<T extends { id: string }>({
     filterValue === 'Todos' ? data : data.filter((item) => (item as any)[filterField] === filterValue);
 
   return (
-    <div className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 lg:p-6 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col h-full">
+    <div className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 lg:p-6 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col min-h-[300px]">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 border-b-2 border-[#1a1a1a] pb-2 gap-2">
         <div className="flex gap-2 items-center flex-wrap">
           <select

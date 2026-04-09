@@ -680,7 +680,7 @@ export default function BaseDatos() {
             Administración de Datos
           </h1>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
             <DataTable<Personal>
               data={personnel}
               columns={[
