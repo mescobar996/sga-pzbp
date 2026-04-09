@@ -628,7 +628,6 @@ export default function Novedades() {
                 />
                 </div>
 
-                <div>
               <div>
                 <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">
                   Contenido (Nota)

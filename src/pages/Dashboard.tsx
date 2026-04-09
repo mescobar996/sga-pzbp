@@ -5,7 +5,7 @@ import { getVisitas, onVisitasChange } from '../db/visitas';
 import { getNovedades, onNovedadesChange } from '../db/novedades';
 import { withTimeout } from '../db/client';
 import type { Task, Visita, Novedad } from '../types';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
@@ -195,21 +195,33 @@ export default function Dashboard() {
         {/* Charts */}
         <div className="lg:col-span-2 border-2 border-[#1a1a1a] bg-white p-3 sm:p-5 shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)]">
           <h2 className="text-base sm:text-xl font-black uppercase mb-3 sm:mb-4 font-['Space_Grotesk'] border-b-2 border-[#1a1a1a] pb-2 inline-block">Actividad Semanal</h2>
-          <div className="h-48 sm:h-64 w-full min-h-[192px] min-w-[300px]">
-            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={192}>
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+          <div className="h-64 sm:h-80 lg:h-96 w-full min-h-[256px] min-w-[300px]">
+            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={256}>
+              <BarChart data={chartData} margin={{ top: 20, right: 30, left: -20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
-                <XAxis dataKey="name" stroke="#1a1a1a" tick={{ fontFamily: 'Space Grotesk', fontWeight: 'bold', fontSize: 10, fill: '#1a1a1a' }} />
-                <YAxis stroke="#1a1a1a" tick={{ fontFamily: 'Space Grotesk', fontWeight: 'bold', fontSize: 10, fill: '#1a1a1a' }} allowDecimals={false} />
-                <Tooltip 
+                <XAxis dataKey="name" stroke="#1a1a1a" tick={{ fontFamily: 'Space Grotesk', fontWeight: 'bold', fontSize: 11, fill: '#1a1a1a' }} />
+                <YAxis stroke="#1a1a1a" tick={{ fontFamily: 'Space Grotesk', fontWeight: 'bold', fontSize: 11, fill: '#1a1a1a' }} allowDecimals={false} />
+                <Tooltip
                   contentStyle={{ border: '2px solid #1a1a1a', borderRadius: 0, fontWeight: 'bold', textTransform: 'uppercase', fontSize: 11, backgroundColor: '#fff' }}
                   itemStyle={{ color: '#1a1a1a' }}
+                  labelStyle={{ fontFamily: 'Space Grotesk', fontWeight: 'black', marginBottom: 4 }}
                 />
-                <Bar dataKey="Tareas" fill="#0055ff" stroke="#1a1a1a" strokeWidth={2} />
-                <Bar dataKey="Visitas" fill="#00cc66" stroke="#1a1a1a" strokeWidth={2} />
+                <Legend
+                  wrapperStyle={{ fontFamily: 'Space Grotesk', fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase', paddingTop: 16 }}
+                  iconType="square"
+                  iconSize={12}
+                />
+                <Bar dataKey="Tareas" fill="#0055ff" stroke="#1a1a1a" strokeWidth={2} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Visitas" fill="#00cc66" stroke="#1a1a1a" strokeWidth={2} radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
+          {chartData.every(d => d.Tareas === 0 && d.Visitas === 0) && (
+            <div className="text-center py-4 border-t-2 border-[#1a1a1a]/10 mt-4">
+              <Activity className="w-8 h-8 mx-auto mb-2 opacity-30" />
+              <p className="text-xs font-bold uppercase tracking-widest opacity-50">No hay datos registrados esta semana</p>
+            </div>
+          )}
         </div>
 
         {/* Recent Activity & Novedades */}
