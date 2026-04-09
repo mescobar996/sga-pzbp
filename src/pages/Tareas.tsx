@@ -933,9 +933,9 @@ export default function Tareas() {
                     exit={{ opacity: 0, x: 20 }}
                     whileHover={task.status !== 'completado' ? { x: 4 } : {}}
                     transition={{ duration: 0.2 }}
-                    className="p-3 sm:p-4 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4 min-h-[100px] max-h-[100px] overflow-hidden"
+                    className="p-3 sm:p-4 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4 min-h-[80px]"
                   >
-                    <div className="flex flex-1 items-start md:items-center gap-3 sm:gap-4 w-full h-full overflow-hidden">
+                    <div className="flex flex-1 items-start md:items-center gap-3 sm:gap-4 w-full min-w-0">
                       <div className="flex flex-col items-center gap-1 shrink-0">
                         <div className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
                           {getStatusIcon(task.status)}
@@ -943,7 +943,7 @@ export default function Tareas() {
                         <select
                           value={task.priority}
                           onChange={(e) => handleUpdatePriority(task.id, e.target.value as 'alta' | 'media' | 'baja')}
-                          className={`px-1.5 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[8px] tracking-widest cursor-pointer focus:outline-none ${getPriorityColor(task.priority)}`}
+                          className={`px-1.5 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-wider cursor-pointer focus:outline-none ${getPriorityColor(task.priority)}`}
                         >
                           <option value="alta">A</option>
                           <option value="media">M</option>
@@ -951,10 +951,10 @@ export default function Tareas() {
                         </select>
                       </div>
 
-                      <div className="flex-1 min-w-0 h-full flex flex-col justify-center">
-                        <div className="flex flex-wrap items-center gap-2 mb-1 overflow-hidden">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-1.5 mb-1">
                           <h3
-                            className={`text-base sm:text-lg font-black uppercase tracking-tight font-['Space_Grotesk'] truncate relative shrink-0 max-w-[70%] ${task.status === 'completado' ? 'text-gray-500' : ''}`}
+                            className={`text-sm sm:text-base lg:text-lg font-black uppercase tracking-tight font-['Space_Grotesk'] truncate ${task.status === 'completado' ? 'text-gray-500' : ''}`}
                           >
                             {task.title}
                             {task.status === 'completado' && (
@@ -967,11 +967,11 @@ export default function Tareas() {
                             )}
                           </h3>
                           {task.tags && task.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-1 overflow-hidden h-5">
+                            <div className="flex flex-wrap gap-1">
                               {task.tags.map((tag) => (
                                 <span
                                   key={tag}
-                                  className="px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[8px] font-bold uppercase tracking-widest truncate max-w-[60px]"
+                                  className="px-1.5 py-0.5 bg-[#f5f0e8] border border-[#1a1a1a] text-[10px] font-bold uppercase tracking-wider"
                                 >
                                   {tag}
                                 </span>
@@ -979,25 +979,25 @@ export default function Tareas() {
                             </div>
                           )}
                         </div>
-                        
-                        <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 overflow-hidden">
+
+                        <div className="flex flex-col gap-1">
                           <p className={`text-[10px] sm:text-xs font-medium truncate opacity-70 ${task.status === 'completado' ? 'line-through' : ''}`}>
                             {task.description || 'Sin descripción'}
                           </p>
-                          <div className="flex items-center gap-3 shrink-0">
+                          <div className="flex items-center gap-3 flex-wrap">
                             {task.dueDate && (
-                              <span className="text-[9px] font-bold opacity-60 uppercase tracking-widest flex items-center gap-1">
-                                <CalendarIcon className="w-2.5 h-2.5" /> {task.dueDate}
+                              <span className="text-[10px] font-bold opacity-60 uppercase tracking-wider flex items-center gap-1">
+                                <CalendarIcon className="w-3 h-3" /> {task.dueDate}
                               </span>
                             )}
                             {task.subtasks && task.subtasks.length > 0 && (
-                              <span className="text-[9px] font-bold opacity-60 uppercase tracking-widest flex items-center gap-1">
-                                <CheckSquare className="w-2.5 h-2.5" /> {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
+                              <span className="text-[10px] font-bold opacity-60 uppercase tracking-wider flex items-center gap-1">
+                                <CheckSquare className="w-3 h-3" /> {task.subtasks.filter(st => st.completed).length}/{task.subtasks.length}
                               </span>
                             )}
                             {task.attachments && task.attachments.length > 0 && (
-                              <span className="text-[9px] font-bold opacity-60 uppercase tracking-widest flex items-center gap-1">
-                                <Paperclip className="w-2.5 h-2.5" /> {task.attachments.length}
+                              <span className="text-[10px] font-bold opacity-60 uppercase tracking-wider flex items-center gap-1">
+                                <Paperclip className="w-3 h-3" /> {task.attachments.length}
                               </span>
                             )}
                           </div>
@@ -1005,13 +1005,13 @@ export default function Tareas() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end mt-2 md:mt-0 pt-2 md:pt-0 border-t-2 md:border-t-0 border-[#1a1a1a]/10 h-full">
+                    <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#1a1a1a]/10">
                       <select
                         value={task.status}
                         onChange={(e) =>
                           handleUpdateStatus(task.id, e.target.value as 'pendiente' | 'en_proceso' | 'completado')
                         }
-                        className="px-2 py-1 border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-widest cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
+                        className="px-2 py-1.5 min-h-[44px] sm:min-h-[36px] border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-wider cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
                       >
                         <option value="pendiente">PENDIENTE</option>
                         <option value="en_proceso">PROCESO</option>
@@ -1020,14 +1020,14 @@ export default function Tareas() {
 
                       <button
                         onClick={() => openEditTaskModal(task)}
-                        className="p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                        className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors"
                         title="Editar tarea"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
 
                       <label
-                        className="p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer"
+                        className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer"
                         title="Subir archivo rápido"
                       >
                         <Upload className="w-4 h-4" />
@@ -1047,7 +1047,7 @@ export default function Tareas() {
                       {isAdmin && (
                         <button
                           onClick={() => handleDeleteTask(task.id)}
-                          className="p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors"
+                          className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors"
                           title="Eliminar tarea"
                         >
                           <Trash2 className="w-4 h-4" />
