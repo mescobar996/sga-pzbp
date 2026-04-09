@@ -64,16 +64,16 @@ export function DataTable<T extends { id: string }>({
         </div>
       </div>
 
-      <div className="overflow-x-auto flex-1 -mx-3 sm:mx-0">
-        <table className="w-full text-left border-collapse min-w-[600px]">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse min-w-[500px]">
           <thead>
             <tr className="border-b-2 border-[#1a1a1a] bg-[#f5f0e8]">
               {columns.map((col) => (
-                <th key={col.key} className="p-2 sm:p-3 font-black uppercase tracking-widest text-[10px] sm:text-xs">
+                <th key={col.key} className="p-2 sm:p-3 font-black uppercase tracking-widest text-xs">
                   {col.label}
                 </th>
               ))}
-              {showActions && <th className="p-2 sm:p-3 font-black uppercase tracking-widest text-[10px] sm:text-xs text-right">Acciones</th>}
+              {showActions && <th className="p-2 sm:p-3 font-black uppercase tracking-widest text-xs text-right">Acciones</th>}
             </tr>
           </thead>
           <tbody>
@@ -83,7 +83,7 @@ export function DataTable<T extends { id: string }>({
                 className="border-b border-[#1a1a1a]/20 hover:bg-[#0055ff] hover:text-white transition-colors"
               >
                 {columns.map((col) => (
-                  <td key={col.key} className="p-2 sm:p-3 font-bold uppercase text-[10px] sm:text-sm">
+                  <td key={col.key} className="p-2 sm:p-3 font-bold uppercase text-xs sm:text-sm whitespace-nowrap">
                     {col.render ? col.render(item) : (item as any)[col.key]}
                   </td>
                 ))}
@@ -91,14 +91,14 @@ export function DataTable<T extends { id: string }>({
                   <td className="p-2 sm:p-3 flex sm:justify-end gap-1.5 sm:gap-2">
                     <button
                       onClick={() => onEdit(item)}
-                      className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center p-1.5 sm:p-1.5 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] hover:bg-[#0055ff] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
+                      className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center p-1.5 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] hover:bg-[#0055ff] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
                       title="Editar"
                     >
                       <Edit className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                     </button>
                     <button
                       onClick={() => onDelete(item)}
-                      className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center p-1.5 sm:p-1.5 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
+                      className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center p-1.5 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
                       title="Eliminar"
                     >
                       <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
