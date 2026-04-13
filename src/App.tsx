@@ -19,6 +19,7 @@ import Configuracion from './pages/Configuracion';
 import DebugDB from './pages/DebugDB';
 import Login from './pages/Login';
 import Notificaciones from './pages/Notificaciones';
+import AdminUsuarios from './pages/AdminUsuarios';
 
 function PageTransition({ children }: { children: React.ReactNode }) {
   return (
@@ -119,6 +120,14 @@ function AnimatedRoutes({ user }: { user: User | null }) {
             element={
               <PageTransition>
                 <Notificaciones />
+              </PageTransition>
+            }
+          />
+          <Route
+            path="admin-usuarios"
+            element={
+              <PageTransition>
+                <AdminUsuarios />
               </PageTransition>
             }
           />

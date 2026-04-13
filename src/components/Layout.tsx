@@ -23,6 +23,7 @@ import {
   Users,
   Calendar,
   Clock,
+  Shield,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'motion/react';
@@ -429,6 +430,12 @@ export default function Layout({ user }: { user: User }) {
     { to: '/base-datos', icon: Database, label: 'Base de Datos' },
   ];
 
+  const adminNavItems = _isAdmin ? [
+    { to: '/admin-usuarios', icon: Shield, label: 'Admin Usuarios' },
+  ] : [];
+
+  const allNavItems = [...navItems, ...adminNavItems];
+
   const userName = (user.user_metadata?.name as string) || user.email?.split('@')[0] || 'Usuario';
   const userEmail = user.email || '';
 
@@ -706,7 +713,14 @@ export default function Layout({ user }: { user: User }) {
                 )}
               </div>
               <div className="hidden lg:block">
-                <p className="text-xs font-black uppercase leading-tight">{userName}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-black uppercase leading-tight">{userName}</p>
+                  {!_isAdmin && (
+                    <span className="text-[8px] font-black uppercase tracking-wider bg-[#e63b2e] text-white px-1.5 py-0.5 leading-none">
+                      Solo lectura
+                    </span>
+                  )}
+                </div>
                 <p className="text-[10px] font-bold opacity-50 uppercase truncate max-w-[120px]">{userEmail}</p>
               </div>
             </div>
@@ -720,7 +734,7 @@ export default function Layout({ user }: { user: User }) {
           <span className="text-xl font-black block">SGA PZBP - MS</span>
         </div>
         <div className="flex-1 overflow-y-auto py-4">
-          {navItems.map((item) => (
+          {allNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -783,7 +797,7 @@ export default function Layout({ user }: { user: User }) {
               </div>
             </div>
             <div className="flex-1 overflow-y-auto py-4">
-              {navItems.map((item) => (
+              {allNavItems.map((item) => (
                 <NavLink
                   key={item.to}
                   to={item.to}
@@ -829,6 +843,13 @@ export default function Layout({ user }: { user: User }) {
                 <LogOut className="w-5 h-5" />
                 <span>Cerrar Sesión</span>
               </button>
+              {!_isAdmin && (
+                <div className="mt-2 p-2 border-2 border-[#e63b2e] bg-[#e63b2e]/5 text-center">
+                  <span className="text-[9px] font-black uppercase tracking-wider text-[#e63b2e]">
+                    Modo solo lectura
+                  </span>
+                </div>
+              )}
             </div>
           </motion.nav>
         )}
