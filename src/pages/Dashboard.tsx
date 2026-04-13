@@ -168,13 +168,13 @@ export default function Dashboard() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05, duration: 0.3 }}
-            className="p-2 sm:p-3 lg:p-4 border-2 border-[#1a1a1a] bg-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] flex flex-col sm:items-center sm:justify-between transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] cursor-default"
+            className="p-2 sm:p-3 lg:p-4 border-2 border-[#1a1a1a] bg-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] flex flex-col items-center justify-between transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] cursor-default"
           >
-            <div className="text-center sm:text-left w-full">
+            <div className="text-center w-full">
               <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5 sm:mb-1">{kpi.label}</p>
               <p className="text-xl sm:text-2xl lg:text-3xl font-black font-['Space_Grotesk']">{kpi.value}</p>
             </div>
-            <div className={`p-1.5 sm:p-2 lg:p-3 border-2 border-[#1a1a1a] ${kpi.color} text-white self-end sm:self-auto mt-2 sm:mt-0`}>
+            <div className={`p-1.5 sm:p-2 lg:p-3 border-2 border-[#1a1a1a] ${kpi.color} text-white mt-2 sm:mt-0`}>
               <kpi.icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
             </div>
           </motion.div>
