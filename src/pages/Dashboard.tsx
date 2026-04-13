@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Activity, CheckCircle, Clock, AlertTriangle, Newspaper, ArrowRight, HardHat, Plus, TrendingUp, ClipboardList } from 'lucide-react';
+import { Activity, CheckCircle, Clock, AlertTriangle, Newspaper, ArrowRight, HardHat, Plus, TrendingUp, ClipboardList, FileText, Calendar } from 'lucide-react';
 import { getTasks, onTasksChange } from '../db/tasks';
 import { getVisitas, onVisitasChange } from '../db/visitas';
 import { getNovedades, onNovedadesChange } from '../db/novedades';
+import { getDiligenciamientos, onDiligenciamientosChange } from '../db/diligenciamientos';
 import { withTimeout } from '../db/client';
-import type { Task, Visita, Novedad } from '../types';
+import type { Task, Visita, Novedad, Diligenciamiento } from '../types';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
@@ -38,18 +39,21 @@ export default function Dashboard() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [visits, setVisits] = useState<Visita[]>([]);
   const [novedades, setNovedades] = useState<Novedad[]>([]);
+  const [diligenciamientos, setDiligenciamientos] = useState<Diligenciamiento[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadAll = useCallback(async () => {
     try {
-      const [tasksData, visitsData, novedadesData] = await withTimeout(Promise.all([
+      const [tasksData, visitsData, novedadesData, diligenciamientosData] = await withTimeout(Promise.all([
         getTasks(),
         getVisitas(),
         getNovedades(),
+        getDiligenciamientos(),
       ]), 8000);
       setTasks(tasksData);
       setVisits(visitsData);
       setNovedades(novedadesData);
+      setDiligenciamientos(diligenciamientosData);
     } catch (error) {
       handleFirestoreError(error, 'dashboard');
     } finally {
@@ -64,6 +68,7 @@ export default function Dashboard() {
     const unsubTasks = onTasksChange((data) => setTasks(data));
     const unsubVisitas = onVisitasChange((data) => setVisits(data));
     const unsubNovedades = onNovedadesChange((data) => setNovedades(data));
+    const unsubDiligenciamientos = onDiligenciamientosChange((data) => setDiligenciamientos(data));
 
     // Auto-refresh when user returns to tab
     const onFocus = () => loadAll();
@@ -73,23 +78,27 @@ export default function Dashboard() {
       unsubTasks();
       unsubVisitas();
       unsubNovedades();
+      unsubDiligenciamientos();
       window.removeEventListener('focus', onFocus);
     };
   }, [loadAll]);
 
   const pendingTasks = tasks.filter(t => t.status === 'pendiente' || t.status === 'en_proceso').length;
   const completedTasks = tasks.filter(t => t.status === 'completado').length;
-  const highPriorityAlerts = tasks.filter(t => t.priority === 'alta' && t.status !== 'completado').length;
-  
+  const highPriorityTasks = tasks.filter(t => t.priority === 'alta' && t.status !== 'completado');
+  const highPriorityAlerts = highPriorityTasks.length;
+
   const todayStr = new Date().toISOString().split('T')[0];
   const visitsToday = visits.filter(v => v.fecha === todayStr).length;
   const completionRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
+  const totalDiligenciamientos = diligenciamientos.length;
 
   const kpis = [
-    { label: 'TAREAS PENDIENTES', value: pendingTasks.toString(), icon: Clock, color: 'bg-[#0055ff]' },
-    { label: 'VISITAS HOY', value: visitsToday.toString(), icon: Activity, color: 'bg-[#00cc66]' },
-    { label: 'COMPLETADAS', value: completedTasks.toString(), icon: CheckCircle, color: 'bg-[#00cc66]' },
-    { label: 'ALERTAS PRIORIDAD ALTA', value: highPriorityAlerts.toString(), icon: AlertTriangle, color: 'bg-[#e63b2e]' },
+    { label: 'TAREAS COMPLETADAS', value: completedTasks.toString(), icon: CheckCircle, color: 'bg-[#00cc66]' },
+    { label: 'VISITAS TÉCNICAS COMPLETADAS', value: visits.length.toString(), icon: HardHat, color: 'bg-[#0055ff]' },
+    { label: 'DILIGENCIAMIENTOS', value: totalDiligenciamientos.toString(), icon: FileText, color: 'bg-[#ff9900]' },
+    { label: 'ALERTAS PRIORIDAD ALTA', value: highPriorityAlerts.toString(), icon: AlertTriangle, color: 'bg-[#e63b2e]', detail: highPriorityTasks.map(t => t.title).join(', ') },
+    { label: 'VISITAS HOY', value: visitsToday.toString(), icon: Calendar, color: 'bg-[#00cc66]' },
   ];
 
   const chartData = [];
@@ -116,16 +125,16 @@ export default function Dashboard() {
   const quickActions = [
     { label: 'Nueva Visita', icon: HardHat, action: () => navigate('/visitas'), color: 'bg-[#00cc66]' },
     { label: 'Nueva Tarea', icon: Plus, action: () => navigate('/tareas'), color: 'bg-[#0055ff]' },
-    { label: 'Ver Reportes', icon: TrendingUp, action: () => navigate('/reportes'), color: 'bg-[#1a1a1a]' },
-    { label: 'Novedades', icon: Newspaper, action: () => navigate('/novedades'), color: 'bg-[#0055ff]' },
+    { label: 'Diligenciamientos', icon: FileText, action: () => navigate('/diligenciamientos'), color: 'bg-[#ff9900]' },
+    { label: 'Novedades', icon: Newspaper, action: () => navigate('/novedades'), color: 'bg-[#1a1a1a]' },
   ];
 
   if (loading) {
     return (
       <div className="font-['Inter'] max-w-6xl mx-auto">
         <div className="h-10 w-48 bg-[#1a1a1a]/10 animate-pulse mb-6"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+          {[1, 2, 3, 4, 5].map(i => <SkeletonCard key={i} />)}
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <SkeletonChart />
@@ -152,20 +161,23 @@ export default function Dashboard() {
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-8">
         {kpis.map((kpi, idx) => (
           <motion.div
             key={idx}
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05, duration: 0.3 }}
-            className="p-2 sm:p-3 lg:p-4 border-2 border-[#1a1a1a] bg-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] flex flex-col sm:flex-row sm:items-center sm:justify-between transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] cursor-default"
+            className="p-2 sm:p-3 lg:p-4 border-2 border-[#1a1a1a] bg-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] flex flex-col sm:items-center sm:justify-between transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] cursor-default"
           >
-            <div>
+            <div className="text-center sm:text-left w-full">
               <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5 sm:mb-1">{kpi.label}</p>
               <p className="text-xl sm:text-2xl lg:text-3xl font-black font-['Space_Grotesk']">{kpi.value}</p>
+              {'detail' in kpi && kpi.detail && (
+                <p className="text-[9px] sm:text-[10px] font-bold text-[#e63b2e] mt-1 truncate" title={kpi.detail}>{kpi.detail}</p>
+              )}
             </div>
-            <div className={`p-1.5 sm:p-2 lg:p-3 border-2 border-[#1a1a1a] ${kpi.color} text-white self-end sm:self-auto`}>
+            <div className={`p-1.5 sm:p-2 lg:p-3 border-2 border-[#1a1a1a] ${kpi.color} text-white self-end sm:self-auto mt-2 sm:mt-0`}>
               <kpi.icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
             </div>
           </motion.div>
