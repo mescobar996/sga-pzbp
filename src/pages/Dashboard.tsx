@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, Clock, AlertTriangle, Newspaper, ArrowRight, HardHat, ListChecks, Users, MapPin } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, Newspaper, ArrowRight, HardHat, ListChecks, Users, MapPin, FileText } from 'lucide-react';
 import { getTasks, onTasksChange } from '../db/tasks';
 import { getVisitas, onVisitasChange } from '../db/visitas';
 import { getNovedades, onNovedadesChange } from '../db/novedades';
