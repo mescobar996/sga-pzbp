@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Activity, CheckCircle, Clock, AlertTriangle, Newspaper, ArrowRight, HardHat, Plus, TrendingUp, ClipboardList, FileText, Calendar } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, Newspaper, ArrowRight, HardHat, Plus, TrendingUp, ClipboardList, FileText, Calendar, ListChecks, Users, MapPin } from 'lucide-react';
 import { getTasks, onTasksChange } from '../db/tasks';
 import { getVisitas, onVisitasChange } from '../db/visitas';
 import { getNovedades, onNovedadesChange } from '../db/novedades';
 import { getDiligenciamientos, onDiligenciamientosChange } from '../db/diligenciamientos';
+import { getPersonal, onPersonalChange } from '../db/personal';
+import { getLocations, onLocationsChange } from '../db/locations';
 import { withTimeout } from '../db/client';
-import type { Task, Visita, Novedad, Diligenciamiento } from '../types';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
+import type { Task, Visita, Novedad, Diligenciamiento, Personal as PersonalType, Location as LocationType } from '../types';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { toast } from 'sonner';
@@ -25,35 +26,32 @@ function SkeletonCard() {
   );
 }
 
-function SkeletonChart() {
-  return (
-    <div className="border-2 border-[#1a1a1a] bg-white p-5 animate-pulse">
-      <div className="h-4 w-40 bg-[#1a1a1a]/10 mb-4"></div>
-      <div className="h-64 bg-[#1a1a1a]/5"></div>
-    </div>
-  );
-}
-
 export default function Dashboard() {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [visits, setVisits] = useState<Visita[]>([]);
   const [novedades, setNovedades] = useState<Novedad[]>([]);
   const [diligenciamientos, setDiligenciamientos] = useState<Diligenciamiento[]>([]);
+  const [personal, setPersonal] = useState<PersonalType[]>([]);
+  const [locations, setLocations] = useState<LocationType[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadAll = useCallback(async () => {
     try {
-      const [tasksData, visitsData, novedadesData, diligenciamientosData] = await withTimeout(Promise.all([
+      const [tasksData, visitsData, novedadesData, diligenciamientosData, personalData, locationsData] = await withTimeout(Promise.all([
         getTasks(),
         getVisitas(),
         getNovedades(),
         getDiligenciamientos(),
+        getPersonal(),
+        getLocations(),
       ]), 8000);
       setTasks(tasksData);
       setVisits(visitsData);
       setNovedades(novedadesData);
       setDiligenciamientos(diligenciamientosData);
+      setPersonal(personalData);
+      setLocations(locationsData);
     } catch (error) {
       handleFirestoreError(error, 'dashboard');
     } finally {
@@ -69,6 +67,8 @@ export default function Dashboard() {
     const unsubVisitas = onVisitasChange((data) => setVisits(data));
     const unsubNovedades = onNovedadesChange((data) => setNovedades(data));
     const unsubDiligenciamientos = onDiligenciamientosChange((data) => setDiligenciamientos(data));
+    const unsubPersonal = onPersonalChange((data) => setPersonal(data));
+    const unsubLocations = onLocationsChange((data) => setLocations(data));
 
     // Auto-refresh when user returns to tab
     const onFocus = () => loadAll();
@@ -79,6 +79,8 @@ export default function Dashboard() {
       unsubVisitas();
       unsubNovedades();
       unsubDiligenciamientos();
+      unsubPersonal();
+      unsubLocations();
       window.removeEventListener('focus', onFocus);
     };
   }, [loadAll]);
@@ -101,22 +103,17 @@ export default function Dashboard() {
     { label: 'VISITAS HOY', value: visitsToday.toString(), icon: Calendar, color: 'bg-[#00cc66]' },
   ];
 
-  const chartData = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
-    const dayName = d.toLocaleDateString('es-ES', { weekday: 'short' }).toUpperCase();
-    
-    const tasksDue = tasks.filter(t => t.dueDate === dateStr).length;
-    const visitsOnDay = visits.filter(v => v.fecha === dateStr).length;
+  const totalPersonal = personal.length;
+  const totalLocations = locations.length;
 
-    chartData.push({
-      name: dayName,
-      Tareas: tasksDue,
-      Visitas: visitsOnDay
-    });
-  }
+  const summaryCards = [
+    { label: 'Tareas', value: tasks.length, icon: ListChecks, color: 'bg-[#0055ff]', route: '/tareas' },
+    { label: 'Visitas', value: visits.length, icon: HardHat, color: 'bg-[#00cc66]', route: '/visitas' },
+    { label: 'Personal', value: totalPersonal, icon: Users, color: 'bg-[#ff9900]', route: '/base-datos' },
+    { label: 'Novedades', value: novedades.length, icon: Newspaper, color: 'bg-[#1a1a1a]', route: '/novedades' },
+    { label: 'Diligenciamientos', value: totalDiligenciamientos, icon: FileText, color: 'bg-[#9b59b6]', route: '/diligenciamientos' },
+    { label: 'Ubicaciones', value: totalLocations, icon: MapPin, color: 'bg-[#0055ff]', route: '/base-datos' },
+  ];
 
   const recentTasks = tasks.filter(t => t.status !== 'completado').slice(0, 5);
   const recentNovedades = novedades.slice(0, 3);
@@ -136,12 +133,8 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
           {[1, 2, 3, 4, 5].map(i => <SkeletonCard key={i} />)}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <SkeletonChart />
-          <div className="space-y-6">
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
         </div>
       </div>
     );
@@ -200,36 +193,29 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Chart - Full Width */}
-      <div className="mb-4 sm:mb-8 border-2 border-[#1a1a1a] bg-white p-2 sm:p-4 lg:p-5 shadow-[4px_4px_0px_0px_rgba(26,26,26,0.3)]">
-        <h2 className="text-sm sm:text-xl font-black uppercase mb-2 sm:mb-4 font-['Space_Grotesk'] border-b-2 border-[#1a1a1a] pb-1.5 sm:pb-2 inline-block">Actividad Semanal</h2>
-        <div className="h-56 sm:h-80 lg:h-[440px] w-full min-h-[224px] min-w-[280px]">
-          <ResponsiveContainer width="100%" height="100%" minWidth={280} minHeight={224}>
-            <BarChart data={chartData} margin={{ top: 10, right: 16, left: -10, bottom: 10 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" opacity={0.5} />
-              <XAxis dataKey="name" stroke="#1a1a1a" tick={{ fontFamily: 'Space Grotesk', fontWeight: 'bold', fontSize: 10, fill: '#1a1a1a' }} />
-              <YAxis stroke="#1a1a1a" tick={{ fontFamily: 'Space Grotesk', fontWeight: 'bold', fontSize: 10, fill: '#1a1a1a' }} allowDecimals={false} />
-              <Tooltip
-                contentStyle={{ border: '2px solid #1a1a1a', borderRadius: 0, fontWeight: 'bold', textTransform: 'uppercase', fontSize: 11, backgroundColor: '#fff' }}
-                itemStyle={{ color: '#1a1a1a' }}
-                labelStyle={{ fontFamily: 'Space Grotesk', fontWeight: 'black', marginBottom: 4 }}
-              />
-              <Legend
-                wrapperStyle={{ fontFamily: 'Space Grotesk', fontWeight: 'bold', fontSize: 11, textTransform: 'uppercase', paddingTop: 12 }}
-                iconType="square"
-                iconSize={12}
-              />
-              <Bar dataKey="Tareas" fill="#0055ff" stroke="#1a1a1a" strokeWidth={2} radius={[4, 4, 0, 0]} />
-              <Bar dataKey="Visitas" fill="#00cc66" stroke="#1a1a1a" strokeWidth={2} radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* Resumen del Sistema */}
+      <div className="mb-4 sm:mb-8">
+        <h2 className="text-sm sm:text-lg font-black uppercase mb-2 sm:mb-3 font-['Space_Grotesk']">Resumen del Sistema</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
+          {summaryCards.map((card, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05, duration: 0.3 }}
+              onClick={() => navigate(card.route)}
+              className="p-3 sm:p-4 lg:p-5 border-2 border-[#1a1a1a] bg-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] flex items-center gap-3 sm:gap-4 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] cursor-pointer"
+            >
+              <div className={`p-2.5 sm:p-3 border-2 border-[#1a1a1a] ${card.color} text-white shrink-0`}>
+                <card.icon className="w-5 h-5 sm:w-6 sm:h-6" />
+              </div>
+              <div>
+                <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest opacity-60">{card.label}</p>
+                <p className="text-2xl sm:text-3xl font-black font-['Space_Grotesk']">{card.value}</p>
+              </div>
+            </motion.div>
+          ))}
         </div>
-        {chartData.every(d => d.Tareas === 0 && d.Visitas === 0) && (
-          <div className="text-center py-4 border-t-2 border-[#1a1a1a]/10 mt-4">
-            <Activity className="w-8 h-8 mx-auto mb-2 opacity-30" />
-            <p className="text-xs font-bold uppercase tracking-widest opacity-50">No hay datos registrados esta semana</p>
-          </div>
-        )}
       </div>
 
       {/* Tareas Recientes & Novedades - Side by Side */}
