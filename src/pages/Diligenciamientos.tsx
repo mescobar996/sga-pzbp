@@ -13,6 +13,7 @@ import {
   Video,
   ChevronLeft,
   ChevronRight,
+  Save,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -462,166 +463,190 @@ export default function Diligenciamientos() {
       )}
 
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto py-10">
-          <div className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-6 w-full max-w-3xl flex flex-col my-8">
-            <h2 className="text-2xl font-black uppercase mb-4 font-['Space_Grotesk'] tracking-widest">
-              {isEditing ? 'Editar Diligenciamiento' : 'Nuevo Diligenciamiento'}
-            </h2>
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto pt-8 sm:pt-10 pb-8 sm:pb-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2 }}
+            className="bg-white border-2 sm:border-4 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-0 w-full max-w-3xl relative"
+          >
+            {/* Header */}
+            <div className="bg-[#1a1a1a] text-white p-4 sm:p-5 flex justify-between items-center">
+              <h2 className="text-lg sm:text-2xl font-black uppercase font-['Space_Grotesk'] tracking-widest">
+                {isEditing ? 'Editar Diligenciamiento' : 'Nuevo Diligenciamiento'}
+              </h2>
+              <button
+                onClick={() => handleCloseModal()}
+                className="p-1.5 sm:p-2 hover:bg-[#e63b2e] hover:text-white transition-colors border-2 border-transparent hover:border-white text-white"
+              >
+                <X className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            </div>
 
-            <form onSubmit={handleSave} className="flex flex-col gap-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Título</label>
-                <input
-                  type="text"
-                  value={currentDiligenciamiento.title || ''}
-                  onChange={(e) => setCurrentDiligenciamiento({ ...currentDiligenciamiento, title: e.target.value })}
-                  className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-lg transition-colors"
-                  placeholder="TÍTULO DEL DILIGENCIAMIENTO..."
-                  required
-                  autoFocus
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Fecha</label>
-                <input
-                  type="date"
-                  value={currentDiligenciamiento.fecha || ''}
-                  onChange={(e) => setCurrentDiligenciamiento({ ...currentDiligenciamiento, fecha: e.target.value })}
-                  className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">
-                  Contenido (Detalle del trámite)
-                </label>
-                <textarea
-                  value={currentDiligenciamiento.content || ''}
-                  onChange={(e) =>
-                    setCurrentDiligenciamiento({ ...currentDiligenciamiento, content: e.target.value })
-                  }
-                  className="w-full h-48 p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium resize-none transition-colors text-sm"
-                  placeholder="Describe los detalles del diligenciamiento aquí..."
-                  required
-                />
-              </div>
-
-              {/* Attachments Section */}
-              <div className="border-2 border-[#1a1a1a] p-4 bg-white">
-                <div className="flex justify-between items-center mb-3">
-                  <label className="text-xs font-bold uppercase tracking-widest opacity-70">Archivos Adjuntos</label>
-                  <label className="cursor-pointer px-3 py-2 bg-[#1a1a1a] text-white font-bold uppercase text-xs tracking-widest hover:bg-[#333] transition-colors flex items-center gap-2">
-                    <Upload className="w-4 h-4" /> Subir Archivo
-                    <input
-                      type="file"
-                      className="hidden"
-                      multiple
-                      onChange={(e) => {
-                        if (e.target.files) {
-                          setPendingFiles([...pendingFiles, ...Array.from(e.target.files)]);
-                        }
-                        e.target.value = '';
-                      }}
-                    />
-                  </label>
+            <form onSubmit={handleSave} className="p-4 sm:p-6">
+              <div className="grid grid-cols-1 gap-4 mb-6">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest">Título</label>
+                  <input
+                    type="text"
+                    value={currentDiligenciamiento.title || ''}
+                    onChange={(e) => setCurrentDiligenciamiento({ ...currentDiligenciamiento, title: e.target.value })}
+                    className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
+                    placeholder="TÍTULO DEL DILIGENCIAMIENTO..."
+                    required
+                    autoFocus
+                  />
                 </div>
 
-                <div className="flex flex-col gap-2">
-                  {/* Existing Attachments */}
-                  {currentDiligenciamiento.attachments
-                    ?.filter((a) => !attachmentsToDelete.includes(a))
-                    .map((att, idx) => (
-                      <div
-                        key={`att-${idx}`}
-                        className="flex items-center justify-between p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8]"
-                      >
-                        <div className="flex items-center gap-3 truncate max-w-[80%]">
-                          {att.type.startsWith('image/') ? (
-                            <div
-                              className="w-8 h-8 flex-shrink-0 border border-[#1a1a1a] overflow-hidden bg-white cursor-pointer"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setPreviewImage(att.url);
-                              }}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest">Fecha</label>
+                  <input
+                    type="date"
+                    value={currentDiligenciamiento.fecha || ''}
+                    onChange={(e) => setCurrentDiligenciamiento({ ...currentDiligenciamiento, fecha: e.target.value })}
+                    className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-base sm:text-sm"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest">Contenido</label>
+                  <textarea
+                    rows={4}
+                    value={currentDiligenciamiento.content || ''}
+                    onChange={(e) =>
+                      setCurrentDiligenciamiento({ ...currentDiligenciamiento, content: e.target.value })
+                    }
+                    className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors resize-none text-xs sm:text-sm"
+                    placeholder="Describe los detalles del diligenciamiento aquí..."
+                    required
+                  />
+                </div>
+
+                {/* Attachments Section */}
+                <div className="border-2 border-[#1a1a1a] p-3 sm:p-4 bg-white">
+                  <div className="flex justify-between items-center mb-3">
+                    <label className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                      <Paperclip className="w-4 h-4" /> Archivos Adjuntos
+                    </label>
+                    <label className="cursor-pointer px-3 py-1.5 bg-[#1a1a1a] text-white font-bold uppercase text-[10px] tracking-widest hover:bg-[#333] transition-colors flex items-center gap-2">
+                      <Upload className="w-3.5 h-3.5" /> Subir Archivos
+                      <input
+                        type="file"
+                        className="hidden"
+                        multiple
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            setPendingFiles([...pendingFiles, ...Array.from(e.target.files)]);
+                          }
+                          e.target.value = '';
+                        }}
+                      />
+                    </label>
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    {/* Existing Attachments */}
+                    {currentDiligenciamiento.attachments
+                      ?.filter((a) => !attachmentsToDelete.includes(a))
+                      .map((att, idx) => (
+                        <div
+                          key={`att-${idx}`}
+                          className="flex items-center justify-between p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8]"
+                        >
+                          <div className="flex items-center gap-3 truncate max-w-[80%]">
+                            {att.type.startsWith('image/') ? (
+                              <div
+                                className="w-8 h-8 flex-shrink-0 border border-[#1a1a1a] overflow-hidden bg-white cursor-pointer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setPreviewImage(att.url);
+                                }}
+                              >
+                                <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
+                              </div>
+                            ) : (
+                              getFileIcon(att.type, 'w-5 h-5 flex-shrink-0')
+                            )}
+                            <a
+                              href={att.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="truncate text-xs font-medium hover:underline"
                             >
-                              <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
-                            </div>
-                          ) : (
-                            getFileIcon(att.type, 'w-5 h-5 flex-shrink-0')
-                          )}
-                          <a
-                            href={att.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="truncate text-sm font-medium hover:underline"
+                              {att.name}
+                            </a>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setAttachmentsToDelete([...attachmentsToDelete, att])}
+                            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#e63b2e] hover:text-white transition-colors ml-2"
+                            title="Eliminar archivo"
                           >
-                            {att.name}
-                          </a>
+                            <X className="w-5 h-5" />
+                          </button>
+                        </div>
+                      ))}
+
+                    {/* Pending Attachments */}
+                    {pendingFiles.map((file, idx) => (
+                      <div
+                        key={`pending-${idx}`}
+                        className="flex items-center justify-between p-2 border-2 border-dashed border-[#1a1a1a] bg-gray-50"
+                      >
+                        <div className="flex items-center gap-2 truncate max-w-[80%] opacity-70">
+                          <Paperclip className="w-4 h-4 flex-shrink-0" />
+                          <span className="truncate text-sm font-medium">{file.name} <span className="opacity-50">(Pendiente)</span></span>
                         </div>
                         <button
                           type="button"
-                          onClick={() => setAttachmentsToDelete([...attachmentsToDelete, att])}
-                          className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#e63b2e] hover:text-white transition-colors"
-                          title="Eliminar archivo"
+                          onClick={() => setPendingFiles(pendingFiles.filter((_, i) => i !== idx))}
+                          className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors"
                         >
-                          <X className="w-5 h-5" />
+                          <X className="w-4 h-4" />
                         </button>
                       </div>
                     ))}
 
-                  {/* Pending Attachments */}
-                  {pendingFiles.map((file, idx) => (
-                    <div
-                      key={`pending-${idx}`}
-                      className="flex items-center justify-between p-2 border-2 border-dashed border-[#1a1a1a] bg-white"
-                    >
-                      <div className="flex items-center gap-3 truncate max-w-[80%]">
-                        {getFileIcon(file.type, 'w-5 h-5 flex-shrink-0')}
-                        <span className="truncate text-sm font-medium">{file.name}</span>
-                        <span className="text-xs opacity-50">{(file.size / 1024).toFixed(1)} KB</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setPendingFiles(pendingFiles.filter((_, i) => i !== idx))}
-                        className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors"
-                        title="Quitar archivo"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ))}
-
-                  {(!currentDiligenciamiento.attachments || currentDiligenciamiento.attachments.length === 0) &&
-                    pendingFiles.length === 0 && (
-                      <div className="text-center p-6 border-2 border-dashed border-[#1a1a1a]/20 opacity-40">
-                        <Paperclip className="w-6 h-6 mx-auto mb-2" />
-                        <p className="text-xs font-bold uppercase tracking-widest">Sin archivos adjuntos</p>
-                      </div>
-                    )}
+                    {(!currentDiligenciamiento.attachments || currentDiligenciamiento.attachments.length === 0) &&
+                      pendingFiles.length === 0 && (
+                        <p className="text-xs font-black uppercase tracking-widest opacity-50 text-center py-4">
+                          No hay archivos adjuntos
+                        </p>
+                      )}
+                  </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end border-t-2 border-[#1a1a1a] pt-4">
                 <button
                   type="button"
                   onClick={() => handleCloseModal()}
-                  className="px-4 py-3 border-2 border-[#1a1a1a] bg-white font-black uppercase tracking-widest hover:bg-[#f5f0e8] transition-colors text-sm"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#e63b2e] hover:text-white transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm"
                 >
-                  Cancelar
+                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isUploading}
-                  className="px-4 py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
                 >
-                  {isUploading ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Crear Diligenciamiento'}
+                  {isUploading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                      Guardando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> {isEditing ? 'Actualizar' : 'Crear'}
+                    </>
+                  )}
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
 
