@@ -18,6 +18,7 @@ import {
   History,
   CheckSquare,
   List,
+  Share2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -465,6 +466,25 @@ export default function Tareas() {
     }
   };
 
+  const handleShareTask = async (task: Task) => {
+    const statusLabels: Record<string, string> = { pendiente: 'Pendiente', en_proceso: 'En Proceso', completado: 'Completado' };
+    const priorityLabels: Record<string, string> = { alta: 'Alta', media: 'Media', baja: 'Baja' };
+    const text = `*Tarea*\n\n*Título:* ${task.title}${task.description ? `\n*Descripción:* ${task.description}` : ''}\n*Estado:* ${statusLabels[task.status] || task.status}\n*Prioridad:* ${priorityLabels[task.priority] || task.priority}${task.dueDate ? `\n*Vencimiento:* ${task.dueDate}` : ''}${task.recurrence && task.recurrence !== 'none' ? `\n*Recurrencia:* ${task.recurrence}` : ''}${task.subtasks && task.subtasks.length > 0 ? `\n\n*Subtareas:*\n${task.subtasks.map((s: any) => `  ${s.completed ? '✅' : '⬜'} ${s.title}`).join('\n')}` : ''}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `Tarea: ${task.title}`, text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast.success('Información copiada al portapapeles');
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        await navigator.clipboard.writeText(text);
+        toast.success('Información copiada al portapapeles');
+      }
+    }
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'alta':
@@ -805,6 +825,7 @@ export default function Tareas() {
                       isAdmin={isAdmin}
                       onEdit={openEditTaskModal}
                       onDelete={handleDeleteTask}
+                      onShare={handleShareTask}
                     />
                   ))}
                 {filteredTasks.filter((t) => t.status === status).length === 0 && (

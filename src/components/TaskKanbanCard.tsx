@@ -1,5 +1,5 @@
 import { memo } from 'react';
-import { Edit2, Trash2, CheckSquare, Paperclip } from 'lucide-react';
+import { Edit2, Trash2, CheckSquare, Paperclip, Share2 } from 'lucide-react';
 
 interface Subtask {
   id: string;
@@ -35,6 +35,7 @@ interface TaskKanbanCardProps {
   isAdmin: boolean;
   onEdit: (task: any) => void;
   onDelete: (id: string) => void;
+  onShare: (task: any) => void;
 }
 
 const priorityColorMap: Record<string, string> = {
@@ -47,7 +48,7 @@ function getPriorityColor(priority: string): string {
   return priorityColorMap[priority] || 'bg-gray-200 text-black';
 }
 
-export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEdit, onDelete }: TaskKanbanCardProps) {
+export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEdit, onDelete, onShare }: TaskKanbanCardProps) {
   return (
     <div
       draggable
@@ -69,6 +70,13 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
           {task.priority}
         </span>
         <div className="flex gap-0.5 sm:gap-1">
+          <button
+            onClick={() => onShare(task)}
+            className="min-w-[32px] min-h-[32px] sm:min-w-[28px] sm:min-h-[28px] flex items-center justify-center p-1 hover:bg-[#00cc66] hover:text-white transition-colors rounded"
+            title="Compartir"
+          >
+            <Share2 className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
+          </button>
           <button
             onClick={() => onEdit(task)}
             className="min-w-[32px] min-h-[32px] sm:min-w-[28px] sm:min-h-[28px] flex items-center justify-center p-1 hover:bg-[#1a1a1a] hover:text-white transition-colors rounded"

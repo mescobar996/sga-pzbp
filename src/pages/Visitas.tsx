@@ -16,6 +16,7 @@ import {
   Paperclip,
   Upload,
   Plus,
+  Share2,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
@@ -332,6 +333,23 @@ export default function Visitas() {
     }
   };
 
+  const handleShareVisita = async (visita: Visita) => {
+    const text = `*Visita Técnica*\n\n*Origen:* ${visita.origen}\n*Destino:* ${visita.destino}\n*Fecha:* ${visita.fecha}\n*Hora:* ${visita.hora}\n*Responsable:* ${visita.responsable}${visita.observaciones ? `\n*Observaciones:* ${visita.observaciones}` : ''}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `Visita: ${visita.origen} -> ${visita.destino}`, text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast.success('Información copiada al portapapeles');
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        await navigator.clipboard.writeText(text);
+        toast.success('Información copiada al portapapeles');
+      }
+    }
+  };
+
   const filteredVisitas = useMemo(
     () =>
       visitas.filter((v) => {
@@ -543,6 +561,16 @@ export default function Visitas() {
                             }}
                           />
                         </label>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShareVisita(visita);
+                          }}
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#00cc66] hover:text-white transition-colors"
+                          title="Compartir"
+                        >
+                          <Share2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -893,12 +921,21 @@ export default function Visitas() {
                       </span>
                     </div>
                   </div>
-                  <button
-                    onClick={() => setSelectedVisita(null)}
-                    className="p-1.5 sm:p-2 hover:bg-[#e63b2e] hover:text-white transition-colors border-2 border-transparent hover:border-white text-white shrink-0"
-                  >
-                    <X className="w-4 h-4 sm:w-6 sm:h-6" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleShareVisita(selectedVisita)}
+                      className="p-1.5 sm:p-2 hover:bg-[#00cc66] hover:text-white transition-colors border-2 border-transparent hover:border-white text-white shrink-0"
+                      title="Compartir"
+                    >
+                      <Share2 className="w-4 h-4 sm:w-6 sm:h-6" />
+                    </button>
+                    <button
+                      onClick={() => setSelectedVisita(null)}
+                      className="p-1.5 sm:p-2 hover:bg-[#e63b2e] hover:text-white transition-colors border-2 border-transparent hover:border-white text-white shrink-0"
+                    >
+                      <X className="w-4 h-4 sm:w-6 sm:h-6" />
+                    </button>
+                  </div>
                 </div>
 
                 <div className="p-4 sm:p-6">

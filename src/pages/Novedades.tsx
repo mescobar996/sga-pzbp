@@ -16,6 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Save,
+  Share2,
   Calendar,
   User,
   Clock,
@@ -217,6 +218,23 @@ export default function Novedades() {
       toast.success('Novedad eliminada');
     } catch (error) {
       handleError(error);
+    }
+  };
+
+  const handleShareNovedad = async (novedad: Novedad) => {
+    const text = `*Novedad*\n\n*Título:* ${novedad.title}\n*Fecha:* ${novedad.fecha || new Date(novedad.createdAt).toLocaleDateString('es-ES')}\n*Autor:* ${novedad.authorName}\n\n*Contenido:*\n${novedad.content}${novedad.attachments && novedad.attachments.length > 0 ? `\n\n*Adjuntos:* ${novedad.attachments.length} archivo(s)` : ''}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `Novedad: ${novedad.title}`, text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast.success('Información copiada al portapapeles');
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        await navigator.clipboard.writeText(text);
+        toast.success('Información copiada al portapapeles');
+      }
     }
   };
 
@@ -508,6 +526,13 @@ export default function Novedades() {
                       </span>
                     </div>
                   </div>
+                  <button
+                    onClick={() => handleShareNovedad(novedad)}
+                    className="min-w-[44px] min-h-[44px] p-1.5 border-2 border-[#1a1a1a] hover:bg-[#00cc66] hover:text-white transition-colors self-end"
+                    title="Compartir"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => openEditModal(novedad)}

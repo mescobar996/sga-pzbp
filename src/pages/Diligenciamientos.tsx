@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Save,
+  Share2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -212,6 +213,23 @@ export default function Diligenciamientos() {
     }
   };
 
+  const handleShareDiligenciamiento = async (d: Diligenciamiento) => {
+    const text = `*Diligenciamiento*\n\n*Título:* ${d.title}\n*Fecha:* ${d.fecha || new Date(d.createdAt).toLocaleDateString('es-ES')}\n*Autor:* ${d.authorName}\n\n*Contenido:*\n${d.content}${d.attachments && d.attachments.length > 0 ? `\n\n*Adjuntos:* ${d.attachments.length} archivo(s)` : ''}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `Diligenciamiento: ${d.title}`, text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast.success('Información copiada al portapapeles');
+      }
+    } catch (err: any) {
+      if (err.name !== 'AbortError') {
+        await navigator.clipboard.writeText(text);
+        toast.success('Información copiada al portapapeles');
+      }
+    }
+  };
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, dateFrom, dateTo]);
@@ -371,6 +389,13 @@ export default function Diligenciamientos() {
                       <span>Por: {d.authorName}</span>
                     </div>
                   </div>
+                  <button
+                    onClick={() => handleShareDiligenciamiento(d)}
+                    className="min-w-[44px] min-h-[44px] p-1.5 border-2 border-[#1a1a1a] hover:bg-[#00cc66] hover:text-white transition-colors self-end"
+                    title="Compartir"
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </button>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => openEditModal(d)}
