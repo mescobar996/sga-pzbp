@@ -14,12 +14,16 @@ export default defineConfig(({mode}) => {
         registerType: 'autoUpdate',
         includeAssets: ['**/*'],
         manifest: {
-          name: 'SGO-PZBP Dashboard',
-          short_name: 'PZBP',
-          description: 'Sistema de Gestión Operativa - Prefectura Naval Argentina',
+          name: 'Sistema de Gestión Operativa - PZBP',
+          short_name: 'SGO PZBP',
+          description: 'Sistema de Gestión Operativa - Prefectura Naval Argentina. Gestión de tareas, visitas técnicas, novedades y diligenciamientos.',
           theme_color: '#f5f0e8',
           background_color: '#f5f0e8',
           display: 'standalone',
+          orientation: 'portrait',
+          scope: '/',
+          start_url: '/',
+          categories: ['business', 'productivity'],
           icons: [
             {
               src: 'pwa-144x144.png',
