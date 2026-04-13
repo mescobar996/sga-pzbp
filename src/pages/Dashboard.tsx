@@ -97,7 +97,7 @@ export default function Dashboard() {
     { label: 'TAREAS COMPLETADAS', value: completedTasks.toString(), icon: CheckCircle, color: 'bg-[#00cc66]' },
     { label: 'VISITAS TÉCNICAS COMPLETADAS', value: visits.length.toString(), icon: HardHat, color: 'bg-[#0055ff]' },
     { label: 'DILIGENCIAMIENTOS', value: totalDiligenciamientos.toString(), icon: FileText, color: 'bg-[#ff9900]' },
-    { label: 'ALERTAS PRIORIDAD ALTA', value: highPriorityAlerts.toString(), icon: AlertTriangle, color: 'bg-[#e63b2e]', detail: highPriorityTasks.map(t => t.title).join(', ') },
+    { label: 'ALERTAS PRIORIDAD ALTA', value: highPriorityAlerts.toString(), icon: AlertTriangle, color: 'bg-[#e63b2e]' },
     { label: 'VISITAS HOY', value: visitsToday.toString(), icon: Calendar, color: 'bg-[#00cc66]' },
   ];
 
@@ -173,9 +173,6 @@ export default function Dashboard() {
             <div className="text-center sm:text-left w-full">
               <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5 sm:mb-1">{kpi.label}</p>
               <p className="text-xl sm:text-2xl lg:text-3xl font-black font-['Space_Grotesk']">{kpi.value}</p>
-              {'detail' in kpi && kpi.detail && (
-                <p className="text-[9px] sm:text-[10px] font-bold text-[#e63b2e] mt-1 truncate" title={kpi.detail}>{kpi.detail}</p>
-              )}
             </div>
             <div className={`p-1.5 sm:p-2 lg:p-3 border-2 border-[#1a1a1a] ${kpi.color} text-white self-end sm:self-auto mt-2 sm:mt-0`}>
               <kpi.icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
