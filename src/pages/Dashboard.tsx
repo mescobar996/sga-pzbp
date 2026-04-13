@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { CheckCircle, Clock, AlertTriangle, Newspaper, ArrowRight, HardHat, Plus, TrendingUp, ClipboardList, FileText, Calendar, ListChecks, Users, MapPin } from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, Newspaper, ArrowRight, HardHat, ListChecks, Users, MapPin } from 'lucide-react';
 import { getTasks, onTasksChange } from '../db/tasks';
 import { getVisitas, onVisitasChange } from '../db/visitas';
 import { getNovedades, onNovedadesChange } from '../db/novedades';
@@ -87,24 +87,10 @@ export default function Dashboard() {
 
   const pendingTasks = tasks.filter(t => t.status === 'pendiente' || t.status === 'en_proceso').length;
   const completedTasks = tasks.filter(t => t.status === 'completado').length;
-  const highPriorityTasks = tasks.filter(t => t.priority === 'alta' && t.status !== 'completado');
-  const highPriorityAlerts = highPriorityTasks.length;
+  const highPriorityAlerts = tasks.filter(t => t.priority === 'alta' && t.status !== 'completado').length;
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const visitsToday = visits.filter(v => v.fecha === todayStr).length;
   const completionRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
   const totalDiligenciamientos = diligenciamientos.length;
-
-  const kpis = [
-    { label: 'TAREAS COMPLETADAS', value: completedTasks.toString(), icon: CheckCircle, color: 'bg-[#00cc66]' },
-    { label: 'VISITAS TÉCNICAS COMPLETADAS', value: visits.length.toString(), icon: HardHat, color: 'bg-[#0055ff]' },
-    { label: 'DILIGENCIAMIENTOS', value: totalDiligenciamientos.toString(), icon: FileText, color: 'bg-[#ff9900]' },
-    { label: 'ALERTAS PRIORIDAD ALTA', value: highPriorityAlerts.toString(), icon: AlertTriangle, color: 'bg-[#e63b2e]' },
-    { label: 'VISITAS HOY', value: visitsToday.toString(), icon: Calendar, color: 'bg-[#00cc66]' },
-  ];
-
-  const totalPersonal = personal.length;
-  const totalLocations = locations.length;
 
   const summaryCards = [
     { label: 'Tareas', value: tasks.length, icon: ListChecks, color: 'bg-[#0055ff]', route: '/tareas' },
@@ -119,20 +105,10 @@ export default function Dashboard() {
   const recentNovedades = novedades.slice(0, 3);
   const recentVisits = visits.slice(0, 4);
 
-  const quickActions = [
-    { label: 'Nueva Visita', icon: HardHat, action: () => navigate('/visitas'), color: 'bg-[#00cc66]' },
-    { label: 'Nueva Tarea', icon: Plus, action: () => navigate('/tareas'), color: 'bg-[#0055ff]' },
-    { label: 'Diligenciamientos', icon: FileText, action: () => navigate('/diligenciamientos'), color: 'bg-[#ff9900]' },
-    { label: 'Novedades', icon: Newspaper, action: () => navigate('/novedades'), color: 'bg-[#1a1a1a]' },
-  ];
-
   if (loading) {
     return (
       <div className="font-['Inter'] max-w-6xl mx-auto">
         <div className="h-10 w-48 bg-[#1a1a1a]/10 animate-pulse mb-6"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
-          {[1, 2, 3, 4, 5].map(i => <SkeletonCard key={i} />)}
-        </div>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {[1, 2, 3, 4, 5, 6].map(i => <SkeletonCard key={i} />)}
         </div>
@@ -150,46 +126,6 @@ export default function Dashboard() {
         <div className="flex items-center gap-2">
           <span className="text-[11px] sm:text-xs font-bold uppercase opacity-50">Completitud:</span>
           <span className="text-sm sm:text-base font-black text-[#00cc66]">{completionRate}%</span>
-        </div>
-      </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3 lg:gap-4 mb-4 sm:mb-8">
-        {kpis.map((kpi, idx) => (
-          <motion.div
-            key={idx}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.05, duration: 0.3 }}
-            className="p-2 sm:p-3 lg:p-4 border-2 border-[#1a1a1a] bg-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] flex flex-col items-center justify-between transition-all duration-150 hover:-translate-y-0.5 hover:shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] cursor-default"
-          >
-            <div className="text-center w-full">
-              <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest opacity-60 mb-0.5 sm:mb-1">{kpi.label}</p>
-              <p className="text-xl sm:text-2xl lg:text-3xl font-black font-['Space_Grotesk']">{kpi.value}</p>
-            </div>
-            <div className={`p-1.5 sm:p-2 lg:p-3 border-2 border-[#1a1a1a] ${kpi.color} text-white mt-2 sm:mt-0`}>
-              <kpi.icon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
-            </div>
-          </motion.div>
-        ))}
-      </div>
-
-      {/* Quick Actions */}
-      <div className="mb-4 sm:mb-8">
-        <h2 className="text-sm sm:text-lg font-black uppercase mb-2 sm:mb-3 font-['Space_Grotesk']">Acciones Rápidas</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-          {quickActions.map((action, idx) => (
-            <button
-              key={idx}
-              onClick={action.action}
-              className="min-h-[44px] p-2 sm:p-3 lg:p-4 border-2 border-[#1a1a1a] bg-white shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all duration-150 flex flex-col items-center gap-1 sm:gap-1.5 lg:gap-2 group"
-            >
-              <div className={`p-1.5 sm:p-2 border-2 border-[#1a1a1a] ${action.color} text-white group-hover:scale-110 transition-transform`}>
-                <action.icon className="w-4 h-4 sm:w-5 sm:h-5" />
-              </div>
-              <span className="text-[9px] sm:text-[11px] lg:text-xs font-black uppercase tracking-wider text-center leading-tight">{action.label}</span>
-            </button>
-          ))}
         </div>
       </div>
 
