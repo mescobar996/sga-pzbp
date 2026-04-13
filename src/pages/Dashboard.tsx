@@ -91,6 +91,8 @@ export default function Dashboard() {
 
   const completionRate = tasks.length > 0 ? Math.round((completedTasks / tasks.length) * 100) : 0;
   const totalDiligenciamientos = diligenciamientos.length;
+  const totalPersonal = personal.length;
+  const totalLocations = locations.length;
 
   const summaryCards = [
     { label: 'Tareas', value: tasks.length, icon: ListChecks, color: 'bg-[#0055ff]', route: '/tareas' },
