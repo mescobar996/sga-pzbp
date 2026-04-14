@@ -526,14 +526,14 @@ export default function Novedades() {
                       </span>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleShareNovedad(novedad)}
-                    className="min-w-[44px] min-h-[44px] p-1.5 border-2 border-[#1a1a1a] hover:bg-[#00cc66] hover:text-white transition-colors self-end"
-                    title="Compartir"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </button>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => handleShareNovedad(novedad)}
+                      className="min-h-[44px] p-1.5 border-2 border-[#1a1a1a] hover:bg-[#00cc66] hover:text-white transition-colors"
+                      title="Compartir"
+                    >
+                      <Share2 className="w-3.5 h-3.5" />
+                    </button>
                     <button
                       onClick={() => openEditModal(novedad)}
                       className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
