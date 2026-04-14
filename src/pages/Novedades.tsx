@@ -26,6 +26,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useOutletContext } from 'react-router-dom';
 import { SkeletonPage } from '../components/Skeleton';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { getNovedades, addNovedad, updateNovedad, deleteNovedad, uploadNovedadAttachment, onNovedadesChange } from '../db/novedades';
 import { addNotification } from '../db/notifications';
 import { getCurrentUserId, supabase, withTimeout } from '../db/client';
@@ -61,6 +62,8 @@ export default function Novedades() {
   const [sortBy, setSortBy] = useState('fecha_desc');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+
+  const [confirmModal, setConfirmModal] = useState<{isOpen: boolean; id: string | null}>({ isOpen: false, id: null });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -210,8 +213,11 @@ export default function Novedades() {
     }
   };
 
+  const triggerDelete = (id: string) => {
+    setConfirmModal({ isOpen: true, id });
+  };
+
   const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar esta novedad?')) return;
     try {
       await deleteNovedad(id);
       toast.success('Novedad eliminada');
@@ -542,7 +548,7 @@ export default function Novedades() {
                     </button>
                     {isAdmin && (
                       <button
-                        onClick={() => handleDelete(novedad.id)}
+                        onClick={() => triggerDelete(novedad.id)}
                         className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
                         title="Eliminar"
                       >
@@ -623,14 +629,15 @@ export default function Novedades() {
         </div>
       )}
 
+      <AnimatePresence>
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto pt-8 sm:pt-10 pb-8 sm:pb-10">
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white border-2 sm:border-4 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-0 w-full max-w-3xl relative"
+            initial={{ opacity: 0, x: 400 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 400 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="bg-white border-l-4 border-[#1a1a1a] shadow-[-6px_0px_0px_0px_rgba(26,26,26,1)] w-full max-w-2xl h-full flex flex-col overflow-y-auto"
           >
             {/* Header */}
             <div className="bg-[#1a1a1a] text-white p-4 sm:p-5 flex justify-between items-center">
@@ -834,6 +841,16 @@ export default function Novedades() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message="¿Estás seguro de que quieres eliminar esta novedad de forma permanente?"
+        onConfirm={() => {
+          if (confirmModal.id) handleDelete(confirmModal.id);
+          setConfirmModal({ isOpen: false, id: null });
+        }}
+        onCancel={() => setConfirmModal({ isOpen: false, id: null })}
+      />
+      </AnimatePresence>
     </div>
   );
 }

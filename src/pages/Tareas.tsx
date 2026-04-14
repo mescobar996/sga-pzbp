@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
 import { taskSchema } from '../utils/validation';
 import { TaskKanbanCard } from '../components/TaskKanbanCard';
+import { ConfirmModal } from '../components/ConfirmModal';
 import type { TaskHistory, Task } from '../types';
 import { getTasks, addTask, updateTask, deleteTask, onTasksChange, logTaskHistory } from '../db/tasks';
 import { onTaskHistoryChange } from '../db/taskHistory';
@@ -130,6 +131,7 @@ export default function Tareas() {
   const [activeTab, setActiveTab] = useState<'description' | 'subtasks' | 'attachments' | 'history'>('description');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isFormatsDropdownOpen, setIsFormatsDropdownOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{isOpen: boolean; id: string | null}>({ isOpen: false, id: null });
 
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
@@ -465,6 +467,10 @@ export default function Tareas() {
     }
   };
 
+  const triggerDeleteTask = (id: string) => {
+    setConfirmModal({ isOpen: true, id });
+  };
+
   const handleDeleteTask = async (id: string) => {
     try {
       const taskToDelete = tasks.find((t) => t.id === id);
@@ -588,7 +594,10 @@ export default function Tareas() {
   };
 
   const handleBulkDelete = async () => {
-    if (!window.confirm(`¿Eliminar definitivamente ${selectedTasks.length} tareas?`)) return;
+    setConfirmModal({ isOpen: true, id: 'bulk' });
+  };
+
+  const executeBulkDelete = async () => {
     try {
       setLoading(true);
       await Promise.all(selectedTasks.map(id => deleteTask(id)));
@@ -945,7 +954,7 @@ export default function Tareas() {
                       task={task as Task}
                       isAdmin={isAdmin}
                       onEdit={openEditTaskModal}
-                      onDelete={handleDeleteTask}
+                      onDelete={triggerDeleteTask}
                       onShare={handleShareTask}
                       isPinned={pinnedTasks.includes(task.id)}
                       onTogglePin={(id) => {
@@ -1234,7 +1243,7 @@ export default function Tareas() {
 
                       {isAdmin && (
                         <button
-                          onClick={() => handleDeleteTask(task.id)}
+                          onClick={() => triggerDeleteTask(task.id)}
                           className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors"
                           title="Eliminar tarea"
                         >
@@ -1410,14 +1419,15 @@ export default function Tareas() {
       )}
 
       {/* Unified Task Modal (Create & Edit) */}
+      <AnimatePresence>
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto pt-8 sm:pt-10 pb-8 sm:pb-10">
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white border-2 sm:border-4 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-0 w-full max-w-2xl relative"
+            initial={{ opacity: 0, x: 400 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 400 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="bg-white border-l-4 border-[#1a1a1a] shadow-[-6px_0px_0px_0px_rgba(26,26,26,1)] w-full max-w-2xl h-full flex flex-col overflow-y-auto"
           >
             {/* Header */}
             <div className="bg-[#1a1a1a] text-white p-4 sm:p-5 flex justify-between items-center">
@@ -1810,6 +1820,21 @@ export default function Tareas() {
           </motion.div>
         </div>
       )}
+      </AnimatePresence>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message={confirmModal.id === 'bulk' ? `¿Estás seguro de que quieres eliminar definitivamente estas ${selectedTasks.length} tareas?` : "¿Estás seguro de que quieres eliminar esta tarea permanentemente?"}
+        onConfirm={() => {
+          if (confirmModal.id === 'bulk') {
+            executeBulkDelete();
+          } else if (confirmModal.id) {
+            handleDeleteTask(confirmModal.id);
+          }
+          setConfirmModal({ isOpen: false, id: null });
+        }}
+        onCancel={() => setConfirmModal({ isOpen: false, id: null })}
+      />
     </div>
   );
 }

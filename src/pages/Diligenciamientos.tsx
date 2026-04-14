@@ -20,6 +20,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
 import { SkeletonPage } from '../components/Skeleton';
+import { ConfirmModal } from '../components/ConfirmModal';
 import {
   getDiligenciamientos,
   addDiligenciamiento,
@@ -63,6 +64,7 @@ export default function Diligenciamientos() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
 
+  const [confirmModal, setConfirmModal] = useState<{isOpen: boolean; id: string | null}>({ isOpen: false, id: null });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentDiligenciamiento, setCurrentDiligenciamiento] = useState<Partial<Diligenciamiento>>({
@@ -134,6 +136,7 @@ export default function Diligenciamientos() {
       currentDiligenciamiento.content?.trim() ||
       pendingFiles.length > 0;
     if (hasChanges && !isUploading) {
+      setConfirmModal({ isOpen: false, id: null });
       if (!window.confirm('¿Tenés cambios sin guardar? Si cerrás, se van a perder.')) return;
     }
     setIsModalOpen(false);
@@ -203,8 +206,11 @@ export default function Diligenciamientos() {
     }
   };
 
+  const triggerDelete = (id: string) => {
+    setConfirmModal({ isOpen: true, id });
+  };
+
   const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar este diligenciamiento?')) return;
     try {
       await deleteDiligenciamiento(id);
       toast.success('Diligenciamiento eliminado');
@@ -406,7 +412,7 @@ export default function Diligenciamientos() {
                     </button>
                     {isAdmin && (
                       <button
-                        onClick={() => handleDelete(d.id)}
+                        onClick={() => triggerDelete(d.id)}
                         className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
                         title="Eliminar"
                       >
@@ -487,14 +493,15 @@ export default function Diligenciamientos() {
         </div>
       )}
 
+      <AnimatePresence>
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto pt-8 sm:pt-10 pb-8 sm:pb-10">
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2 }}
-            className="bg-white border-2 sm:border-4 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-0 w-full max-w-3xl relative"
+            initial={{ opacity: 0, x: 400 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 400 }}
+            transition={{ duration: 0.3, ease: 'easeOut' }}
+            className="bg-white border-l-4 border-[#1a1a1a] shadow-[-6px_0px_0px_0px_rgba(26,26,26,1)] w-full max-w-2xl h-full flex flex-col overflow-y-auto"
           >
             {/* Header */}
             <div className="bg-[#1a1a1a] text-white p-4 sm:p-5 flex justify-between items-center">
@@ -674,6 +681,7 @@ export default function Diligenciamientos() {
           </motion.div>
         </div>
       )}
+      </AnimatePresence>
 
       {/* Image Preview Modal */}
       {previewImage && (
@@ -699,6 +707,16 @@ export default function Diligenciamientos() {
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message="¿Estás seguro de que quieres eliminar este diligenciamiento permanentemente?"
+        onConfirm={() => {
+          if (confirmModal.id) handleDelete(confirmModal.id);
+          setConfirmModal({ isOpen: false, id: null });
+        }}
+        onCancel={() => setConfirmModal({ isOpen: false, id: null })}
+      />
     </div>
   );
 }
