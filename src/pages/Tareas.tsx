@@ -1065,6 +1065,14 @@ export default function Tareas() {
                         />
                       </label>
 
+                      <button
+                        onClick={() => handleShareTask(task)}
+                        className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#00cc66] hover:text-white transition-colors"
+                        title="Compartir tarea"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </button>
+
                       {isAdmin && (
                         <button
                           onClick={() => handleDeleteTask(task.id)}
