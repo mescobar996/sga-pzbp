@@ -36,6 +36,9 @@ interface TaskKanbanCardProps {
   onEdit: (task: any) => void;
   onDelete: (id: string) => void;
   onShare: (task: any) => void;
+  isPinned?: boolean;
+  onTogglePin?: (id: string) => void;
+  onDuplicate?: (task: any) => void;
 }
 
 const priorityColorMap: Record<string, string> = {
@@ -48,7 +51,7 @@ function getPriorityColor(priority: string): string {
   return priorityColorMap[priority] || 'bg-gray-200 text-black';
 }
 
-export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEdit, onDelete, onShare }: TaskKanbanCardProps) {
+export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEdit, onDelete, onShare, isPinned, onTogglePin, onDuplicate }: TaskKanbanCardProps) {
   return (
     <div
       draggable
@@ -61,7 +64,7 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
       onDragEnd={(e) => {
         (e.target as HTMLElement).classList.remove('opacity-50');
       }}
-      className="p-2.5 sm:p-3 bg-white border-2 border-[#1a1a1a] shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] cursor-move hover:-translate-y-0.5 hover:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] transition-all group"
+      className={`p-2.5 sm:p-3 bg-white border-2 border-[#1a1a1a] cursor-move hover:-translate-y-0.5 transition-all group ${isPinned ? 'shadow-[4px_4px_0px_0px_rgba(255,153,0,1)]' : 'shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]'}`}
     >
       <div className="flex justify-between items-start mb-1.5 sm:mb-2">
         <span
@@ -69,7 +72,16 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
         >
           {task.priority}
         </span>
-        <div className="flex gap-0.5 sm:gap-1">
+        <div className="flex gap-0.5 sm:gap-1 align-center">
+          {onTogglePin && (
+            <button
+              onClick={() => onTogglePin(task.id)}
+              className={`min-w-[32px] min-h-[32px] sm:min-w-[28px] sm:min-h-[28px] flex items-center justify-center p-1 transition-colors rounded ${isPinned ? 'text-[#ff9900]' : 'text-gray-400 hover:text-[#1a1a1a]'}`}
+              title="Favorito"
+            >
+               <svg className="w-3.5 h-3.5 sm:w-3 sm:h-3" fill={isPinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+            </button>
+          )}
           <button
             onClick={() => onShare(task)}
             className="min-w-[32px] min-h-[32px] sm:min-w-[28px] sm:min-h-[28px] flex items-center justify-center p-1 hover:bg-[#00cc66] hover:text-white transition-colors rounded"
@@ -84,6 +96,15 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
           >
             <Edit2 className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
           </button>
+          {onDuplicate && (
+            <button
+              onClick={() => onDuplicate(task)}
+              className="min-w-[32px] min-h-[32px] sm:min-w-[28px] sm:min-h-[28px] flex items-center justify-center p-1 hover:bg-[#1a1a1a] hover:text-white transition-colors rounded"
+              title="Duplicar"
+            >
+              <svg className="w-3.5 h-3.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" d="M8 7h12v14H8z"></path><path strokeLinecap="square" strokeLinejoin="miter" d="M16 7V3H4v14h4"></path></svg>
+            </button>
+          )}
           {isAdmin && (
             <button
               onClick={() => onDelete(task.id)}

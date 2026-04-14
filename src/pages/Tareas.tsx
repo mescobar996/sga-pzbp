@@ -84,9 +84,17 @@ export default function Tareas() {
   const [statusFilter, setStatusFilter] = useState<'todos' | 'pendiente' | 'en_proceso' | 'completado'>('todos');
   const [priorityFilter, setPriorityFilter] = useState<'todos' | 'alta' | 'media' | 'baja'>('todos');
   const [tagFilter, setTagFilter] = useState<string>('todos');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'kanban' | 'history'>('list');
   const [historyEvents, setHistoryEvents] = useState<TaskHistoryEvent[]>([]);
   const [currentDate, setCurrentDate] = useState(new Date());
+  
+  // Productividad State (#19 Favoritos, #20 Bulk Actions)
+  const [pinnedTasks, setPinnedTasks] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('pinnedTasks') || '[]'); } catch { return []; }
+  });
+  const [selectedTasks, setSelectedTasks] = useState<string[]>([]);
 
   // Pagination State
   const [currentPageList, setCurrentPageList] = useState(1);
@@ -138,12 +146,15 @@ export default function Tareas() {
     const onFocus = () => loadTasks();
     window.addEventListener('focus', onFocus);
 
+    // Save pins
+    localStorage.setItem('pinnedTasks', JSON.stringify(pinnedTasks));
+
     return () => {
       clearTimeout(safetyTimeout);
       unsub();
       window.removeEventListener('focus', onFocus);
     };
-  }, []);
+  }, [pinnedTasks]);
 
   const loadMoreTasks = async () => {
     // Pagination with Supabase: use range-based pagination
@@ -516,12 +527,26 @@ export default function Tareas() {
         const matchesSearch =
           task.title.toLowerCase().includes(query) ||
           (task.description && task.description.toLowerCase().includes(query));
-        const matchesStatus = statusFilter === 'todos' ? task.status !== 'completado' : task.status === statusFilter;
+        let matchesStatus = statusFilter === 'todos' ? task.status !== 'completado' : task.status === statusFilter;
+        if (statusFilter === 'todos' && viewMode === 'history') matchesStatus = true; // allow all in history
+        if (statusFilter === 'todos') {
+             // Forcing "todos" to ignore 'completado' hiding for now if explicitly requested
+        }
+        
         const matchesPriority = priorityFilter === 'todos' || task.priority === priorityFilter;
         const matchesTag = tagFilter === 'todos' || (task.tags && task.tags.includes(tagFilter));
+        const matchesDateFrom = !dateFrom || (task.dueDate && task.dueDate >= dateFrom);
+        const matchesDateTo = !dateTo || (task.dueDate && task.dueDate <= dateTo);
 
-        return matchesSearch && matchesStatus && matchesPriority && matchesTag;
+        // Quick fix to show done tasks if status==='completado' or if explicit
+        const isDoneHiddenList = statusFilter === 'todos' && task.status === 'completado';
+        
+        return matchesSearch && (!isDoneHiddenList) && matchesStatus && matchesPriority && matchesTag && matchesDateFrom && matchesDateTo;
       }).sort((a, b) => {
+        const aPinned = pinnedTasks.includes(a.id) ? 1 : 0;
+        const bPinned = pinnedTasks.includes(b.id) ? 1 : 0;
+        if (aPinned !== bPinned) return bPinned - aPinned;
+
         if (sortBy === 'fecha_desc') return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         if (sortBy === 'fecha_asc') return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
         if (sortBy === 'titulo_az') return a.title.localeCompare(b.title, 'es');
@@ -537,8 +562,44 @@ export default function Tareas() {
         }
         return 0;
       }),
-    [tasks, statusFilter, priorityFilter, tagFilter, searchQuery, sortBy],
+    [tasks, statusFilter, priorityFilter, tagFilter, searchQuery, sortBy, pinnedTasks, dateFrom, dateTo, viewMode]
   );
+
+  // Bulk Actions
+  const handleToggleSelectAll = () => {
+    if (selectedTasks.length === paginatedListTasks.length) {
+      setSelectedTasks([]);
+    } else {
+      setSelectedTasks(paginatedListTasks.map(t => t.id));
+    }
+  };
+
+  const handleBulkComplete = async () => {
+    try {
+      setLoading(true);
+      await Promise.all(selectedTasks.map(id => updateTask(id, { status: 'completado' })));
+      setSelectedTasks([]);
+      toast.success(`${selectedTasks.length} tareas completadas en bloque`);
+    } catch (err) {
+      handleError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!window.confirm(`¿Eliminar definitivamente ${selectedTasks.length} tareas?`)) return;
+    try {
+      setLoading(true);
+      await Promise.all(selectedTasks.map(id => deleteTask(id)));
+      setSelectedTasks([]);
+      toast.success(`Eliminaste ${selectedTasks.length} tareas`);
+    } catch (err) {
+      handleError(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Reset page when filters change
   useEffect(() => {
@@ -726,6 +787,21 @@ export default function Tareas() {
               </option>
             ))}
           </select>
+          
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-[10px] sm:text-sm"
+            title="Vencimiento desde"
+          />
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-[10px] sm:text-sm"
+            title="Vencimiento hasta"
+          />
 
           <select
             value={sortBy}
@@ -743,7 +819,7 @@ export default function Tareas() {
       </div>
 
       {/* Active filter badges */}
-      {(searchQuery || statusFilter !== 'todos' || priorityFilter !== 'todos' || tagFilter !== 'todos') && (
+      {(searchQuery || statusFilter !== 'todos' || priorityFilter !== 'todos' || tagFilter !== 'todos' || dateFrom || dateTo) && (
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <span className="text-[10px] font-bold uppercase opacity-60">Filtros activos:</span>
           {searchQuery && (
@@ -766,18 +842,63 @@ export default function Tareas() {
               Etiqueta: {tagFilter}
             </span>
           )}
+          {dateFrom && (
+            <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
+              Desde: {dateFrom}
+            </span>
+          )}
+          {dateTo && (
+            <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
+              Hasta: {dateTo}
+            </span>
+          )}
           <button
             onClick={() => {
               setSearchQuery('');
               setStatusFilter('todos');
               setPriorityFilter('todos');
               setTagFilter('todos');
+              setDateFrom('');
+              setDateTo('');
             }}
             className="text-[10px] font-bold text-[#e63b2e] hover:underline ml-1"
           >
             Limpiar
           </button>
         </div>
+      )}
+
+      {/* Feature #20: Bulk Actions Panel */}
+      {selectedTasks.length > 0 && viewMode === 'list' && (
+        <motion.div 
+          initial={{ opacity: 0, y: -10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          className="bg-[#1a1a1a] text-white border-2 border-[#0055ff] p-3 mb-4 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-[4px_4px_0px_0px_rgba(0,85,255,0.5)]"
+        >
+          <span className="font-black uppercase tracking-wider text-sm">
+            {selectedTasks.length} tareas seleccionadas
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleBulkComplete}
+              className="px-3 py-1.5 border-2 border-[#00cc66] text-[#00cc66] hover:bg-[#00cc66] hover:text-white font-bold uppercase text-xs transition-colors"
+            >
+              <CheckCircle className="w-4 h-4 inline mr-1" /> Completar
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              className="px-3 py-1.5 border-2 border-[#e63b2e] text-[#e63b2e] hover:bg-[#e63b2e] hover:text-white font-bold uppercase text-xs transition-colors"
+            >
+              <Trash2 className="w-4 h-4 inline mr-1" /> Eliminar
+            </button>
+            <button
+              onClick={() => setSelectedTasks([])}
+              className="px-3 py-1.5 border-2 border-white text-white hover:bg-white hover:text-[#1a1a1a] font-bold uppercase text-xs transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </motion.div>
       )}
 
       {/* Task List / Calendar View */}
@@ -826,6 +947,16 @@ export default function Tareas() {
                       onEdit={openEditTaskModal}
                       onDelete={handleDeleteTask}
                       onShare={handleShareTask}
+                      isPinned={pinnedTasks.includes(task.id)}
+                      onTogglePin={(id) => {
+                        if (pinnedTasks.includes(id)) setPinnedTasks(p => p.filter(tId => tId !== id));
+                        else setPinnedTasks(p => [...p, id]);
+                      }}
+                      onDuplicate={(t) => {
+                        const duplicate = { ...t, title: `${t.title} (COPIA)`, id: undefined };
+                        openEditTaskModal(duplicate as Task);
+                        setIsEditing(false);
+                      }}
                     />
                   ))}
                 {filteredTasks.filter((t) => t.status === status).length === 0 && (
@@ -937,11 +1068,20 @@ export default function Tareas() {
               </div>
             ) : paginatedListTasks.length === 0 ? (
               <div className="text-center p-6 sm:p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-base sm:text-xl opacity-50">
-                No se encontraron tareas para "{searchQuery}"
+                No se encontraron tareas
               </div>
             ) : (
               <AnimatePresence mode="popLayout">
-                {paginatedListTasks.map((task) => (
+                {paginatedListTasks.length > 0 && (
+                  <div className="flex items-center gap-2 px-1 py-2">
+                    <input type="checkbox" className="w-4 h-4 cursor-pointer accent-[#1a1a1a]" checked={selectedTasks.length === paginatedListTasks.length && paginatedListTasks.length > 0} onChange={handleToggleSelectAll} />
+                    <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">Seleccionar Todo en la página actual</span>
+                  </div>
+                )}
+                {paginatedListTasks.map((task) => {
+                  const isSelected = selectedTasks.includes(task.id);
+                  const isPinned = pinnedTasks.includes(task.id);
+                  return (
                   <motion.div
                     key={task.id}
                     layout
@@ -949,14 +1089,33 @@ export default function Tareas() {
                     animate={{
                       opacity: task.status === 'completado' ? 0.7 : 1,
                       x: 0,
-                      backgroundColor: task.status === 'completado' ? '#e5e7eb' : '#ffffff',
+                      backgroundColor: isSelected ? '#f0f7ff' : (task.status === 'completado' ? '#e5e7eb' : '#ffffff'),
                     }}
                     exit={{ opacity: 0, x: 20 }}
-                    whileHover={task.status !== 'completado' ? { x: 4 } : {}}
+                    whileHover={task.status !== 'completado' && !isSelected ? { x: 4 } : {}}
                     transition={{ duration: 0.2 }}
-                    className="p-3 sm:p-4 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4 min-h-[80px]"
+                    className={`p-3 sm:p-4 border-2 ${isSelected ? 'border-[#0055ff]' : 'border-[#1a1a1a]'} shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4 min-h-[80px]`}
                   >
                     <div className="flex flex-1 items-start md:items-center gap-3 sm:gap-4 w-full min-w-0">
+                      <input 
+                        type="checkbox" 
+                        checked={isSelected}
+                        onChange={() => {
+                          if (isSelected) setSelectedTasks(s => s.filter(id => id !== task.id));
+                          else setSelectedTasks(s => [...s, task.id]);
+                        }}
+                        className="w-5 h-5 cursor-pointer accent-[#1a1a1a] shrink-0 mt-1 sm:mt-0" 
+                      />
+                      <button 
+                        onClick={() => {
+                          if (isPinned) setPinnedTasks(p => p.filter(id => id !== task.id));
+                          else setPinnedTasks(p => [...p, task.id]);
+                        }}
+                        className={`shrink-0 p-1 mt-0.5 sm:mt-0 opacity-40 hover:opacity-100 transition-opacity ${isPinned ? 'text-[#ff9900] opacity-100' : 'text-gray-400'}`}
+                      >
+                        <svg className="w-5 h-5" fill={isPinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"></path></svg>
+                      </button>
+                      
                       <div className="flex flex-col items-center gap-1 shrink-0">
                         <div className="p-1 sm:p-1.5 border-2 border-[#1a1a1a] bg-[#f5f0e8]">
                           {getStatusIcon(task.status)}
@@ -1082,9 +1241,23 @@ export default function Tareas() {
                           <Trash2 className="w-4 h-4" />
                         </button>
                       )}
+                      
+                      {/* Feature #18: Duplicate Task */}
+                      <button
+                          onClick={() => {
+                            const duplicate = { ...task, title: `${task.title} (COPIA)`, id: undefined };
+                            openEditTaskModal(duplicate as Task);
+                            setIsEditing(false); // Force to create new
+                          }}
+                          className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors ml-auto sm:ml-0"
+                          title="Duplicar tarea"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" d="M8 7h12v14H8z"></path><path strokeLinecap="square" strokeLinejoin="miter" d="M16 7V3H4v14h4"></path></svg>
+                      </button>
                     </div>
                   </motion.div>
-                ))}
+                );
+                })}
               </AnimatePresence>
             )}
           </div>

@@ -643,6 +643,18 @@ export default function Visitas() {
                         >
                           <FileText className="w-5 h-5 sm:w-4 sm:h-4" />
                         </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const duplicatedVisita = { ...visita, origen: `${visita.origen} (COPIA)`, id: undefined };
+                            openEditModal(duplicatedVisita as any);
+                            setIsEditingVisita(false); // force create new
+                          }}
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                          title="Duplicar"
+                        >
+                          <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" d="M8 7h12v14H8z"></path><path strokeLinecap="square" strokeLinejoin="miter" d="M16 7V3H4v14h4"></path></svg>
+                        </button>
                         {isAdmin && (
                           <button
                             onClick={(e) => {
