@@ -78,16 +78,46 @@ export default function Layout({ user }: { user: User }) {
     setSearchResults([]);
   }, [location.pathname]);
 
+  // Feature #5: Global keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const active = document.activeElement;
+      const inInput = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement || active instanceof HTMLSelectElement;
+
+      // Ctrl+K → focus search
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
         searchInputRef.current?.focus();
+        return;
+      }
+
+      // Escape → close menus
+      if (e.key === 'Escape') {
+        setShowNotifications(false);
+        setSearchOpen(false);
+        setMobileMenuOpen(false);
+        return;
+      }
+
+      // Alt+Key shortcuts (navigation) — only when not in input
+      if (e.altKey && !inInput) {
+        const routes: Record<string, string> = {
+          d: '/',
+          t: '/tareas',
+          v: '/visitas',
+          n: '/novedades',
+          r: '/reportes',
+          c: '/configuracion',
+        };
+        if (routes[e.key]) {
+          e.preventDefault();
+          navigate(routes[e.key]);
+        }
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -525,7 +555,6 @@ export default function Layout({ user }: { user: User }) {
                     if (searchResults.length > 0) setSearchOpen(true);
                   }}
                   aria-label="Buscar en el sistema"
-                  autoComplete="off"
                 />
                 {searching && (
                   <div className="w-3 h-3 border-2 border-[#1a1a1a] border-t-transparent rounded-full animate-spin ml-2"></div>
@@ -917,6 +946,27 @@ export default function Layout({ user }: { user: User }) {
 
       {/* Main Content */}
       <main className="lg:ml-64 mt-16 lg:mt-20 p-4 lg:p-8 min-h-screen transition-all duration-200">
+        {/* Feature #17: Breadcrumbs */}
+        {location.pathname !== '/' && (
+          <nav className="mb-4 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
+            <button onClick={() => navigate('/')} className="text-[#0055ff] hover:underline">Panel</button>
+            <ChevronRight className="w-3 h-3 opacity-30" />
+            <span className="opacity-60">
+              {{
+                '/tareas': 'Tareas Operativas',
+                '/visitas': 'Visitas Técnicas',
+                '/novedades': 'Novedades',
+                '/diligenciamientos': 'Diligenciamientos',
+                '/reportes': 'Reportes',
+                '/base-datos': 'Base de Datos',
+                '/configuracion': 'Configuración',
+                '/notificaciones': 'Notificaciones',
+                '/admin-usuarios': 'Admin Usuarios',
+                '/debug-db': 'Debug DB',
+              }[location.pathname] || location.pathname.slice(1)}
+            </span>
+          </nav>
+        )}
         <Outlet context={{ user, isAdmin: _isAdmin }} />
       </main>
     </div>

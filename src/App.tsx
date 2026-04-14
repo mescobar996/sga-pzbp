@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense, lazy } from 'react';
 import { supabase } from './db/client';
 import type { User } from '@supabase/supabase-js';
 import { Toaster } from 'sonner';
@@ -8,18 +8,31 @@ import Layout from './components/Layout';
 import { OfflineBanner } from './components/OfflineBanner';
 import { AnimatePresence, motion } from 'motion/react';
 
-import Dashboard from './pages/Dashboard';
-import Visitas from './pages/Visitas';
-import Tareas from './pages/Tareas';
-import Reportes from './pages/Reportes';
-import BaseDatos from './pages/BaseDatos';
-import Novedades from './pages/Novedades';
-import Diligenciamientos from './pages/Diligenciamientos';
-import Configuracion from './pages/Configuracion';
-import DebugDB from './pages/DebugDB';
-import Login from './pages/Login';
-import Notificaciones from './pages/Notificaciones';
-import AdminUsuarios from './pages/AdminUsuarios';
+// Feature #25 — Lazy loading: pages loaded on demand for faster initial load
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Visitas = lazy(() => import('./pages/Visitas'));
+const Tareas = lazy(() => import('./pages/Tareas'));
+const Reportes = lazy(() => import('./pages/Reportes'));
+const BaseDatos = lazy(() => import('./pages/BaseDatos'));
+const Novedades = lazy(() => import('./pages/Novedades'));
+const Diligenciamientos = lazy(() => import('./pages/Diligenciamientos'));
+const Configuracion = lazy(() => import('./pages/Configuracion'));
+const DebugDB = lazy(() => import('./pages/DebugDB'));
+const Login = lazy(() => import('./pages/Login'));
+const Notificaciones = lazy(() => import('./pages/Notificaciones'));
+const AdminUsuarios = lazy(() => import('./pages/AdminUsuarios'));
+
+/** Brutalista loading spinner — shown while lazy pages resolve */
+function LazyFallback() {
+  return (
+    <div className="flex items-center justify-center py-24">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-8 h-8 border-4 border-[#1a1a1a] border-t-[#0055ff] animate-spin"></div>
+        <span className="text-xs font-black uppercase tracking-widest opacity-50">Cargando...</span>
+      </div>
+    </div>
+  );
+}
 
 function PageTransition({ children }: { children: React.ReactNode }) {
   return (
@@ -38,6 +51,7 @@ function AnimatedRoutes({ user }: { user: User | null }) {
   const location = useLocation();
 
   return (
+    <Suspense fallback={<LazyFallback />}>
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/login" element={<PageTransition>{!user ? <Login /> : <Navigate to="/" />}</PageTransition>} />
@@ -134,6 +148,7 @@ function AnimatedRoutes({ user }: { user: User | null }) {
         </Route>
       </Routes>
     </AnimatePresence>
+    </Suspense>
   );
 }
 

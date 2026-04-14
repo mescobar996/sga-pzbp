@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { supabase } from '../db/client';
 import { visitaSchema } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
@@ -380,6 +381,49 @@ export default function Visitas() {
     setCurrentPage(1);
   }, [searchQuery, dateFrom, dateTo, responsableFilter, sortBy]);
 
+  // Feature #6: Export bulk filtered Visitas to Excel
+  const handleExportAll = () => {
+    if (filteredVisitas.length === 0) {
+      toast.error('No hay visitas para exportar.');
+      return;
+    }
+    const data = filteredVisitas.map(v => ({
+      ID: v.id,
+      Origen: v.origen,
+      Destino: v.destino,
+      Fecha: v.fecha,
+      Hora: v.hora,
+      Responsable: v.responsable,
+      Observaciones: v.observaciones || '',
+      'Adjuntos (Cant)': v.attachments?.length || 0,
+      'Creado El': new Date(v.createdAt).toLocaleString(),
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Visitas');
+    XLSX.writeFile(wb, `Visitas_${new Date().toISOString().split('T')[0]}.xlsx`);
+    toast.success(`Exportadas ${filteredVisitas.length} visitas a Excel.`);
+  };
+
+  // Feature #21: Export a individual Visita to Excel
+  const handleExportIndividual = (visita: Visita) => {
+    const data = [{
+      ID: visita.id,
+      Origen: visita.origen,
+      Destino: visita.destino,
+      Fecha: visita.fecha,
+      Hora: visita.hora,
+      Responsable: visita.responsable,
+      Observaciones: visita.observaciones || '',
+      'Adjuntos (Cant)': visita.attachments?.length || 0,
+    }];
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Detalle Visita');
+    XLSX.writeFile(wb, `Visita_${visita.origen}_${visita.fecha}.xlsx`);
+    toast.success('Visita exportada correctamente.');
+  };
+
   return (
     <div className="font-['Inter'] max-w-6xl mx-auto px-3 sm:px-4 pb-24 lg:pb-8">
       {loading ? (
@@ -391,12 +435,20 @@ export default function Visitas() {
             <h1 className="text-xl sm:text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">
               Visitas Técnicas
             </h1>
-            <button
-              onClick={openNewModal}
-              className="min-h-[44px] px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] transition-colors flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 text-xs sm:text-sm"
-            >
-              <Plus className="w-4 h-4 sm:w-5 sm:h-5" /> Nueva Visita
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleExportAll}
+                className="min-h-[44px] px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-white transition-colors flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 text-xs sm:text-sm"
+              >
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5" /> Exportar (Excel)
+              </button>
+              <button
+                onClick={openNewModal}
+                className="min-h-[44px] px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] transition-colors flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 text-xs sm:text-sm"
+              >
+                <Plus className="w-4 h-4 sm:w-5 sm:h-5" /> Nueva Visita
+              </button>
+            </div>
           </div>
 
           {/* Filters */}
@@ -580,6 +632,16 @@ export default function Visitas() {
                           title="Editar"
                         >
                           <Edit2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleExportIndividual(visita);
+                          }}
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                          title="Exportar"
+                        >
+                          <FileText className="w-5 h-5 sm:w-4 sm:h-4" />
                         </button>
                         {isAdmin && (
                           <button
