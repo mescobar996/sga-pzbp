@@ -24,13 +24,14 @@ import * as XLSX from 'xlsx';
 import { supabase } from '../db/client';
 import { visitaSchema } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
+import { ConfirmModal } from '../components/ConfirmModal';
 import VisitasMap from '../components/VisitasMap';
 import { getVisitas, addVisita, updateVisita, deleteVisita, uploadVisitaAttachment, onVisitasChange } from '../db/visitas';
 import { getLocations, onLocationsChange } from '../db/locations';
 import { getPersonal, onPersonalChange } from '../db/personal';
 import { addNotification } from '../db/notifications';
 import { getCurrentUserId } from '../db/client';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface Attachment {
   name: string;
@@ -78,6 +79,7 @@ export default function Visitas() {
   const [selectedResponsables, setSelectedResponsables] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+  const [confirmModal, setConfirmModal] = useState<{isOpen: boolean; id: string | null}>({ isOpen: false, id: null });
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -306,8 +308,11 @@ export default function Visitas() {
     setIsSubmitting(false);
   };
 
+  const triggerDelete = (id: string) => {
+    setConfirmModal({ isOpen: true, id });
+  };
+
   const handleDeleteVisita = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de que quieres eliminar esta visita?')) return;
     try {
       const visitaToDelete = visitas.find((v) => v.id === id);
       if (visitaToDelete?.attachments) {
@@ -659,7 +664,7 @@ export default function Visitas() {
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteVisita(visita.id);
+                              triggerDelete(visita.id);
                             }}
                             className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
                             title="Eliminar"
@@ -708,14 +713,15 @@ export default function Visitas() {
           )}
 
           {/* Create/Edit Modal */}
+          <AnimatePresence>
           {isModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-start justify-center p-3 sm:p-4 bg-black/50 backdrop-blur-sm overflow-y-auto pt-8 sm:pt-10 pb-8 sm:pb-10">
+            <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                transition={{ duration: 0.2 }}
-                className="bg-white border-2 sm:border-4 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-0 w-full max-w-3xl relative"
+                initial={{ opacity: 0, x: 400 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 400 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className="bg-white border-l-4 border-[#1a1a1a] shadow-[-6px_0px_0px_0px_rgba(26,26,26,1)] w-full max-w-2xl h-full flex flex-col overflow-y-auto"
               >
                 {/* Header */}
                 <div className="bg-[#1a1a1a] text-white p-4 sm:p-5 flex justify-between items-center">
@@ -1125,8 +1131,19 @@ export default function Visitas() {
               </div>
             </div>
           )}
+          </AnimatePresence>
         </>
       )}
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        message="¿Estás seguro de que quieres eliminar esta visita de forma permanente?"
+        onConfirm={() => {
+          if (confirmModal.id) handleDeleteVisita(confirmModal.id);
+          setConfirmModal({ isOpen: false, id: null });
+        }}
+        onCancel={() => setConfirmModal({ isOpen: false, id: null })}
+      />
     </div>
   );
 }

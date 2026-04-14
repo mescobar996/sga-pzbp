@@ -618,25 +618,41 @@ export default function Configuracion() {
                     </button>
                   </div>
 
-                  {/* Collection Stats */}
+                  {/* Collection Stats with Sparklines */}
                   <div>
                     <h3 className="text-sm font-black uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <Database className="w-4 h-4" /> Colecciones de Datos
+                      <BarChart3 className="w-4 h-4" /> Métricas Operativas de Bases de Datos
                     </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {Object.entries(systemStats).map(([col, count]) => (
-                        <div key={col} className="p-4 bg-[#f5f0e8] border-2 border-[#1a1a1a] flex items-center gap-3">
-                          <div className="p-2 bg-[#0055ff] text-white">
-                            {collectionIcons[col] || <Database className="w-5 h-5" />}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {Object.entries(systemStats).map(([col, count]) => {
+                         // Feature #11: Calculate a dynamic mock percentage/sparkline width based on max volume collection
+                         const maxCount = Math.max(...Object.values(systemStats), 1);
+                         const progress = Math.max(2, Math.round((count / maxCount) * 100));
+                         
+                         return (
+                        <div key={col} className="p-4 bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:bg-[#f5f0e8] hover:-translate-y-1 transition-transform cursor-default">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="p-2 border-2 border-[#1a1a1a] bg-[#00cc66] text-white shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]">
+                              {collectionIcons[col] || <Database className="w-5 h-5" />}
+                            </div>
+                            <div className="text-3xl font-black font-['Space_Grotesk'] text-[#1a1a1a]">{count}</div>
                           </div>
                           <div>
-                            <div className="text-[10px] font-bold uppercase opacity-50">
+                            <div className="text-[10px] font-black uppercase tracking-widest opacity-80 mb-2">
                               {collectionLabels[col] || col}
                             </div>
-                            <div className="text-2xl font-black font-['Space_Grotesk']">{count}</div>
+                            {/* Injected Sparkline/Meter */}
+                            <div className="w-full h-2 border-2 border-[#1a1a1a] bg-gray-200 overflow-hidden relative">
+                              <motion.div 
+                                initial={{ width: 0 }}
+                                animate={{ width: `${progress}%` }}
+                                transition={{ duration: 1, ease: 'easeOut' }}
+                                className={`h-full ${col === 'tasks' ? 'bg-[#ff9900]' : col === 'visitas' ? 'bg-[#0055ff]' : 'bg-[#1a1a1a]'}`}
+                              ></motion.div>
+                            </div>
                           </div>
                         </div>
-                      ))}
+                      )})}
                     </div>
                   </div>
 

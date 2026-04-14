@@ -127,7 +127,7 @@ export default function Tareas() {
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [attachmentsToDelete, setAttachmentsToDelete] = useState<Attachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'description' | 'subtasks' | 'attachments'>('description');
+  const [activeTab, setActiveTab] = useState<'description' | 'subtasks' | 'attachments' | 'history'>('description');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isFormatsDropdownOpen, setIsFormatsDropdownOpen] = useState(false);
 
@@ -1534,31 +1534,55 @@ export default function Tareas() {
               </div>
 
               {/* Tabs Navigation */}
-              <div className="flex border-b-2 border-[#1a1a1a] overflow-x-auto custom-scrollbar">
+              <div className="flex border-b-2 border-[#1a1a1a] mb-4 overflow-x-auto hide-scrollbar">
                 <button
                   type="button"
                   onClick={() => setActiveTab('description')}
-                  className={`px-3 py-2 font-bold uppercase tracking-widest whitespace-nowrap border-r-2 border-[#1a1a1a] transition-colors text-xs ${activeTab === 'description' ? 'bg-[#1a1a1a] text-white' : 'bg-[#f5f0e8] hover:bg-gray-200'}`}
+                  className={`px-4 py-3 font-black uppercase text-xs md:text-sm whitespace-nowrap transition-colors flex-1 text-center ${
+                    activeTab === 'description' ? 'bg-[#1a1a1a] text-white' : 'bg-gray-100 text-[#1a1a1a] hover:bg-gray-200'
+                  }`}
                 >
                   Descripción
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('subtasks')}
-                  className={`px-3 py-2 font-bold uppercase tracking-widest whitespace-nowrap border-r-2 border-[#1a1a1a] transition-colors text-xs ${activeTab === 'subtasks' ? 'bg-[#1a1a1a] text-white' : 'bg-[#f5f0e8] hover:bg-gray-200'}`}
+                  className={`px-4 py-3 font-black uppercase text-xs md:text-sm whitespace-nowrap transition-colors flex-1 text-center flex items-center justify-center gap-2 ${
+                    activeTab === 'subtasks' ? 'bg-[#1a1a1a] text-white' : 'bg-gray-100 text-[#1a1a1a] hover:bg-gray-200'
+                  }`}
                 >
-                  Subtareas{' '}
-                  {currentTask.subtasks && currentTask.subtasks.length > 0 && `(${currentTask.subtasks.length})`}
+                  Subtareas
+                  {currentTask.subtasks && currentTask.subtasks.length > 0 && (
+                    <span className="bg-[#0055ff] text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                      {currentTask.subtasks.length}
+                    </span>
+                  )}
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab('attachments')}
-                  className={`px-3 py-2 font-bold uppercase tracking-widest whitespace-nowrap border-r-2 border-[#1a1a1a] transition-colors text-xs ${activeTab === 'attachments' ? 'bg-[#1a1a1a] text-white' : 'bg-[#f5f0e8] hover:bg-gray-200'}`}
+                  className={`px-4 py-3 font-black uppercase text-xs md:text-sm whitespace-nowrap transition-colors flex-1 text-center flex items-center justify-center gap-2 ${
+                    activeTab === 'attachments' ? 'bg-[#1a1a1a] text-white' : 'bg-gray-100 text-[#1a1a1a] hover:bg-gray-200'
+                  }`}
                 >
-                  Adjuntos{' '}
-                  {(currentTask.attachments?.length || 0) - attachmentsToDelete.length + pendingFiles.length > 0 &&
-                    `(${(currentTask.attachments?.length || 0) - attachmentsToDelete.length + pendingFiles.length})`}
+                  Adjuntos
+                  {currentTask.attachments && currentTask.attachments.length > 0 && (
+                    <span className="bg-[#e63b2e] text-white text-[10px] px-1.5 py-0.5 rounded-full">
+                      {currentTask.attachments.length}
+                    </span>
+                  )}
                 </button>
+                {isEditing && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('history')}
+                    className={`px-4 py-3 font-black uppercase text-xs md:text-sm whitespace-nowrap transition-colors flex-1 text-center flex items-center justify-center gap-2 ${
+                      activeTab === 'history' ? 'bg-[#1a1a1a] text-white' : 'bg-gray-100 text-[#1a1a1a] hover:bg-gray-200'
+                    }`}
+                  >
+                    Historial
+                  </button>
+                )}
               </div>
 
               {/* Tab Contents */}
@@ -1685,84 +1709,72 @@ export default function Tareas() {
 
                 {activeTab === 'attachments' && (
                   <div className="border-2 border-[#1a1a1a] p-3 bg-white animate-in fade-in duration-200">
-                    <div className="flex justify-between items-center mb-3">
-                      <label className="text-xs font-bold uppercase tracking-widest opacity-70">
-                        Archivos Adjuntos
-                      </label>
-                      <label className="cursor-pointer px-3 py-1.5 bg-[#1a1a1a] text-white font-bold uppercase text-[10px] tracking-widest hover:bg-[#333] transition-colors flex items-center gap-2">
-                        <Upload className="w-3.5 h-3.5" /> Subir Archivo
-                        <input
-                          type="file"
-                          className="hidden"
-                          multiple
-                          onChange={(e) => {
-                            if (e.target.files) {
-                              setPendingFiles([...pendingFiles, ...Array.from(e.target.files)]);
-                            }
-                            e.target.value = '';
-                          }}
-                        />
-                      </label>
+                    <div className="border-2 border-dashed border-[#1a1a1a] bg-[#f5f0e8] p-4 text-center group cursor-pointer hover:bg-[#e6f0ff] hover:border-[#0055ff] hover:border-solid transition-colors relative">
+                      <input
+                        type="file"
+                        multiple
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            setPendingFiles([...pendingFiles, ...Array.from(e.target.files)]);
+                          }
+                          e.target.value = '';
+                        }}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                      />
+                      <Upload className="w-8 h-8 mx-auto mb-2 text-[#1a1a1a] group-hover:text-[#0055ff] transition-colors" />
+                      <p className="font-bold uppercase text-xs tracking-widest text-[#1a1a1a] group-hover:text-[#0055ff]">
+                        Arrojar archivos aquí o click
+                      </p>
                     </div>
 
-                    <div className="flex flex-col gap-2">
-                      {/* Existing Attachments */}
-                      {currentTask.attachments
-                        ?.filter((a: any) => !attachmentsToDelete.includes(a as any))
-                        .map((att: any, idx: number) => (
-                          <div
-                            key={`att-${idx}`}
-                            className="flex items-center justify-between p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8]"
-                          >
-                            <a
-                              href={att.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 hover:underline truncate max-w-[80%]"
-                            >
-                              <Paperclip className="w-3.5 h-3.5 flex-shrink-0" />
-                              <span className="truncate text-xs font-medium">{att.name}</span>
-                            </a>
-                            <button
-                              type="button"
-                              onClick={() => setAttachmentsToDelete([...attachmentsToDelete, att])}
-                              className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#e63b2e] hover:text-white transition-colors"
-                              title="Eliminar archivo"
-                            >
-                              <X className="w-5 h-5" />
+                    {(pendingFiles.length > 0 || (currentTask.attachments && currentTask.attachments.length > 0)) && (
+                      <div className="mt-4 space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
+                        {pendingFiles.map((file, index) => (
+                          <div key={`pending-${index}`} className="flex items-center justify-between p-2 border-2 border-[#0055ff] bg-[#f0f7ff]">
+                            <div className="flex items-center gap-2 overflow-hidden">
+                              <Paperclip className="w-4 h-4 shrink-0 text-[#0055ff]" />
+                              <span className="font-bold text-xs truncate text-[#0055ff]">{file.name}</span>
+                            </div>
+                            <button type="button" onClick={() => setPendingFiles(pendingFiles.filter((_, i) => i !== index))} className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors border border-transparent">
+                              <X className="w-4 h-4" />
                             </button>
                           </div>
                         ))}
-
-                      {/* Pending Attachments */}
-                      {pendingFiles.map((file, idx) => (
-                        <div
-                          key={`pending-${idx}`}
-                          className="flex items-center justify-between p-2 border-2 border-dashed border-[#1a1a1a] bg-gray-50"
-                        >
-                          <div className="flex items-center gap-2 truncate max-w-[80%] opacity-70">
-                            <Paperclip className="w-4 h-4 flex-shrink-0" />
-                            <span className="truncate text-sm font-medium">{file.name} (Pendiente)</span>
+                        {currentTask.attachments?.map((attachment: any, index) => (
+                          <div key={`existing-${index}`} className={`flex items-center justify-between p-2 border-2 ${attachmentsToDelete.includes(attachment) ? 'border-[#e63b2e] bg-red-50' : 'border-[#1a1a1a] bg-gray-50'}`}>
+                            <div className="flex items-center gap-2 overflow-hidden">
+                              <Paperclip className="w-4 h-4 shrink-0 opacity-50" />
+                              <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="font-bold text-xs truncate hover:text-[#0055ff] hover:underline">
+                                {attachment.name}
+                              </a>
+                            </div>
+                            <button type="button" onClick={() => {
+                              if (attachmentsToDelete.includes(attachment)) setAttachmentsToDelete(attachmentsToDelete.filter(a => a !== attachment));
+                              else setAttachmentsToDelete([...attachmentsToDelete, attachment]);
+                            }} className={`p-1 transition-colors border border-transparent ${attachmentsToDelete.includes(attachment) ? 'bg-[#e63b2e] text-white hover:bg-black' : 'hover:bg-[#1a1a1a] hover:text-white'}`}>
+                              <X className="w-4 h-4" />
+                            </button>
                           </div>
-                          <button
-                            type="button"
-                            onClick={() => setPendingFiles(pendingFiles.filter((_, i) => i !== idx))}
-                            className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors"
-                            title="Cancelar subida"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
-                      {(!currentTask.attachments ||
-                        currentTask.attachments.length === 0 ||
-                        currentTask.attachments.length === attachmentsToDelete.length) &&
-                        pendingFiles.length === 0 && (
-                          <p className="text-xs font-bold uppercase tracking-widest opacity-50 text-center py-4">
-                            No hay archivos adjuntos
-                          </p>
-                        )}
+                {activeTab === 'history' && (
+                  <div className="border-2 border-[#1a1a1a] p-3 bg-[#f5f0e8] animate-in fade-in duration-200">
+                    <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                      {historyEvents.filter(e => e.taskId === currentTask.id).length > 0 ? historyEvents.filter(e => e.taskId === currentTask.id).map(event => (
+                         <div key={event.id} className="p-3 bg-white border-2 border-[#1a1a1a] text-xs font-bold shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]">
+                           <div className="flex justify-between items-center mb-1">
+                             <span className="uppercase opacity-60 text-[10px]">{new Date(event.timestamp).toLocaleString()}</span>
+                             <span className={`px-2 py-0.5 text-white ${event.action === 'completado' ? 'bg-[#00cc66]' : event.action === 'eliminado' ? 'bg-[#e63b2e]' : 'bg-[#0055ff]'}`}>{event.action}</span>
+                           </div>
+                           <p className="mt-2 text-sm">{event.userEmail.split('@')[0]} interactuó con la tarea.</p>
+                         </div>
+                      )) : (
+                        <div className="text-center p-4 font-black uppercase text-xs opacity-50">Sin historial</div>
+                      )}
                     </div>
                   </div>
                 )}

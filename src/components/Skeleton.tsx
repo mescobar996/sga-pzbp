@@ -79,17 +79,26 @@ export function SkeletonPage({ title = 'Cargando', cardCount = 3, layout = 'card
 
   if (layout === 'list') {
     return (
-      <div className="font-['Inter'] max-w-6xl mx-auto">
-        <div className="h-10 bg-gray-200 rounded w-64 mb-6 animate-pulse" />
-        <div className="flex flex-col gap-3">
+      <div className="font-['Inter'] max-w-6xl mx-auto mt-4 px-4 sm:px-8">
+        <div className="flex gap-4 mb-4">
+            <div className="h-10 border-2 border-[#1a1a1a] bg-[#f5f0e8] w-full animate-pulse" />
+            <div className="h-10 border-2 border-[#1a1a1a] bg-white w-48 animate-pulse hidden sm:block" />
+        </div>
+        <div className="flex flex-col gap-3 sm:gap-4">
           {Array.from({ length: cardCount }).map((_, i) => (
-            <div key={i} className="bg-white border-2 border-gray-300 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] p-4">
-              <div className="flex gap-4 items-start">
-                <div className="h-10 w-10 bg-gray-200 rounded animate-pulse flex-shrink-0" />
+            <div key={i} className="bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-3 sm:p-4 flex items-center justify-between gap-3 min-h-[80px]">
+              <div className="flex items-center gap-4 flex-1">
+                <div className="h-5 w-5 border-2 border-[#1a1a1a] bg-[#f5f0e8] animate-pulse shrink-0" />
+                <div className="h-10 w-10 border-2 border-[#1a1a1a] bg-[#f5f0e8] animate-pulse shrink-0" />
                 <div className="flex-1 flex flex-col gap-2">
-                  <div className="h-5 bg-gray-200 rounded w-3/4 animate-pulse" />
-                  <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse" />
+                  <div className="h-5 bg-gray-200 w-3/4 animate-pulse" />
+                  <div className="h-4 bg-gray-200 w-1/3 animate-pulse" />
                 </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-24 border-2 border-[#1a1a1a] bg-[#f5f0e8] animate-pulse hidden sm:block" />
+                <div className="h-10 w-10 border-2 border-[#1a1a1a] bg-[#f5f0e8] animate-pulse" />
+                <div className="h-10 w-10 border-2 border-[#1a1a1a] bg-[#f5f0e8] animate-pulse" />
               </div>
             </div>
           ))}
