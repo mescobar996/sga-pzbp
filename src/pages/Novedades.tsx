@@ -510,7 +510,8 @@ export default function Novedades() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-5 group"
+                onClick={() => openEditModal(novedad)}
+                className="bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-5 group cursor-pointer hover:bg-[#f5f0e8] transition-colors"
               >
                 <div className="flex justify-between items-start mb-3">
                   <div>
@@ -533,14 +534,20 @@ export default function Novedades() {
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={() => handleShareNovedad(novedad)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleShareNovedad(novedad);
+                      }}
                       className="min-h-[44px] p-1.5 border-2 border-[#1a1a1a] hover:bg-[#00cc66] hover:text-white transition-colors"
                       title="Compartir"
                     >
                       <Share2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => openEditModal(novedad)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditModal(novedad);
+                      }}
                       className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
                       title="Editar"
                     >
@@ -548,7 +555,10 @@ export default function Novedades() {
                     </button>
                     {isAdmin && (
                       <button
-                        onClick={() => triggerDelete(novedad.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          triggerDelete(novedad.id);
+                        }}
                         className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
                         title="Eliminar"
                       >
@@ -631,7 +641,7 @@ export default function Novedades() {
 
       <AnimatePresence>
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/20">
           <motion.div
             initial={{ opacity: 0, x: 400 }}
             animate={{ opacity: 1, x: 0 }}

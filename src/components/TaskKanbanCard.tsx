@@ -64,7 +64,8 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
       onDragEnd={(e) => {
         (e.target as HTMLElement).classList.remove('opacity-50');
       }}
-      className={`p-2.5 sm:p-3 bg-white border-2 border-[#1a1a1a] cursor-move hover:-translate-y-0.5 transition-all group ${isPinned ? 'shadow-[4px_4px_0px_0px_rgba(255,153,0,1)]' : 'shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]'}`}
+      onClick={() => onEdit(task)}
+      className={`p-2.5 sm:p-3 bg-white border-2 border-[#1a1a1a] cursor-pointer hover:-translate-y-0.5 transition-all group ${isPinned ? 'shadow-[4px_4px_0px_0px_rgba(255,153,0,1)]' : 'shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]'}`}
     >
       <div className="flex justify-between items-start mb-1.5 sm:mb-2">
         <span
@@ -75,7 +76,10 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
         <div className="flex gap-0.5 sm:gap-1 align-center">
           {onTogglePin && (
             <button
-              onClick={() => onTogglePin(task.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onTogglePin(task.id);
+              }}
               className={`min-w-[32px] min-h-[32px] sm:min-w-[28px] sm:min-h-[28px] flex items-center justify-center p-1 transition-colors rounded ${isPinned ? 'text-[#ff9900]' : 'text-gray-400 hover:text-[#1a1a1a]'}`}
               title="Favorito"
             >
@@ -83,14 +87,20 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
             </button>
           )}
           <button
-            onClick={() => onShare(task)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onShare(task);
+            }}
             className="min-w-[32px] min-h-[32px] sm:min-w-[28px] sm:min-h-[28px] flex items-center justify-center p-1 hover:bg-[#00cc66] hover:text-white transition-colors rounded"
             title="Compartir"
           >
             <Share2 className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
           </button>
           <button
-            onClick={() => onEdit(task)}
+            onClick={(e) => {
+              e.stopPropagation();
+              onEdit(task);
+            }}
             className="min-w-[32px] min-h-[32px] sm:min-w-[28px] sm:min-h-[28px] flex items-center justify-center p-1 hover:bg-[#1a1a1a] hover:text-white transition-colors rounded"
             title="Editar"
           >
@@ -98,7 +108,10 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
           </button>
           {onDuplicate && (
             <button
-              onClick={() => onDuplicate(task)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDuplicate(task);
+              }}
               className="min-w-[32px] min-h-[32px] sm:min-w-[28px] sm:min-h-[28px] flex items-center justify-center p-1 hover:bg-[#1a1a1a] hover:text-white transition-colors rounded"
               title="Duplicar"
             >
@@ -107,7 +120,10 @@ export const TaskKanbanCard = memo(function TaskKanbanCard({ task, isAdmin, onEd
           )}
           {isAdmin && (
             <button
-              onClick={() => onDelete(task.id)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(task.id);
+              }}
               className="min-w-[32px] min-h-[32px] sm:min-w-[28px] sm:min-h-[28px] flex items-center justify-center p-1 hover:bg-[#e63b2e] hover:text-white transition-colors rounded"
               title="Eliminar"
             >

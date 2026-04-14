@@ -575,7 +575,7 @@ export default function Visitas() {
                 {paginatedVisitas.map((visita) => (
                   <div
                     key={visita.id}
-                    onClick={() => setSelectedVisita(visita)}
+                    onClick={() => openEditModal(visita)}
                     className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 cursor-pointer hover:bg-[#f5f0e8] transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none flex flex-col justify-between group"
                   >
                     <div>
@@ -715,7 +715,7 @@ export default function Visitas() {
           {/* Create/Edit Modal */}
           <AnimatePresence>
           {isModalOpen && (
-            <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
+            <div className="fixed inset-0 z-50 flex justify-end bg-black/20">
               <motion.div
                 initial={{ opacity: 0, x: 400 }}
                 animate={{ opacity: 1, x: 0 }}

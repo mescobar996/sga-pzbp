@@ -1103,20 +1103,24 @@ export default function Tareas() {
                     exit={{ opacity: 0, x: 20 }}
                     whileHover={task.status !== 'completado' && !isSelected ? { x: 4 } : {}}
                     transition={{ duration: 0.2 }}
-                    className={`p-3 sm:p-4 border-2 ${isSelected ? 'border-[#0055ff]' : 'border-[#1a1a1a]'} shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4 min-h-[80px]`}
+                    onClick={() => openEditTaskModal(task)}
+                    className={`p-3 sm:p-4 border-2 ${isSelected ? 'border-[#0055ff]' : 'border-[#1a1a1a]'} shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4 min-h-[80px] cursor-pointer hover:bg-[#f5f0e8]`}
                   >
                     <div className="flex flex-1 items-start md:items-center gap-3 sm:gap-4 w-full min-w-0">
                       <input 
                         type="checkbox" 
                         checked={isSelected}
-                        onChange={() => {
+                        onClick={(e) => e.stopPropagation()}
+                        onChange={(e) => {
+                          e.stopPropagation();
                           if (isSelected) setSelectedTasks(s => s.filter(id => id !== task.id));
                           else setSelectedTasks(s => [...s, task.id]);
                         }}
                         className="w-5 h-5 cursor-pointer accent-[#1a1a1a] shrink-0 mt-1 sm:mt-0" 
                       />
                       <button 
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (isPinned) setPinnedTasks(p => p.filter(id => id !== task.id));
                           else setPinnedTasks(p => [...p, task.id]);
                         }}
@@ -1131,6 +1135,7 @@ export default function Tareas() {
                         </div>
                         <select
                           value={task.priority}
+                          onClick={(e) => e.stopPropagation()}
                           onChange={(e) => handleUpdatePriority(task.id, e.target.value as 'alta' | 'media' | 'baja')}
                           className={`px-1.5 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-wider cursor-pointer focus:outline-none ${getPriorityColor(task.priority)}`}
                         >
@@ -1200,6 +1205,7 @@ export default function Tareas() {
                         onChange={(e) =>
                           handleUpdateStatus(task.id, e.target.value as 'pendiente' | 'en_proceso' | 'completado')
                         }
+                        onClick={(e) => e.stopPropagation()}
                         className="px-2 py-1.5 min-h-[44px] sm:min-h-[36px] border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-wider cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
                       >
                         <option value="pendiente">PENDIENTE</option>
@@ -1208,7 +1214,10 @@ export default function Tareas() {
                       </select>
 
                       <button
-                        onClick={() => openEditTaskModal(task)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditTaskModal(task);
+                        }}
                         className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors"
                         title="Editar tarea"
                       >
@@ -1218,12 +1227,14 @@ export default function Tareas() {
                       <label
                         className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer"
                         title="Subir archivo rápido"
+                        onClick={(e) => e.stopPropagation()}
                       >
                         <Upload className="w-4 h-4" />
                         <input
                           type="file"
                           className="hidden"
                           onChange={(e) => {
+                            e.stopPropagation();
                             const file = e.target.files?.[0];
                             if (file) {
                               handleQuickUpload(task.id, task.attachments as any, file);
@@ -1234,7 +1245,10 @@ export default function Tareas() {
                       </label>
 
                       <button
-                        onClick={() => handleShareTask(task)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShareTask(task);
+                        }}
                         className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#00cc66] hover:text-white transition-colors"
                         title="Compartir tarea"
                       >
@@ -1243,7 +1257,10 @@ export default function Tareas() {
 
                       {isAdmin && (
                         <button
-                          onClick={() => triggerDeleteTask(task.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerDeleteTask(task.id);
+                          }}
                           className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors"
                           title="Eliminar tarea"
                         >
@@ -1253,7 +1270,8 @@ export default function Tareas() {
                       
                       {/* Feature #18: Duplicate Task */}
                       <button
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             const duplicate = { ...task, title: `${task.title} (COPIA)`, id: undefined };
                             openEditTaskModal(duplicate as Task);
                             setIsEditing(false); // Force to create new
@@ -1421,7 +1439,7 @@ export default function Tareas() {
       {/* Unified Task Modal (Create & Edit) */}
       <AnimatePresence>
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/40">
           <motion.div
             initial={{ opacity: 0, x: 400 }}
             animate={{ opacity: 1, x: 0 }}
