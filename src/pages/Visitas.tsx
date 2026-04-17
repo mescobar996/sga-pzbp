@@ -32,6 +32,7 @@ import { getPersonal, onPersonalChange } from '../db/personal';
 import { addNotification } from '../db/notifications';
 import { getCurrentUserId } from '../db/client';
 import { motion, AnimatePresence } from 'motion/react';
+import { FilterBar } from '../components/FilterBar';
 
 interface Attachment {
   name: string;
@@ -456,116 +457,56 @@ export default function Visitas() {
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 mb-4 sm:mb-6 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-[#1a1a1a] opacity-50" />
-                </div>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  autoComplete="off"
-                  placeholder="BUSCAR..."
-                  className="w-full pl-9 sm:pl-10 p-2 sm:p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-xs transition-colors"
-                />
-              </div>
-              <div>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-xs sm:text-sm transition-colors"
-                  title="Fecha Desde"
-                />
-              </div>
-              <div>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-xs sm:text-sm transition-colors"
-                  title="Fecha Hasta"
-                />
-              </div>
-              <div>
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full p-2 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors cursor-pointer"
-                >
-                  <option value="fecha_desc">Fecha (Más reciente)</option>
-                  <option value="fecha_asc">Fecha (Más antiguo)</option>
-                  <option value="titulo_az">Origen (A-Z)</option>
-                  <option value="titulo_za">Origen (Z-A)</option>
-                </select>
-              </div>
-              <div className="flex items-center">
-                <div className="flex border-2 border-[#1a1a1a] shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] w-full">
-                  <button
-                    onClick={() => setViewMode('list')}
-                    className={`flex-1 px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest transition-colors ${viewMode === 'list' ? 'bg-[#1a1a1a] text-white' : 'bg-white text-[#1a1a1a] hover:bg-[#f5f0e8]'}`}
-                  >
-                    Lista
-                  </button>
-                  <button
-                    onClick={() => setViewMode('map')}
-                    className={`flex-1 px-3 sm:px-4 py-2 text-[10px] sm:text-xs font-black uppercase tracking-widest border-l-2 border-[#1a1a1a] transition-colors ${viewMode === 'map' ? 'bg-[#1a1a1a] text-white' : 'bg-white text-[#1a1a1a] hover:bg-[#f5f0e8]'}`}
-                  >
-                    Mapa
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div className="mt-3 sm:mt-4">
-              <select
-                value={responsableFilter}
-                onChange={(e) => setResponsableFilter(e.target.value)}
-                className="w-full p-2 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-[10px] sm:text-sm transition-colors"
-              >
-                <option value="todos">TODOS LOS RESPONSABLES</option>
-                {Array.from(new Set(visitas.flatMap((v) => (v.responsable ? v.responsable.split(' Y ') : [])))).map(
-                  (resp) => (
-                    <option key={resp} value={resp}>
-                      {resp}
-                    </option>
-                  ),
-                )}
-              </select>
-            </div>
+          <FilterBar
+            search={{
+              value: searchQuery,
+              onChange: setSearchQuery,
+              placeholder: 'BUSCAR EN VISITAS...'
+            }}
+            filters={[
+              {
+                value: responsableFilter,
+                onChange: setResponsableFilter,
+                type: 'select',
+                placeholder: 'Todos los responsables',
+                options: Array.from(new Set(visitas.flatMap((v) => (v.responsable ? v.responsable.split(' Y ') : []))))
+              }
+            ]}
+            dateRange={{
+              from: { value: dateFrom, onChange: setDateFrom },
+              to: { value: dateTo, onChange: setDateTo }
+            }}
+            sort={{
+              value: sortBy,
+              onChange: setSortBy,
+              options: [
+                { label: 'Fecha (Más reciente)', value: 'fecha_desc' },
+                { label: 'Fecha (Más antiguo)', value: 'fecha_asc' },
+                { label: 'Origen (A-Z)', value: 'titulo_az' },
+                { label: 'Origen (Z-A)', value: 'titulo_za' },
+              ]
+            }}
+            onClear={() => {
+              setSearchQuery('');
+              setResponsableFilter('todos');
+              setDateFrom('');
+              setDateTo('');
+            }}
+          />
 
-            {(searchQuery || dateFrom || dateTo) && (
-              <div className="mt-3 flex flex-wrap items-center gap-2">
-                <span className="text-[10px] font-bold uppercase opacity-60">Filtros activos:</span>
-                {searchQuery && (
-                  <span className="text-[10px] font-bold bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5">
-                    Búsqueda: {searchQuery}
-                  </span>
-                )}
-                {dateFrom && (
-                  <span className="text-[10px] font-bold bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5">
-                    Desde: {dateFrom}
-                  </span>
-                )}
-                {dateTo && (
-                  <span className="text-[10px] font-bold bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5">
-                    Hasta: {dateTo}
-                  </span>
-                )}
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setDateFrom('');
-                    setDateTo('');
-                  }}
-                  className="text-[10px] font-bold text-[#e63b2e] hover:underline ml-1"
-                >
-                  Limpiar
-                </button>
-              </div>
-            )}
+          <div className="flex border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] mb-6 w-full sm:w-64">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex-1 px-4 py-2.5 text-xs font-black uppercase tracking-widest transition-colors ${viewMode === 'list' ? 'bg-[#1a1a1a] text-white' : 'bg-white text-[#1a1a1a] hover:bg-[#f5f0e8]'}`}
+            >
+              Lista
+            </button>
+            <button
+              onClick={() => setViewMode('map')}
+              className={`flex-1 px-4 py-2.5 text-xs font-black uppercase tracking-widest border-l-2 border-[#1a1a1a] transition-colors ${viewMode === 'map' ? 'bg-[#1a1a1a] text-white' : 'bg-white text-[#1a1a1a] hover:bg-[#f5f0e8]'}`}
+            >
+              Mapa
+            </button>
           </div>
 
           {/* List / Map */}

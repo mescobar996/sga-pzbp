@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
 import { SkeletonPage } from '../components/Skeleton';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { FilterBar } from '../components/FilterBar';
 import {
   getDiligenciamientos,
   addDiligenciamiento,
@@ -288,83 +289,32 @@ export default function Diligenciamientos() {
         </div>
       </div>
 
-      <div className="mb-6 bg-white border-2 border-[#1a1a1a] p-4 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div className="relative md:col-span-1">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="w-4 h-4 text-[#1a1a1a] opacity-50" />
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="BUSCAR DILIGENCIAMIENTOS..."
-              autoComplete="off"
-              className="w-full pl-10 p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
-            />
-          </div>
-          <div>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
-              title="Fecha Desde"
-            />
-          </div>
-          <div>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
-              title="Fecha Hasta"
-            />
-          </div>
-          <div>
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-xs"
-            >
-              <option value="fecha_desc">Fecha (Más reciente)</option>
-              <option value="fecha_asc">Fecha (Más antiguo)</option>
-              <option value="titulo_az">Título (A-Z)</option>
-              <option value="titulo_za">Título (Z-A)</option>
-            </select>
-          </div>
-        </div>
-        {(searchQuery || dateFrom || dateTo) && (
-          <div className="mt-3 flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase opacity-60">Filtros activos:</span>
-            {searchQuery && (
-              <span className="text-[10px] font-bold bg-[#f5f0e8] border border-[#1a1a1a] px-2 py-0.5 uppercase">
-                &quot;{searchQuery}&quot;
-              </span>
-            )}
-            {dateFrom && (
-              <span className="text-[10px] font-bold bg-[#f5f0e8] border border-[#1a1a1a] px-2 py-0.5 uppercase">
-                Desde: {dateFrom}
-              </span>
-            )}
-            {dateTo && (
-              <span className="text-[10px] font-bold bg-[#f5f0e8] border border-[#1a1a1a] px-2 py-0.5 uppercase">
-                Hasta: {dateTo}
-              </span>
-            )}
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setDateFrom('');
-                setDateTo('');
-              }}
-              className="text-[10px] font-bold text-[#e63b2e] hover:underline uppercase ml-auto"
-            >
-              Limpiar
-            </button>
-          </div>
-        )}
-      </div>
+      <FilterBar
+        search={{
+          value: searchQuery,
+          onChange: setSearchQuery,
+          placeholder: 'BUSCAR DILIGENCIAMIENTOS...'
+        }}
+        dateRange={{
+          from: { value: dateFrom, onChange: setDateFrom },
+          to: { value: dateTo, onChange: setDateTo }
+        }}
+        sort={{
+          value: sortBy,
+          onChange: setSortBy,
+          options: [
+            { label: 'Fecha (Más reciente)', value: 'fecha_desc' },
+            { label: 'Fecha (Más antiguo)', value: 'fecha_asc' },
+            { label: 'Título (A-Z)', value: 'titulo_az' },
+            { label: 'Título (Z-A)', value: 'titulo_za' },
+          ]
+        }}
+        onClear={() => {
+          setSearchQuery('');
+          setDateFrom('');
+          setDateTo('');
+        }}
+      />
 
       <div className="flex flex-col gap-4">
         {loading ? (

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Shield, User, Users, Check, X, Loader2, Search, AlertTriangle } from 'lucide-react';
+import { Shield, User, Users, Check, X, Loader2, AlertTriangle } from 'lucide-react';
+import { FilterBar } from '../components/FilterBar';
 import { supabase, getCurrentUserEmail } from '../db/client';
 import { toast } from 'sonner';
 import { motion } from 'motion/react';
@@ -143,19 +144,13 @@ export default function AdminUsuarios() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mb-4 sm:mb-6">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-40" />
-          <input
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="BUSCAR USUARIO..."
-            className="w-full pl-10 pr-4 py-3 border-2 border-[#1a1a1a] bg-white text-sm font-bold uppercase tracking-wider placeholder:opacity-40 focus:outline-none focus:ring-2 focus:ring-[#0055ff] focus:ring-offset-2 focus:ring-offset-[#f5f0e8]"
-          />
-        </div>
-      </div>
+      <FilterBar
+        search={{
+          value: search,
+          onChange: setSearch,
+          placeholder: 'BUSCAR USUARIO...'
+        }}
+      />
 
       {/* Users List */}
       {loading ? (

@@ -25,6 +25,7 @@ import { toast } from 'sonner';
 import { useOutletContext } from 'react-router-dom';
 import { taskSchema } from '../utils/validation';
 import { TaskKanbanCard } from '../components/TaskKanbanCard';
+import { FilterBar } from '../components/FilterBar';
 import { ConfirmModal } from '../components/ConfirmModal';
 import type { TaskHistory, Task } from '../types';
 import { getTasks, addTask, updateTask, deleteTask, onTasksChange, logTaskHistory } from '../db/tasks';
@@ -746,136 +747,71 @@ export default function Tareas() {
         </button>
       </div>
 
-      {/* Search and Filters */}
-      <div className="mb-4 sm:mb-6 flex flex-col lg:flex-row gap-3 sm:gap-4">
-        <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search className="w-4 h-4 sm:w-5 sm:h-5 text-[#1a1a1a] opacity-50" />
-          </div>
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="BUSCAR TAREAS..."
-            autoComplete="off"
-            className="w-full pl-9 sm:pl-10 p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] text-[10px] sm:text-sm"
-          />
-        </div>
+      {/* Feature #20: FilterBar */}
+      <FilterBar
+        search={{
+          value: searchQuery,
+          onChange: setSearchQuery,
+          placeholder: 'BUSCAR TAREAS...'
+        }}
+        filters={[
+          {
+            value: statusFilter,
+            onChange: (val) => setStatusFilter(val as any),
+            type: 'select',
+            placeholder: 'Todos los estados',
+            options: [
+              { label: 'Pendiente', value: 'pendiente' },
+              { label: 'En Proceso', value: 'en_proceso' },
+              { label: 'Completado', value: 'completado' },
+            ]
+          },
+          {
+            value: priorityFilter,
+            onChange: (val) => setPriorityFilter(val as any),
+            type: 'select',
+            placeholder: 'Todas las prioridades',
+            options: [
+              { label: 'Alta', value: 'alta' },
+              { label: 'Media', value: 'media' },
+              { label: 'Baja', value: 'baja' },
+            ]
+          },
+          {
+            value: tagFilter,
+            onChange: setTagFilter,
+            type: 'select',
+            placeholder: 'Todas las etiquetas',
+            options: allTags
+          }
+        ]}
+        dateRange={{
+          from: { value: dateFrom, onChange: setDateFrom },
+          to: { value: dateTo, onChange: setDateTo }
+        }}
+        sort={{
+          value: sortBy,
+          onChange: setSortBy,
+          options: [
+            { label: 'Fecha (Más reciente)', value: 'fecha_desc' },
+            { label: 'Fecha (Más antiguo)', value: 'fecha_asc' },
+            { label: 'Título (A-Z)', value: 'titulo_az' },
+            { label: 'Título (Z-A)', value: 'titulo_za' },
+            { label: 'Prioridad', value: 'prioridad' },
+            { label: 'Vencimiento', value: 'vencimiento' },
+          ]
+        }}
+        onClear={() => {
+          setSearchQuery('');
+          setStatusFilter('todos');
+          setPriorityFilter('todos');
+          setTagFilter('todos');
+          setDateFrom('');
+          setDateTo('');
+        }}
+      />
 
-        <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as any)}
-            className="p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-[10px] sm:text-sm"
-          >
-            <option value="todos">Todos los estados</option>
-            <option value="pendiente">Pendiente</option>
-            <option value="en_proceso">En Proceso</option>
-          </select>
 
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value as any)}
-            className="p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-[10px] sm:text-sm"
-          >
-            <option value="todos">Todas las prioridades</option>
-            <option value="alta">Alta</option>
-            <option value="media">Media</option>
-            <option value="baja">Baja</option>
-          </select>
-
-          <select
-            value={tagFilter}
-            onChange={(e) => setTagFilter(e.target.value)}
-            className="p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-[10px] sm:text-sm"
-          >
-            <option value="todos">Todas las etiquetas</option>
-            {allTags.map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
-            ))}
-          </select>
-          
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => setDateFrom(e.target.value)}
-            className="p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-[10px] sm:text-sm"
-            title="Vencimiento desde"
-          />
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => setDateTo(e.target.value)}
-            className="p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-[10px] sm:text-sm"
-            title="Vencimiento hasta"
-          />
-
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] cursor-pointer text-[10px] sm:text-sm"
-          >
-            <option value="fecha_desc">Fecha (Más reciente)</option>
-            <option value="fecha_asc">Fecha (Más antiguo)</option>
-            <option value="titulo_az">Título (A-Z)</option>
-            <option value="titulo_za">Título (Z-A)</option>
-            <option value="prioridad">Prioridad</option>
-            <option value="vencimiento">Vencimiento</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Active filter badges */}
-      {(searchQuery || statusFilter !== 'todos' || priorityFilter !== 'todos' || tagFilter !== 'todos' || dateFrom || dateTo) && (
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span className="text-[10px] font-bold uppercase opacity-60">Filtros activos:</span>
-          {searchQuery && (
-            <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
-              Búsqueda: {searchQuery}
-            </span>
-          )}
-          {statusFilter !== 'todos' && (
-            <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
-              Estado: {statusFilter.replace('_', ' ')}
-            </span>
-          )}
-          {priorityFilter !== 'todos' && (
-            <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
-              Prioridad: {priorityFilter}
-            </span>
-          )}
-          {tagFilter !== 'todos' && (
-            <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
-              Etiqueta: {tagFilter}
-            </span>
-          )}
-          {dateFrom && (
-            <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
-              Desde: {dateFrom}
-            </span>
-          )}
-          {dateTo && (
-            <span className="text-[10px] font-bold bg-white border-2 border-[#1a1a1a] px-2 py-0.5">
-              Hasta: {dateTo}
-            </span>
-          )}
-          <button
-            onClick={() => {
-              setSearchQuery('');
-              setStatusFilter('todos');
-              setPriorityFilter('todos');
-              setTagFilter('todos');
-              setDateFrom('');
-              setDateTo('');
-            }}
-            className="text-[10px] font-bold text-[#e63b2e] hover:underline ml-1"
-          >
-            Limpiar
-          </button>
-        </div>
-      )}
 
       {/* Feature #20: Bulk Actions Panel */}
       {selectedTasks.length > 0 && viewMode === 'list' && (
@@ -1103,24 +1039,20 @@ export default function Tareas() {
                     exit={{ opacity: 0, x: 20 }}
                     whileHover={task.status !== 'completado' && !isSelected ? { x: 4 } : {}}
                     transition={{ duration: 0.2 }}
-                    onClick={() => openEditTaskModal(task)}
-                    className={`p-3 sm:p-4 border-2 ${isSelected ? 'border-[#0055ff]' : 'border-[#1a1a1a]'} shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4 min-h-[80px] cursor-pointer hover:bg-[#f5f0e8]`}
+                    className={`p-3 sm:p-4 border-2 ${isSelected ? 'border-[#0055ff]' : 'border-[#1a1a1a]'} shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4 min-h-[80px]`}
                   >
                     <div className="flex flex-1 items-start md:items-center gap-3 sm:gap-4 w-full min-w-0">
                       <input 
                         type="checkbox" 
                         checked={isSelected}
-                        onClick={(e) => e.stopPropagation()}
-                        onChange={(e) => {
-                          e.stopPropagation();
+                        onChange={() => {
                           if (isSelected) setSelectedTasks(s => s.filter(id => id !== task.id));
                           else setSelectedTasks(s => [...s, task.id]);
                         }}
                         className="w-5 h-5 cursor-pointer accent-[#1a1a1a] shrink-0 mt-1 sm:mt-0" 
                       />
                       <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
+                        onClick={() => {
                           if (isPinned) setPinnedTasks(p => p.filter(id => id !== task.id));
                           else setPinnedTasks(p => [...p, task.id]);
                         }}
@@ -1135,7 +1067,6 @@ export default function Tareas() {
                         </div>
                         <select
                           value={task.priority}
-                          onClick={(e) => e.stopPropagation()}
                           onChange={(e) => handleUpdatePriority(task.id, e.target.value as 'alta' | 'media' | 'baja')}
                           className={`px-1.5 py-0.5 border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-wider cursor-pointer focus:outline-none ${getPriorityColor(task.priority)}`}
                         >
@@ -1205,7 +1136,6 @@ export default function Tareas() {
                         onChange={(e) =>
                           handleUpdateStatus(task.id, e.target.value as 'pendiente' | 'en_proceso' | 'completado')
                         }
-                        onClick={(e) => e.stopPropagation()}
                         className="px-2 py-1.5 min-h-[44px] sm:min-h-[36px] border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-wider cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
                       >
                         <option value="pendiente">PENDIENTE</option>
@@ -1214,10 +1144,7 @@ export default function Tareas() {
                       </select>
 
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          openEditTaskModal(task);
-                        }}
+                        onClick={() => openEditTaskModal(task)}
                         className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors"
                         title="Editar tarea"
                       >
@@ -1227,14 +1154,12 @@ export default function Tareas() {
                       <label
                         className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer"
                         title="Subir archivo rápido"
-                        onClick={(e) => e.stopPropagation()}
                       >
                         <Upload className="w-4 h-4" />
                         <input
                           type="file"
                           className="hidden"
                           onChange={(e) => {
-                            e.stopPropagation();
                             const file = e.target.files?.[0];
                             if (file) {
                               handleQuickUpload(task.id, task.attachments as any, file);
@@ -1245,10 +1170,7 @@ export default function Tareas() {
                       </label>
 
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleShareTask(task);
-                        }}
+                        onClick={() => handleShareTask(task)}
                         className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#00cc66] hover:text-white transition-colors"
                         title="Compartir tarea"
                       >
@@ -1257,10 +1179,7 @@ export default function Tareas() {
 
                       {isAdmin && (
                         <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            triggerDeleteTask(task.id);
-                          }}
+                          onClick={() => triggerDeleteTask(task.id)}
                           className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors"
                           title="Eliminar tarea"
                         >
@@ -1270,8 +1189,7 @@ export default function Tareas() {
                       
                       {/* Feature #18: Duplicate Task */}
                       <button
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          onClick={() => {
                             const duplicate = { ...task, title: `${task.title} (COPIA)`, id: undefined };
                             openEditTaskModal(duplicate as Task);
                             setIsEditing(false); // Force to create new
@@ -1439,7 +1357,7 @@ export default function Tareas() {
       {/* Unified Task Modal (Create & Edit) */}
       <AnimatePresence>
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/40">
+        <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-sm">
           <motion.div
             initial={{ opacity: 0, x: 400 }}
             animate={{ opacity: 1, x: 0 }}

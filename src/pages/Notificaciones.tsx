@@ -4,6 +4,7 @@ import { Bell, Trash2, CheckCircle, Search, Clock, ShieldAlert } from 'lucide-re
 import { toast } from 'sonner';
 import { SkeletonPage } from '../components/Skeleton';
 import type { AppNotification } from '../types';
+import { FilterBar } from '../components/FilterBar';
 
 export default function Notificaciones() {
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
@@ -126,29 +127,30 @@ export default function Notificaciones() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white border-2 border-[#1a1a1a] p-4 mb-6 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-50" />
-          <input 
-            type="text" 
-            placeholder="BUSCAR NOTIFICACIÓN..." 
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white text-xs font-bold uppercase transition-colors outline-none"
-          />
-        </div>
-        <select 
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          className="p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white text-xs font-bold uppercase outline-none min-w-[150px]"
-        >
-          <option value="todas">TODOS LOS TIPOS</option>
-          <option value="tarea">TAREAS</option>
-          <option value="visita">VISITAS</option>
-          <option value="novedad">NOVEDADES</option>
-        </select>
-      </div>
+      <FilterBar
+        search={{
+          value: searchQuery,
+          onChange: setSearchQuery,
+          placeholder: 'BUSCAR NOTIFICACIÓN...'
+        }}
+        filters={[
+          {
+            value: filterType,
+            onChange: setFilterType,
+            type: 'select',
+            placeholder: 'Todos los tipos',
+            options: [
+              { label: 'Tareas', value: 'tarea' },
+              { label: 'Visitas', value: 'visita' },
+              { label: 'Novedades', value: 'novedad' },
+            ]
+          }
+        ]}
+        onClear={() => {
+          setSearchQuery('');
+          setFilterType('todas');
+        }}
+      />
 
       {/* Notificaciones List */}
       <div className="space-y-3">
