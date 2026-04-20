@@ -424,12 +424,13 @@ export default function Novedades() {
           placeholder: 'BUSCAR NOVEDADES...'
         }}
         dateRange={{
-          from: { value: dateFrom, onChange: setDateFrom },
-          to: { value: dateTo, onChange: setDateTo }
+          from: { value: dateFrom, onChange: setDateFrom, label: 'DESDE' },
+          to: { value: dateTo, onChange: setDateTo, label: 'HASTA' }
         }}
         sort={{
           value: sortBy,
           onChange: setSortBy,
+          label: 'ORDENAR POR',
           options: [
             { label: 'Fecha (Más reciente)', value: 'fecha_desc' },
             { label: 'Fecha (Más antiguo)', value: 'fecha_asc' },
@@ -441,6 +442,7 @@ export default function Novedades() {
           setSearchQuery('');
           setDateFrom('');
           setDateTo('');
+          setSortBy('fecha_desc');
         }}
       />
 

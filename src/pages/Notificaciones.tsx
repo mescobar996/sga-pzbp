@@ -138,6 +138,7 @@ export default function Notificaciones() {
             value: filterType,
             onChange: setFilterType,
             type: 'select',
+            label: 'TIPO',
             placeholder: 'Todos los tipos',
             options: [
               { label: 'Tareas', value: 'tarea' },

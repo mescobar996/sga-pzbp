@@ -468,17 +468,19 @@ export default function Visitas() {
                 value: responsableFilter,
                 onChange: setResponsableFilter,
                 type: 'select',
+                label: 'RESPONSABLE',
                 placeholder: 'Todos los responsables',
                 options: Array.from(new Set(visitas.flatMap((v) => (v.responsable ? v.responsable.split(' Y ') : []))))
               }
             ]}
             dateRange={{
-              from: { value: dateFrom, onChange: setDateFrom },
-              to: { value: dateTo, onChange: setDateTo }
+              from: { value: dateFrom, onChange: setDateFrom, label: 'VISITA DESDE' },
+              to: { value: dateTo, onChange: setDateTo, label: 'VISITA HASTA' }
             }}
             sort={{
               value: sortBy,
               onChange: setSortBy,
+              label: 'ORDENAR POR',
               options: [
                 { label: 'Fecha (Más reciente)', value: 'fecha_desc' },
                 { label: 'Fecha (Más antiguo)', value: 'fecha_asc' },
@@ -491,6 +493,7 @@ export default function Visitas() {
               setResponsableFilter('todos');
               setDateFrom('');
               setDateTo('');
+              setSortBy('fecha_desc');
             }}
           />
 

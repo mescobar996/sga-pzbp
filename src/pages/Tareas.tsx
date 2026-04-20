@@ -759,6 +759,7 @@ export default function Tareas() {
             value: statusFilter,
             onChange: (val) => setStatusFilter(val as any),
             type: 'select',
+            label: 'ESTADO',
             placeholder: 'Todos los estados',
             options: [
               { label: 'Pendiente', value: 'pendiente' },
@@ -770,6 +771,7 @@ export default function Tareas() {
             value: priorityFilter,
             onChange: (val) => setPriorityFilter(val as any),
             type: 'select',
+            label: 'PRIORIDAD',
             placeholder: 'Todas las prioridades',
             options: [
               { label: 'Alta', value: 'alta' },
@@ -781,17 +783,19 @@ export default function Tareas() {
             value: tagFilter,
             onChange: setTagFilter,
             type: 'select',
+            label: 'ETIQUETA',
             placeholder: 'Todas las etiquetas',
             options: allTags
           }
         ]}
         dateRange={{
-          from: { value: dateFrom, onChange: setDateFrom },
-          to: { value: dateTo, onChange: setDateTo }
+          from: { value: dateFrom, onChange: setDateFrom, label: 'VENCIMIENTO DESDE' },
+          to: { value: dateTo, onChange: setDateTo, label: 'VENCIMIENTO HASTA' }
         }}
         sort={{
           value: sortBy,
           onChange: setSortBy,
+          label: 'ORDENAR POR',
           options: [
             { label: 'Fecha (Más reciente)', value: 'fecha_desc' },
             { label: 'Fecha (Más antiguo)', value: 'fecha_asc' },
@@ -808,6 +812,7 @@ export default function Tareas() {
           setTagFilter('todos');
           setDateFrom('');
           setDateTo('');
+          setSortBy('fecha_desc');
         }}
       />
 

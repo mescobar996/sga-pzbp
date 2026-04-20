@@ -150,6 +150,7 @@ export default function AdminUsuarios() {
           onChange: setSearch,
           placeholder: 'BUSCAR USUARIO...'
         }}
+        onClear={() => setSearch('')}
       />
 
       {/* Users List */}
