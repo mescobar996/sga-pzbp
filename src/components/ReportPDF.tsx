@@ -90,61 +90,72 @@ const Watermark = () => (
 );
 
 /** Verification pattern — decorative grid simulating doc authenticity mark */
-const VerifPattern = () => {
-  const pattern = [
-    [1,1,1,0,1,1,1],
-    [1,0,1,0,1,0,1],
-    [1,1,1,0,0,1,0],
-    [0,0,0,0,1,0,1],
-    [1,0,1,0,1,1,1],
-    [1,0,0,0,1,0,1],
-    [1,1,1,0,1,1,1],
-  ];
-  return (
-    <View style={{ flexDirection: 'column' as const }}>
-      {pattern.map((row, ri) => (
-        <View key={ri} style={{ flexDirection: 'row' as const }}>
-          {row.map((cell, ci) => (
-            <View
-              key={ci}
-              style={{
-                width: 4, height: 4,
-                backgroundColor: cell ? C.black : C.white,
-              }}
-            />
+/** Verification Pattern — QR styled for document authenticity */
+const QRVerify = ({ size = 45 }: { size?: number }) => (
+  <View style={{ width: size, height: size, borderWidth: 1, borderColor: C.black, borderStyle: 'solid' as const, padding: 2, backgroundColor: C.white }}>
+    <View style={{ flex: 1, backgroundColor: C.black, opacity: 0.1, position: 'absolute' as const, top: 0, left: 0, right: 0, bottom: 0 }} />
+    <View style={{ flexDirection: 'column' as const, justifyContent: 'space-between' as const, flex: 1 }}>
+      {[0, 1, 2, 3, 4].map(r => (
+        <View key={r} style={{ flexDirection: 'row' as const, justifyContent: 'space-between' as const }}>
+          {[0, 1, 2, 3, 4].map(c => (
+             <View key={c} style={{ width: size/7, height: size/7, backgroundColor: (r+c)%3 === 0 || (r === 0 && c === 0) || (r === 4 && c === 4) ? C.black : C.white }} />
           ))}
         </View>
       ))}
     </View>
-  );
-};
+  </View>
+);
 
-/** Fixed header bar — pages 2+ */
-const FixedHdr = ({ section, date }: { section: string; date: string }) => (
-  <View
-    style={{
-      position: 'absolute' as const, top: 0, left: 0, right: 0,
-      height: 30, backgroundColor: C.black,
-      flexDirection: 'row' as const, alignItems: 'center' as const,
-      justifyContent: 'space-between' as const, paddingHorizontal: 24,
-      borderBottomWidth: 4, borderBottomColor: C.blue,
-      borderBottomStyle: 'solid' as const,
-    }}
-    fixed
-  >
-    <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 10, color: C.white, letterSpacing: 2, textTransform: 'uppercase' as const }}>
-      SGA PZBP
-    </Text>
-    <View style={{ flexDirection: 'row' as const, alignItems: 'center' as const }}>
-      <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 7, color: C.cream, letterSpacing: 1, textTransform: 'uppercase' as const, marginRight: 12 }}>
-        {section}
+/** Official Verification Stamp */
+const VerifyStamp = () => (
+  <View style={{ position: 'absolute' as const, bottom: 40, right: 40, transform: 'rotate(-5deg)' }}>
+    <View style={{ borderWidth: 3, borderColor: C.blue, borderStyle: 'solid' as const, padding: 10, width: 140, alignItems: 'center' as const }}>
+      <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 8, color: C.blue, letterSpacing: 2, marginBottom: 4, textTransform: 'uppercase' as const }}>
+        PNA VERIFIED
       </Text>
-      <Text style={{ fontFamily: 'Helvetica', fontSize: 7, color: C.cream, opacity: 0.5, textTransform: 'uppercase' as const }}>
-        {date}
+      <View style={{ height: 2, width: '100%', backgroundColor: C.blue, marginBottom: 4 }} />
+      <Text style={{ fontFamily: 'Helvetica', fontSize: 5, color: C.blue, textTransform: 'uppercase' as const }}>
+        SGA PZBP - SECURE DOC
+      </Text>
+      <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 6, color: C.blue, marginTop: 2 }}>
+        ID: {Math.random().toString(36).substring(2, 10).toUpperCase()}
       </Text>
     </View>
   </View>
 );
+
+/** Fixed header bar — pages 2+ with DOC ID */
+const FixedHdr = ({ section, date }: { section: string; date: string }) => {
+  const docId = `DOC-${date.slice(0,4)}-${Math.floor(Math.random()*10000)}`;
+  return (
+    <View
+      style={{
+        position: 'absolute' as const, top: 0, left: 0, right: 0,
+        height: 34, backgroundColor: C.black,
+        flexDirection: 'row' as const, alignItems: 'center' as const,
+        justifyContent: 'space-between' as const, paddingHorizontal: 24,
+        borderBottomWidth: 4, borderBottomColor: C.blue,
+        borderBottomStyle: 'solid' as const,
+      }}
+      fixed
+    >
+      <View style={{ flexDirection: 'column' as const }}>
+        <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 10, color: C.white, letterSpacing: 2, textTransform: 'uppercase' as const }}>
+          SGA PZBP
+        </Text>
+        <Text style={{ fontFamily: 'Helvetica', fontSize: 5, color: C.blue, letterSpacing: 1 }}>{docId}</Text>
+      </View>
+      <View style={{ flexDirection: 'row' as const, alignItems: 'center' as const }}>
+        <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 7, color: C.cream, letterSpacing: 1, textTransform: 'uppercase' as const, marginRight: 12 }}>
+          {section}
+        </Text>
+        <Text style={{ fontFamily: 'Helvetica', fontSize: 7, color: C.cream, opacity: 0.5, textTransform: 'uppercase' as const }}>
+          {date}
+        </Text>
+      </View>
+    </View>
+  );
+};
 
 /** Fixed footer bar */
 const FixedFtr = () => (
@@ -416,12 +427,12 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
           </View>
 
           {/* Verification pattern — bottom right corner */}
-          <View style={{ position: 'absolute' as const, bottom: 14, right: 40 }}>
+          <View style={{ position: 'absolute' as const, bottom: 20, right: 40 }}>
             <View style={{ flexDirection: 'row' as const, alignItems: 'center' as const }}>
-              <Text style={{ fontFamily: 'Helvetica', fontSize: 5, color: C.grey, marginRight: 6, textTransform: 'uppercase' as const, letterSpacing: 1 }}>
-                DOC ID
+              <Text style={{ fontFamily: 'Helvetica', fontSize: 5, color: C.grey, marginRight: 8, textTransform: 'uppercase' as const, letterSpacing: 1 }}>
+                SECURITY QR MARK
               </Text>
-              <VerifPattern />
+              <QRVerify />
             </View>
           </View>
         </View>
@@ -649,6 +660,9 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
               ))}
             </View>
           </Shadow>
+
+          {/* Verification Stamp at Bottom of Summary */}
+          <VerifyStamp />
         </View>
       </Page>
 
@@ -781,8 +795,8 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
                   <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 6, color: C.grey, textTransform: 'uppercase' as const }}>{a.date.toUpperCase()}</Text>
                 </View>
               ))}
-            </View>
           </View>
+          <VerifyStamp />
         </View>
       </Page>
 

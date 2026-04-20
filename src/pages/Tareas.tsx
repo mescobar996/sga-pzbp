@@ -1135,13 +1135,13 @@ export default function Tareas() {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end mt-2 md:mt-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#1a1a1a]/10">
+                    <div className="grid grid-cols-4 sm:flex items-center gap-2 shrink-0 w-full md:w-auto mt-3 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-[#1a1a1a]/10">
                       <select
                         value={task.status}
                         onChange={(e) =>
                           handleUpdateStatus(task.id, e.target.value as 'pendiente' | 'en_proceso' | 'completado')
                         }
-                        className="px-2 py-1.5 min-h-[44px] sm:min-h-[36px] border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-wider cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
+                        className="col-span-2 sm:col-auto px-2 py-1.5 h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-wider cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
                       >
                         <option value="pendiente">PENDIENTE</option>
                         <option value="en_proceso">PROCESO</option>
@@ -1150,14 +1150,14 @@ export default function Tareas() {
 
                       <button
                         onClick={() => openEditTaskModal(task)}
-                        className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                        className="flex items-center justify-center h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors"
                         title="Editar tarea"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
 
                       <label
-                        className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer"
+                        className="flex items-center justify-center h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer"
                         title="Subir archivo rápido"
                       >
                         <Upload className="w-4 h-4" />
@@ -1176,34 +1176,33 @@ export default function Tareas() {
 
                       <button
                         onClick={() => handleShareTask(task)}
-                        className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#00cc66] hover:text-white transition-colors"
+                        className="flex items-center justify-center h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#00cc66] hover:text-white transition-colors"
                         title="Compartir tarea"
                       >
                         <Share2 className="w-4 h-4" />
                       </button>
 
-                      {isAdmin && (
-                        <button
-                          onClick={() => triggerDeleteTask(task.id)}
-                          className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors"
-                          title="Eliminar tarea"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-                      
-                      {/* Feature #18: Duplicate Task */}
                       <button
                           onClick={() => {
                             const duplicate = { ...task, title: `${task.title} (COPIA)`, id: undefined };
                             openEditTaskModal(duplicate as Task);
                             setIsEditing(false); // Force to create new
                           }}
-                          className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors ml-auto sm:ml-0"
+                          className="flex items-center justify-center h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors"
                           title="Duplicar tarea"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" d="M8 7h12v14H8z"></path><path strokeLinecap="square" strokeLinejoin="miter" d="M16 7V3H4v14h4"></path></svg>
                       </button>
+
+                      {isAdmin && (
+                        <button
+                          onClick={() => triggerDeleteTask(task.id)}
+                          className="flex items-center justify-center h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors"
+                          title="Eliminar tarea"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </motion.div>
                 );
