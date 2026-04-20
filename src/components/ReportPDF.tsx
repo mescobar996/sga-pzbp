@@ -795,6 +795,7 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
                   <Text style={{ fontFamily: 'Helvetica-Bold', fontSize: 6, color: C.grey, textTransform: 'uppercase' as const }}>{a.date.toUpperCase()}</Text>
                 </View>
               ))}
+            </View>
           </View>
           <VerifyStamp />
         </View>
