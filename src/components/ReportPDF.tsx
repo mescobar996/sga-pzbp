@@ -491,7 +491,7 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
           {/* Logo placeholder — show text PNA if image not found */}
           <View style={{ marginBottom: 12 }}>
             <Image
-              src="/public/logo-pna.png"
+              src="/logo-pna.png"
               style={{ height: 90, objectFit: 'contain' as const }}
             />
           </View>
