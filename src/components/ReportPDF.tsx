@@ -2,17 +2,20 @@ import React from 'react';
 import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer';
 
 // ═══════════════════════════════════════════════════════════════
-// PREMIUM EDITORIAL DESIGN SYSTEM — SGA REVISIÓN 2026
+// PREMIUM OPERATIONAL DESIGN SYSTEM — SGA 2026
 // ═══════════════════════════════════════════════════════════════
 const COLORS = {
-  navy:      '#0A1628', // Azul Profundo PNA
-  gold:      '#B08D57', // Dorado Premium Acento
-  cream:     '#FDFCF8', // Fondo Papel Revista
-  slate:     '#1E293B', // Texto Principal
-  gray:      '#64748B', // Texto Secundario
+  navy:      '#0A1628', // AZUL PROFUNDO PNA
+  gold:      '#B08D57', // DORADO PREMIUM ACENTO
+  cream:     '#FDFCF8', // FONDO PAPEL REVISTA
+  slate:     '#1E293B', // TEXTO PRINCIPAL
+  gray:      '#64748B', // TEXTO SECUNDARIO
   divider:   '#E2E8F0',
   white:     '#FFFFFF',
-  accent:    '#1B4FD8', // Azul Eléctrico
+  accent:    '#1B4FD8', // AZUL ELÉCTRICO
+  success:   '#10B981', // VERDE COMPLETADO
+  warning:   '#F59E0B', // AMARILLO EN PROCESO
+  error:     '#EF4444', // ROJO PENDIENTE/VENCIDO
 };
 
 const S = StyleSheet.create({
@@ -24,11 +27,11 @@ const S = StyleSheet.create({
   },
   contentWrapper: {
     paddingHorizontal: 40,
-    paddingTop: 60,
+    paddingTop: 50,
     paddingBottom: 40,
   },
   
-  // ─── COVER (REVISTA) ────────────────────────────────────────
+  // ─── COVER ──────────────────────────────────────────────────
   cover: {
     height: '100%',
     backgroundColor: COLORS.navy,
@@ -36,61 +39,61 @@ const S = StyleSheet.create({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingVertical: 80,
-  },
-  coverHeader: {
-    alignItems: 'center',
   },
   logo: {
     width: 100,
-    marginBottom: 30,
+    marginBottom: 40,
   },
   magazineTitle: {
-    fontSize: 60,
+    fontSize: 50,
     fontFamily: 'Helvetica-Bold',
     color: COLORS.white,
-    letterSpacing: 2,
+    letterSpacing: 4,
     lineHeight: 1,
   },
   magazineSubtitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontFamily: 'Helvetica-Bold',
     color: COLORS.gold,
-    letterSpacing: 10,
-    marginTop: 20,
+    letterSpacing: 12,
+    marginTop: 25,
     textTransform: 'uppercase',
-  },
-  coverFooter: {
-    width: '100%',
-    paddingHorizontal: 40,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.1)',
-    paddingTop: 30,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
   },
   coverDate: {
     color: COLORS.white,
-    fontSize: 14,
+    fontSize: 12,
+    fontFamily: 'Helvetica-Bold',
+    marginTop: 40,
+    letterSpacing: 2,
+  },
+  coverRecords: {
+    position: 'absolute',
+    bottom: 60,
+    alignItems: 'center',
+  },
+  totalCount: {
+    color: COLORS.white,
+    fontSize: 28,
     fontFamily: 'Helvetica-Bold',
   },
-  issueNumber: {
+  totalLabel: {
     color: COLORS.gold,
-    fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
+    fontSize: 8,
+    letterSpacing: 2,
+    marginTop: 5,
   },
 
-  // ─── EDITORIAL SECTIONS ─────────────────────────────────────
+  // ─── SECTIONS ───────────────────────────────────────────────
   sectionHeader: {
     marginBottom: 20,
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
     borderBottomColor: COLORS.gold,
-    paddingBottom: 10,
+    paddingBottom: 8,
   },
   categoryLabel: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: 'Helvetica-Bold',
     color: COLORS.accent,
     letterSpacing: 2,
@@ -98,74 +101,35 @@ const S = StyleSheet.create({
     marginBottom: 4,
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: 22,
     fontFamily: 'Helvetica-Bold',
     color: COLORS.slate,
     letterSpacing: -0.5,
   },
-  sectionDivider: {
-    height: 2,
-    width: 40,
-    backgroundColor: COLORS.gold,
-    marginTop: 5,
-  },
 
-  // ─── ARTICLE LAYOUT ─────────────────────────────────────────
-  articleRow: {
-    flexDirection: 'row',
-    gap: 15,
-    marginBottom: 20,
-  },
-  articleCard: {
-    flex: 1,
-    backgroundColor: COLORS.white,
-    padding: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.navy,
-  },
-  articleTitle: {
-    fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
-    color: COLORS.slate,
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  articleContent: {
-    fontSize: 8,
-    lineHeight: 1.4,
-    color: COLORS.gray,
-    textAlign: 'justify',
-  },
-  articleMeta: {
-    marginTop: 6,
-    fontSize: 6,
-    fontFamily: 'Helvetica-Bold',
-    color: COLORS.gold,
-    textTransform: 'uppercase',
-  },
-
-  // ─── DATA GRID ──────────────────────────────────────────────
+  // ─── DATA GRID / CARDS ──────────────────────────────────────
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
-    marginVertical: 15,
+    marginVertical: 20,
   },
   statBox: {
-    width: '18%',
+    width: '18.5%',
     backgroundColor: COLORS.navy,
-    padding: 10,
+    padding: 12,
     alignItems: 'center',
+    borderRadius: 2,
   },
   statValue: {
-    fontSize: 18,
+    fontSize: 20,
     fontFamily: 'Helvetica-Bold',
     color: COLORS.white,
   },
   statLabel: {
     fontSize: 6,
     color: COLORS.gold,
-    marginTop: 2,
+    marginTop: 4,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
@@ -174,18 +138,13 @@ const S = StyleSheet.create({
   table: {
     display: 'flex',
     width: 'auto',
-    borderStyle: 'solid',
-    borderWidth: 0,
-    borderRightWidth: 0,
-    borderBottomWidth: 0,
     marginTop: 10,
   },
   tableRow: {
-    margin: 'auto',
     flexDirection: 'row',
     borderBottomWidth: 1,
     borderBottomColor: COLORS.divider,
-    minHeight: 25,
+    minHeight: 30,
     alignItems: 'center',
   },
   tableHeader: {
@@ -196,15 +155,60 @@ const S = StyleSheet.create({
     textTransform: 'uppercase',
   },
   tableCell: {
-    padding: 5,
+    padding: 6,
     fontSize: 7,
     color: COLORS.slate,
   },
 
-  // ─── FOOTER/HEADER ──────────────────────────────────────────
+  // ─── BADGES ─────────────────────────────────────────────────
+  badge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 2,
+    fontSize: 6,
+    fontFamily: 'Helvetica-Bold',
+    color: COLORS.white,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    width: 70,
+  },
+  badgeSuccess: { backgroundColor: COLORS.success },
+  badgeWarning: { backgroundColor: COLORS.warning },
+  badgeError:   { backgroundColor: COLORS.error },
+  badgeInfo:    { backgroundColor: COLORS.accent },
+
+  // ─── CARD LISTING ───────────────────────────────────────────
+  card: {
+    backgroundColor: COLORS.white,
+    padding: 12,
+    borderLeftWidth: 4,
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+  },
+  cardTitle: {
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+    color: COLORS.navy,
+    marginBottom: 4,
+  },
+  cardMeta: {
+    fontSize: 7,
+    color: COLORS.gray,
+    marginBottom: 6,
+  },
+  cardContent: {
+    fontSize: 8,
+    lineHeight: 1.4,
+    color: COLORS.slate,
+    textAlign: 'justify',
+  },
+
+  // ─── FOOTER ─────────────────────────────────────────────────
   pageFolio: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 25,
     right: 40,
     fontSize: 8,
     fontFamily: 'Helvetica-Bold',
@@ -212,25 +216,28 @@ const S = StyleSheet.create({
   },
   pageLogoSmall: {
     position: 'absolute',
-    bottom: 20,
+    bottom: 25,
     left: 40,
-    fontSize: 6,
+    fontSize: 7,
     color: COLORS.gray,
     letterSpacing: 1,
+    fontFamily: 'Helvetica-Bold',
   }
 });
 
-// ─── COMPONENTS ───────────────────────────────────────────────
+// ─── HELPER COMPONENTS ───────────────────────────────────────
 
-const Article = ({ title, content, meta, color = COLORS.navy }: any) => (
-  <View style={[S.articleCard, { borderLeftColor: color }]}>
-    <Text style={S.articleTitle}>{title?.toUpperCase()}</Text>
-    <Text style={S.articleContent}>{content?.toUpperCase()}</Text>
-    <Text style={S.articleMeta}>{meta?.toUpperCase()}</Text>
-  </View>
-);
+const StatusBadge = ({ status }: { status: string }) => {
+  const s = status?.toLowerCase() || '';
+  let style = S.badgeInfo;
+  if (s.includes('completado') || s.includes('activo') || s.includes('operativo')) style = S.badgeSuccess;
+  if (s.includes('pendiente') || s.includes('proceso') || s.includes('mantenimiento')) style = S.badgeError;
+  if (s.includes('urgente') || s.includes('alta')) style = S.badgeError;
+  
+  return <Text style={[S.badge, style]}>{status?.toUpperCase() || 'S/E'}</Text>;
+};
 
-const SectionHeading = ({ category, title }: any) => (
+const SectionHeader = ({ category, title }: any) => (
   <View style={S.sectionHeader}>
     <Text style={S.categoryLabel}>{category?.toUpperCase()}</Text>
     <Text style={S.sectionTitle}>{title?.toUpperCase()}</Text>
@@ -245,53 +252,35 @@ interface Props {
 
 export default function ReportPDF({ data, now, dateStr }: Props) {
   const { visitas = [], tareas = [], novedades = [], diligenciamientos = [], personal = [] } = data;
-
   const total = visitas.length + tareas.length + novedades.length + diligenciamientos.length + personal.length;
 
   return (
     <Document title={`SGA REPORT - ${dateStr.toUpperCase()}`}>
       {/* ═══════════════════════════════════════════════════════
-          PÁGINA 1: PORTADA TIPO REVISTA
+          PÁGINA 1: PORTADA
           ═══════════════════════════════════════════════════════ */}
       <Page size="A4" style={S.page}>
         <View style={S.cover}>
-          <View style={S.coverHeader}>
-            <Image src="/logo-pna.png" style={S.logo} />
-            <Text style={S.magazineTitle}>S G A</Text>
-            <Text style={[S.magazineTitle, { color: COLORS.gold, fontSize: 40, marginTop: 10 }]}>P Z B P</Text>
-            <Text style={S.magazineSubtitle}>R E S U M E N  O P E R A T I V O</Text>
-          </View>
-
-          <View style={{ width: '100%', alignItems: 'center' }}>
-            <View style={{ width: 80, height: 1, backgroundColor: COLORS.gold, marginBottom: 15 }} />
-            <Text style={{ color: COLORS.white, fontSize: 9, letterSpacing: 5 }}>EDICIÓN PROFESIONAL</Text>
-          </View>
-
-          <View style={S.coverFooter}>
-            <View>
-              <Text style={S.coverDate}>{dateStr.toUpperCase()}</Text>
-              <Text style={S.issueNumber}>GESTIÓN OPERATIVA</Text>
-            </View>
-            <View style={{ alignItems: 'flex-end' }}>
-              <Text style={{ color: COLORS.white, fontSize: 24, fontFamily: 'Helvetica-Bold' }}>{total}</Text>
-              <Text style={{ color: COLORS.gold, fontSize: 7 }}>REGISTROS TOTALES</Text>
-            </View>
+          <Image src="/logo-pna.png" style={S.logo} />
+          <Text style={S.magazineTitle}>S G A</Text>
+          <Text style={[S.magazineTitle, { color: COLORS.gold, fontSize: 35, marginTop: 15 }]}>P Z B P</Text>
+          <Text style={S.magazineSubtitle}>R E S U M E N  O P E R A T I V O</Text>
+          <Text style={S.coverDate}>{dateStr.toUpperCase()}</Text>
+          
+          <View style={S.coverRecords}>
+            <Text style={S.totalCount}>{total}</Text>
+            <Text style={S.totalLabel}>REGISTROS TOTALES</Text>
           </View>
         </View>
       </Page>
 
       {/* ═══════════════════════════════════════════════════════
-          PÁGINA 2: RESUMEN Y ESTADÍSTICAS
+          PÁGINA 2: RESUMEN DE INDICADORES
           ═══════════════════════════════════════════════════════ */}
       <Page size="A4" style={S.page}>
         <View style={S.contentWrapper}>
-          <SectionHeading category="EDITORIAL" title="VISIÓN GENERAL DE OPERACIONES" />
+          <SectionHeader category="INTELIGENCIA OPERATIVA" title="ESTADÍSTICAS GENERALES" />
           
-          <Text style={[S.articleContent, { fontSize: 10, marginBottom: 20, color: COLORS.slate, textAlign: 'left', textTransform: 'uppercase' }]}>
-            ESTE INFORME CONSOLIDA LA ACTIVIDAD OPERATIVA DE LA PREFECTURA DE ZONA BAJO PARANÁ. 
-            SE PRESENTA UN ANÁLISIS DETALLADO DE VISITAS, TAREAS, PERSONAL Y NOVEDADES REGISTRADAS.
-          </Text>
-
           <View style={S.statsGrid}>
             <View style={S.statBox}>
               <Text style={S.statValue}>{visitas.length}</Text>
@@ -316,19 +305,22 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
           </View>
 
           <View style={{ marginTop: 30 }}>
-            <SectionHeading category="ESTADO DE FUERZA" title="PERSONAL Y RECURSOS" />
-            <View style={S.articleRow}>
-              <Article 
-                title="DESPLIEGUE" 
-                content={`SE CUENTA CON ${personal.length} EFECTIVOS ACTIVOS ASIGNADOS A DIVERSAS TAREAS OPERATIVAS Y ADMINISTRATIVAS.`}
-                meta="PERSONAL"
-              />
-              <Article 
-                title="GESTIÓN" 
-                content={`SE HAN PROCESADO ${diligenciamientos.length} DILIGENCIAMIENTOS, MANTENIENDO LA EFICIENCIA EN LOS PROCESOS INTERNOS.`}
-                meta="ADMINISTRACIÓN"
-                color={COLORS.gold}
-              />
+            <SectionHeader category="ANÁLISIS DE FUERZA" title="RECURSOS Y GESTIÓN" />
+            <View style={{ flexDirection: 'row', gap: 15 }}>
+              <View style={[S.card, { flex: 1, borderLeftColor: COLORS.navy }]}>
+                <Text style={S.cardTitle}>PERSONAL ACTIVO</Text>
+                <Text style={S.cardContent}>
+                  EL DESPLIEGUE ACTUAL CUENTA CON {personal.length} EFECTIVOS EN ESTADO OPERATIVO, 
+                  GARANTIZANDO LA COBERTURA DE SEGURIDAD EN LA ZONA BAJO PARANÁ.
+                </Text>
+              </View>
+              <View style={[S.card, { flex: 1, borderLeftColor: COLORS.gold }]}>
+                <Text style={S.cardTitle}>DILIGENCIAS ADMINISTRATIVAS</Text>
+                <Text style={S.cardContent}>
+                  SE HAN TRAMITADO {diligenciamientos.length} DOCUMENTOS ADMINISTRATIVOS, 
+                  CUMPLIENDO CON LOS PROTOCOLES DE GESTIÓN INTERNA.
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -338,26 +330,32 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
       </Page>
 
       {/* ═══════════════════════════════════════════════════════
-          PÁGINA: TAREAS OPERATIVAS
+          PÁGINA: TAREAS OPERATIVAS (CON COLORES)
           ═══════════════════════════════════════════════════════ */}
       {tareas.length > 0 && (
         <Page size="A4" style={S.page}>
           <View style={S.contentWrapper}>
-            <SectionHeading category="OPERACIONES" title="LISTADO DE TAREAS OPERATIVAS" />
+            <SectionHeader category="OPERACIONES" title="LISTADO DE TAREAS" />
             
             <View style={S.table}>
               <View style={[S.tableRow, S.tableHeader]}>
-                <Text style={[S.tableCell, { width: '40%' }]}>TÍTULO</Text>
-                <Text style={[S.tableCell, { width: '20%' }]}>PRIORIDAD</Text>
-                <Text style={[S.tableCell, { width: '20%' }]}>ESTADO</Text>
-                <Text style={[S.tableCell, { width: '20%' }]}>VENCIMIENTO</Text>
+                <Text style={[S.tableCell, { width: '45%' }]}>TÍTULO DE LA TAREA</Text>
+                <Text style={[S.tableCell, { width: '15%', textAlign: 'center' }]}>PRIORIDAD</Text>
+                <Text style={[S.tableCell, { width: '20%', textAlign: 'center' }]}>ESTADO</Text>
+                <Text style={[S.tableCell, { width: '20%', textAlign: 'right' }]}>FECHA LÍMITE</Text>
               </View>
               {tareas.map((t: any, i: number) => (
                 <View key={i} style={S.tableRow}>
-                  <Text style={[S.tableCell, { width: '40%', fontFamily: 'Helvetica-Bold' }]}>{t.title?.toUpperCase()}</Text>
-                  <Text style={[S.tableCell, { width: '20%' }]}>{t.priority?.toUpperCase()}</Text>
-                  <Text style={[S.tableCell, { width: '20%' }]}>{t.status?.toUpperCase()}</Text>
-                  <Text style={[S.tableCell, { width: '20%' }]}>{t.dueDate ? new Date(t.dueDate).toLocaleDateString().toUpperCase() : '—'}</Text>
+                  <Text style={[S.tableCell, { width: '45%', fontFamily: 'Helvetica-Bold' }]}>{t.title?.toUpperCase()}</Text>
+                  <View style={{ width: '15%', alignItems: 'center' }}>
+                    <StatusBadge status={t.priority} />
+                  </View>
+                  <View style={{ width: '20%', alignItems: 'center' }}>
+                    <StatusBadge status={t.status} />
+                  </View>
+                  <Text style={[S.tableCell, { width: '20%', textAlign: 'right', color: COLORS.gray }]}>
+                    {t.dueDate ? new Date(t.dueDate).toLocaleDateString().toUpperCase() : '—'}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -373,18 +371,26 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
       {visitas.length > 0 && (
         <Page size="A4" style={S.page}>
           <View style={S.contentWrapper}>
-            <SectionHeading category="REGISTRO" title="BITÁCORA DE VISITAS TÉCNICAS" />
+            <SectionHeader category="REGISTRO" title="BITÁCORA DE VISITAS TÉCNICAS" />
             
-            <View style={{ gap: 10, marginTop: 10 }}>
+            <View style={{ marginTop: 10 }}>
               {visitas.map((v: any, i: number) => (
-                <View key={i} style={{ backgroundColor: COLORS.white, padding: 10, borderLeftWidth: 2, borderLeftColor: COLORS.gold, marginBottom: 5 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
-                    <Text style={{ fontSize: 7, color: COLORS.gray }}>{v.fecha?.toUpperCase()} | {v.hora?.toUpperCase()}</Text>
-                    <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: COLORS.accent }}>{v.responsable?.toUpperCase()}</Text>
+                <View key={i} style={[S.card, { borderLeftColor: COLORS.gold }]}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: COLORS.accent }}>
+                      {v.fecha?.toUpperCase()} | {v.hora?.toUpperCase()}
+                    </Text>
+                    <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: COLORS.navy }}>
+                      RESPONSABLE: {v.responsable?.toUpperCase()}
+                    </Text>
                   </View>
-                  <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: COLORS.navy }}>{v.origen?.toUpperCase()} → {v.destino?.toUpperCase()}</Text>
+                  <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: COLORS.slate, marginBottom: 4 }}>
+                    {v.origen?.toUpperCase()} → {v.destino?.toUpperCase()}
+                  </Text>
                   {v.observaciones && (
-                    <Text style={{ fontSize: 7, color: COLORS.slate, marginTop: 3, textTransform: 'uppercase' }}>{v.observaciones.toUpperCase()}</Text>
+                    <Text style={[S.cardContent, { color: COLORS.gray }]}>
+                      OBSERVACIONES: {v.observaciones.toUpperCase()}
+                    </Text>
                   )}
                 </View>
               ))}
@@ -401,20 +407,20 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
       {novedades.length > 0 && (
         <Page size="A4" style={S.page}>
           <View style={S.contentWrapper}>
-            <SectionHeading category="CRÓNICAS" title="NOVEDADES DE LA JORNADA" />
+            <SectionHeader category="CRÓNICAS" title="NOVEDADES OPERATIVAS" />
             
-            <View style={{ gap: 15, marginTop: 10 }}>
+            <View style={{ marginTop: 10 }}>
               {novedades.map((n: any, i: number) => (
-                <View key={i} style={{ borderBottomWidth: 1, borderBottomColor: COLORS.divider, paddingBottom: 10 }}>
-                  <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: COLORS.navy, marginBottom: 2 }}>
-                    {n.title?.toUpperCase() || 'SIN TÍTULO'}
-                  </Text>
-                  <Text style={[S.articleContent, { textAlign: 'left', fontSize: 8, textTransform: 'uppercase' }]}>
-                    {n.content?.toUpperCase()}
-                  </Text>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 5 }}>
-                    <Text style={{ fontSize: 6, color: COLORS.accent, fontFamily: 'Helvetica-Bold' }}>POR: {n.authorName?.toUpperCase() || 'SISTEMA'}</Text>
-                    <Text style={{ fontSize: 6, color: COLORS.gray }}>{new Date(n.created_at || n.createdAt).toLocaleString().toUpperCase()}</Text>
+                <View key={i} style={[S.card, { borderLeftColor: COLORS.navy, paddingVertical: 15 }]}>
+                  <Text style={S.cardTitle}>{n.title?.toUpperCase() || 'SIN TÍTULO'}</Text>
+                  <Text style={[S.cardContent, { marginBottom: 10 }]}>{n.content?.toUpperCase()}</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: COLORS.divider, paddingTop: 6 }}>
+                    <Text style={{ fontSize: 6, color: COLORS.accent, fontFamily: 'Helvetica-Bold' }}>
+                      AUTOR: {n.authorName?.toUpperCase() || 'SISTEMA'}
+                    </Text>
+                    <Text style={{ fontSize: 6, color: COLORS.gray }}>
+                      {new Date(n.created_at || n.createdAt).toLocaleString().toUpperCase()}
+                    </Text>
                   </View>
                 </View>
               ))}
@@ -431,19 +437,21 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
       {diligenciamientos.length > 0 && (
         <Page size="A4" style={S.page}>
           <View style={S.contentWrapper}>
-            <SectionHeading category="ADMINISTRACIÓN" title="DILIGENCIAMIENTOS" />
+            <SectionHeader category="ADMINISTRACIÓN" title="REGISTRO DE DILIGENCIAS" />
             
-            <View style={{ gap: 10, marginTop: 10 }}>
+            <View style={{ marginTop: 10 }}>
               {diligenciamientos.map((d: any, i: number) => (
-                <View key={i} style={{ borderBottomWidth: 1, borderBottomColor: COLORS.divider, paddingBottom: 8 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
-                    <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: COLORS.navy }}>{d.title?.toUpperCase()}</Text>
-                    <Text style={{ fontSize: 7, color: COLORS.gray }}>{new Date(d.created_at || d.fecha).toLocaleDateString().toUpperCase()}</Text>
+                <View key={i} style={[S.card, { borderLeftColor: COLORS.gold }]}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <Text style={S.cardTitle}>{d.title?.toUpperCase()}</Text>
+                    <Text style={{ fontSize: 7, color: COLORS.gray }}>
+                      {new Date(d.created_at || d.fecha).toLocaleDateString().toUpperCase()}
+                    </Text>
                   </View>
-                  <Text style={[S.articleContent, { textAlign: 'left', fontSize: 8, textTransform: 'uppercase' }]}>
-                    {d.content?.toUpperCase()}
+                  <Text style={S.cardContent}>{d.content?.toUpperCase()}</Text>
+                  <Text style={{ fontSize: 6, color: COLORS.gold, marginTop: 6, fontFamily: 'Helvetica-Bold' }}>
+                    AUTORIZADO POR: {d.authorName?.toUpperCase() || 'SISTEMA'}
                   </Text>
-                  <Text style={{ fontSize: 6, color: COLORS.gold, marginTop: 4 }}>AUTOR: {d.authorName?.toUpperCase() || 'SISTEMA'}</Text>
                 </View>
               ))}
             </View>
@@ -459,19 +467,21 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
       {personal.length > 0 && (
         <Page size="A4" style={S.page}>
           <View style={S.contentWrapper}>
-            <SectionHeading category="FUERZA" title="PERSONAL OPERATIVO" />
+            <SectionHeader category="FUERZA" title="LISTADO DE PERSONAL" />
             
             <View style={S.table}>
               <View style={[S.tableRow, S.tableHeader]}>
-                <Text style={[S.tableCell, { width: '60%' }]}>NOMBRE</Text>
-                <Text style={[S.tableCell, { width: '20%' }]}>ROL</Text>
-                <Text style={[S.tableCell, { width: '20%' }]}>ESTADO</Text>
+                <Text style={[S.tableCell, { width: '50%' }]}>APELLIDO Y NOMBRE</Text>
+                <Text style={[S.tableCell, { width: '25%', textAlign: 'center' }]}>ROL / CARGO</Text>
+                <Text style={[S.tableCell, { width: '25%', textAlign: 'center' }]}>ESTADO</Text>
               </View>
               {personal.map((p: any, i: number) => (
                 <View key={i} style={S.tableRow}>
-                  <Text style={[S.tableCell, { width: '60%', fontFamily: 'Helvetica-Bold' }]}>{p.name?.toUpperCase()}</Text>
-                  <Text style={[S.tableCell, { width: '20%' }]}>{p.role?.toUpperCase()}</Text>
-                  <Text style={[S.tableCell, { width: '20%' }]}>{p.status?.toUpperCase()}</Text>
+                  <Text style={[S.tableCell, { width: '50%', fontFamily: 'Helvetica-Bold' }]}>{p.name?.toUpperCase()}</Text>
+                  <Text style={[S.tableCell, { width: '25%', textAlign: 'center' }]}>{p.role?.toUpperCase()}</Text>
+                  <View style={{ width: '25%', alignItems: 'center' }}>
+                    <StatusBadge status={p.status} />
+                  </View>
                 </View>
               ))}
             </View>
