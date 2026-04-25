@@ -111,27 +111,34 @@ const S = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
-    marginVertical: 20,
+    gap: 15,
+    marginVertical: 30,
+    justifyContent: 'center',
   },
   statBox: {
-    width: '18.5%',
+    width: 80,
+    height: 80,
     backgroundColor: COLORS.navy,
-    padding: 12,
+    display: 'flex',
+    flexDirection: 'column',
     alignItems: 'center',
-    borderRadius: 2,
+    justifyContent: 'center',
+    borderRadius: 4,
+    borderBottomWidth: 3,
+    borderBottomColor: COLORS.gold,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: 'Helvetica-Bold',
     color: COLORS.white,
+    marginBottom: 4,
   },
   statLabel: {
     fontSize: 6,
     color: COLORS.gold,
-    marginTop: 4,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.5,
+    fontFamily: 'Helvetica-Bold',
   },
 
   // ─── TABLES ─────────────────────────────────────────────────
@@ -264,7 +271,6 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
           <Image src="/logo-pna.png" style={S.logo} />
           <Text style={S.magazineTitle}>S G A</Text>
           <Text style={[S.magazineTitle, { color: COLORS.gold, fontSize: 35, marginTop: 15 }]}>P Z B P</Text>
-          <Text style={S.magazineSubtitle}>R E S U M E N  O P E R A T I V O</Text>
           <Text style={S.coverDate}>{dateStr.toUpperCase()}</Text>
           
           <View style={S.coverRecords}>
