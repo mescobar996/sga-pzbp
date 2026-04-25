@@ -189,22 +189,6 @@ export default function Dashboard() {
             <Clock className="w-3 h-3" /> {new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
           </p>
         </div>
-
-        <div className="flex items-center gap-6 bg-[#f5f0e8] border-2 border-[#1a1a1a] p-4 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
-          <div className="relative">
-            <ProgressRing pct={completionRate} color={compColor} size={64} stroke={6} />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-[10px] font-black" style={{ color: compColor }}>{completionRate}%</span>
-            </div>
-          </div>
-          <div>
-            <span className="text-[9px] font-black uppercase tracking-widest opacity-50 block mb-1">EFICIENCIA GLOBAL</span>
-            <div className="flex items-baseline gap-1">
-              <span className="text-2xl font-black font-['Space_Grotesk']">{completedTasks}</span>
-              <span className="text-xs font-bold opacity-30">/ {tasks.length} TAREAS</span>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ─── ALERT BANNER ─── */}
@@ -225,8 +209,26 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         
-        {/* ─── LEFT COLUMN: QUICK STATS ─── */}
+        {/* ─── LEFT COLUMN: QUICK STATS & EFFICIENCY ─── */}
         <div className="lg:col-span-1 flex flex-col gap-6">
+          
+          {/* EFFICIENCY WIDGET AT TOP */}
+          <div className="flex items-center gap-6 bg-[#f5f0e8] border-2 border-[#1a1a1a] p-5 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+            <div className="relative">
+              <ProgressRing pct={completionRate} color={compColor} size={64} stroke={6} />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-[10px] font-black" style={{ color: compColor }}>{completionRate}%</span>
+              </div>
+            </div>
+            <div>
+              <span className="text-[9px] font-black uppercase tracking-widest opacity-50 block mb-1">EFICIENCIA GLOBAL</span>
+              <div className="flex items-baseline gap-1">
+                <span className="text-2xl font-black font-['Space_Grotesk']">{completedTasks}</span>
+                <span className="text-xs font-bold opacity-30">/ {tasks.length} TAREAS</span>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 lg:grid-cols-1 gap-4">
             {[
               { label: 'TAREAS', value: tasks.length, icon: ListChecks, color: 'bg-[#0055ff]', route: '/tareas' },
@@ -244,7 +246,8 @@ export default function Dashboard() {
             ))}
           </div>
 
-          <div className="p-5 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white shadow-[4px_4px_0px_0px_rgba(0,85,255,1)] flex-grow">
+          {/* TASK STATUS BAR (STRETCH FIX) */}
+          <div className="p-5 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white shadow-[4px_4px_0px_0px_rgba(0,85,255,1)]">
             <h3 className="text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-white/20 pb-2">
               <Activity className="w-3.5 h-3.5" /> ESTADO DE TAREAS
             </h3>
@@ -314,7 +317,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ─── FOOTER QUICK STATS (ALIGNED) ─── */}
+      {/* ─── FOOTER QUICK STATS ─── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
         <div className="p-4 border-2 border-[#1a1a1a] bg-white shadow-[4px_4px_0px_0px_rgba(230,59,46,1)]">
           <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-1">ALERTAS CRÍTICAS</p>
