@@ -528,35 +528,35 @@ export default function Reportes() {
   };
 
   return (
-    <div className="font-['Inter'] max-w-6xl mx-auto">
+    <div className="font-['Inter'] max-w-6xl mx-auto px-3 sm:px-4 pb-24 lg:pb-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
-        <h1 className="text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">
+        <h1 className="text-xl sm:text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">
           Generación de Reportes
         </h1>
         {totalRecords > 0 && showPreview && (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]">
             <BarChart3 className="w-5 h-5 text-[#0055ff]" />
             <span className="text-sm font-black uppercase">{totalRecords} REGISTROS</span>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Configuration Panel */}
-        <div className="lg:col-span-1 bg-white border-4 border-[#1a1a1a] p-6 shadow-[8px_8px_0px_0px_rgba(26,26,26,0.3)] h-fit">
-          <h2 className="text-lg font-black uppercase mb-6 font-['Space_Grotesk'] border-b-4 border-[#1a1a1a] pb-2">
+        <div className="lg:col-span-1 bg-[#f5f0e8] border-2 border-[#1a1a1a] p-6 shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] h-fit">
+          <h2 className="text-lg font-black uppercase mb-6 font-['Space_Grotesk'] border-b-2 border-[#1a1a1a] pb-2">
             Configuración
           </h2>
 
           <div className="space-y-5">
             <div>
-              <label className="block text-xs font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                <Database className="w-4 h-4" /> Fuente de Datos
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                <Database className="w-3.5 h-3.5" /> Fuente de Datos
               </label>
               <select
                 value={dataSource}
                 onChange={(e) => setDataSource(e.target.value)}
-                className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
+                className="w-full p-3 border-2 border-[#1a1a1a] bg-white focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
               >
                 <option value="todas">Todas las fuentes</option>
                 <option value="visitas">Visitas Técnicas</option>
@@ -575,11 +575,11 @@ export default function Reportes() {
             />
 
             <div>
-              <label className="block text-xs font-black uppercase tracking-widest mb-2">Ordenar por</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-2">Ordenar por</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
+                className="w-full p-3 border-2 border-[#1a1a1a] bg-white focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
               >
                 <option value="fecha_desc">Fecha (Más reciente)</option>
                 <option value="fecha_asc">Fecha (Más antiguo)</option>
@@ -588,24 +588,24 @@ export default function Reportes() {
             </div>
 
             <div>
-              <label className="block text-xs font-black uppercase tracking-widest mb-2">Formato</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-2">Formato</label>
               <FormatSelector value={format} onChange={setFormat} />
             </div>
 
             <button
               onClick={handleGenerateReport}
               disabled={isGenerating}
-              className="w-full py-3.5 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-white hover:text-[#1a1a1a] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="w-full py-4 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-white hover:text-[#1a1a1a] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed text-sm"
             >
-              <Download className="w-5 h-5" /> {isGenerating ? 'Generando...' : 'Generar Reporte'}
+              <Download className="w-5 h-5" /> {isGenerating ? 'Generando...' : 'Descargar Reporte'}
             </button>
 
             <button
               onClick={loadPreview}
               disabled={isLoadingPreview}
-              className="w-full py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#f5f0e8] transition-all flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 text-sm"
+              className="w-full py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#f5f0e8] transition-all flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 text-xs sm:text-sm"
             >
-              <Eye className="w-4 h-4" /> {isLoadingPreview ? 'CARGANDO...' : 'VISTA PREVIA'}
+              <Eye className="w-4 h-4" /> {isLoadingPreview ? 'CARGANDO...' : 'CARGAR VISTA PREVIA'}
             </button>
           </div>
         </div>
@@ -616,54 +616,54 @@ export default function Reportes() {
             <motion.div
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
-              className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] p-6"
+              className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-6"
             >
-              <h2 className="text-lg font-black uppercase mb-4 font-['Space_Grotesk'] border-b-2 border-[#1a1a1a] pb-2">
-                VISTA PREVIA DE DATOS
+              <h2 className="text-lg font-black uppercase mb-6 font-['Space_Grotesk'] border-b-2 border-[#1a1a1a] pb-2">
+                Vista Previa de Datos
               </h2>
 
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {Object.entries(dataCounts).map(([key, count]) => (
-                  <div key={key} className="p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] flex items-center gap-3">
-                    <div className="p-2 bg-[#0055ff] text-white border-2 border-[#1a1a1a]">
+                  <div key={key} className="p-4 border-2 border-[#1a1a1a] bg-[#f5f0e8] flex flex-col gap-2 shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]">
+                    <div className="p-2 bg-[#1a1a1a] text-white border-2 border-[#1a1a1a] w-fit">
                       {sourceIcons[key] || <Database className="w-4 h-4" />}
                     </div>
                     <div>
-                      <p className="text-[10px] font-bold uppercase opacity-60">{key}</p>
-                      <p className="text-xl font-black font-['Space_Grotesk']">{count}</p>
+                      <p className="text-[10px] font-black uppercase opacity-60 leading-tight mb-1">{key}</p>
+                      <p className="text-2xl font-black font-['Space_Grotesk']">{count}</p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="space-y-8 max-h-[600px] overflow-y-auto pr-2">
+              <div className="space-y-10 max-h-[700px] overflow-y-auto pr-3 custom-scrollbar">
                 {Object.entries(dataPreview).map(([key, records]) => {
                   const columns = getColumnConfig(key);
                   const hasColumns = columns.length > 0;
 
                   return (
-                    <div key={key}>
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-black uppercase flex items-center gap-2">
+                    <div key={key} className="relative">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-black uppercase flex items-center gap-2 bg-[#f5f0e8] border-2 border-[#1a1a1a] px-3 py-1 shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]">
                           {sourceIcons[key] || <Database className="w-4 h-4" />}
                           {sourceLabels[key] || key.toUpperCase()}
                         </h3>
-                        <span className="text-xs font-bold opacity-50 bg-[#f5f0e8] border-2 border-[#1a1a1a] px-2 py-0.5 uppercase">
-                          {records.length} REGISTRO{records.length !== 1 ? 'S' : ''}
+                        <span className="text-[10px] font-black uppercase bg-[#1a1a1a] text-white px-2 py-0.5 border-2 border-[#1a1a1a]">
+                          {records.length} REGISTROS
                         </span>
                       </div>
 
                       {records.length > 0 ? (
-                        <div className="overflow-x-auto border-2 border-[#1a1a1a]">
+                        <div className="overflow-x-auto border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]">
                           {hasColumns ? (
                             <table className="w-full text-left border-collapse">
                               <thead>
                                 <tr className="bg-[#1a1a1a] text-white">
-                                  <th className="p-3 text-[10px] font-black uppercase tracking-wider w-10">#</th>
+                                  <th className="p-3 text-[10px] font-black uppercase tracking-widest w-10 border-r border-white/20">#</th>
                                   {columns.map((col) => (
                                     <th
                                       key={col.field}
-                                      className={`p-3 text-[10px] font-black uppercase tracking-wider ${col.width}`}
+                                      className={`p-3 text-[10px] font-black uppercase tracking-widest border-r border-white/20 last:border-r-0 ${col.width}`}
                                     >
                                       {col.label}
                                     </th>
@@ -671,12 +671,12 @@ export default function Reportes() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {records.slice(0, 8).map((record, idx) => (
+                                {records.slice(0, 10).map((record, idx) => (
                                   <tr
                                     key={idx}
-                                    className={`border-t border-[#1a1a1a]/10 ${idx % 2 === 0 ? 'bg-[#f5f0e8]' : 'bg-white'} hover:bg-[#0055ff]/5 transition-colors`}
+                                    className={`border-t-2 border-[#1a1a1a] ${idx % 2 === 0 ? 'bg-[#f5f0e8]' : 'bg-white'} hover:bg-[#0055ff]/10 transition-colors`}
                                   >
-                                    <td className="p-3 text-xs font-bold opacity-30">{idx + 1}</td>
+                                    <td className="p-3 text-[10px] font-black border-r border-[#1a1a1a] text-center">{idx + 1}</td>
                                     {columns.map((col) => {
                                       const rawVal = record[col.field];
                                       const displayVal = formatValue(rawVal, col.field);
@@ -687,20 +687,20 @@ export default function Reportes() {
                                         col.field === 'attachments';
 
                                       return (
-                                        <td key={col.field} className="p-3 uppercase">
+                                        <td key={col.field} className="p-3 uppercase border-r border-[#1a1a1a] last:border-r-0">
                                           {isBadge && typeof rawVal === 'string' && rawVal ? (
                                             <span
-                                              className={`inline-block px-2 py-0.5 text-[10px] font-black uppercase tracking-wider border border-[#1a1a1a] ${col.field === 'priority' ? getPriorityBadge(rawVal) : getStatusBadge(rawVal)}`}
+                                              className={`inline-block px-2 py-0.5 text-[9px] font-black uppercase tracking-tighter border-2 border-[#1a1a1a] shadow-[1px_1px_0px_0px_rgba(26,26,26,1)] ${col.field === 'priority' ? getPriorityBadge(rawVal) : getStatusBadge(rawVal)}`}
                                             >
                                               {rawVal.replace('_', ' ')}
                                             </span>
                                           ) : isCount && Array.isArray(rawVal) && rawVal.length > 0 ? (
-                                            <span className="inline-block px-2 py-0.5 text-[10px] font-black tracking-wider border border-[#1a1a1a] bg-[#f5f0e8] uppercase">
+                                            <span className="inline-block px-2 py-0.5 text-[10px] font-black tracking-wider border-2 border-[#1a1a1a] bg-white shadow-[1px_1px_0px_0px_rgba(26,26,26,1)] uppercase">
                                               {col.field === 'subtasks' ? displayVal : `${rawVal.length}`}
                                             </span>
                                           ) : (
                                             <span
-                                              className="text-xs font-medium uppercase truncate block max-w-[250px]"
+                                              className="text-xs font-bold uppercase truncate block max-w-[250px]"
                                               title={String(rawVal ?? '')}
                                             >
                                               {displayVal || '—'}
@@ -717,13 +717,13 @@ export default function Reportes() {
                             <table className="w-full text-left border-collapse">
                               <thead>
                                 <tr className="bg-[#1a1a1a] text-white">
-                                  <th className="p-3 text-[10px] font-black uppercase tracking-wider w-10">#</th>
+                                  <th className="p-3 text-[10px] font-black uppercase tracking-widest w-10 border-r border-white/20">#</th>
                                   {Object.keys(records[0])
                                     .slice(0, 6)
                                     .map((header) => (
                                       <th
                                         key={header}
-                                        className="p-3 text-[10px] font-black uppercase tracking-wider min-w-[100px]"
+                                        className="p-3 text-[10px] font-black uppercase tracking-widest border-r border-white/20 last:border-r-0 min-w-[100px]"
                                       >
                                         {header}
                                       </th>
@@ -731,18 +731,18 @@ export default function Reportes() {
                                 </tr>
                               </thead>
                               <tbody>
-                                {records.slice(0, 8).map((record, idx) => (
+                                {records.slice(0, 10).map((record, idx) => (
                                   <tr
                                     key={idx}
-                                    className={`border-t border-[#1a1a1a]/10 ${idx % 2 === 0 ? 'bg-[#f5f0e8]' : 'bg-white'}`}
+                                    className={`border-t-2 border-[#1a1a1a] ${idx % 2 === 0 ? 'bg-[#f5f0e8]' : 'bg-white'}`}
                                   >
-                                    <td className="p-3 text-xs font-bold opacity-30">{idx + 1}</td>
+                                    <td className="p-3 text-[10px] font-black border-r border-[#1a1a1a] text-center">{idx + 1}</td>
                                     {Object.values(record)
                                       .slice(0, 6)
                                       .map((val: any, i) => (
                                         <td
                                           key={i}
-                                          className="p-3 text-xs font-medium uppercase truncate max-w-[200px]"
+                                          className="p-3 text-[10px] font-black uppercase truncate max-w-[200px] border-r border-[#1a1a1a] last:border-r-0"
                                           title={String(val ?? '')}
                                         >
                                           {formatValue(val, Object.keys(record)[i])}
@@ -753,16 +753,16 @@ export default function Reportes() {
                               </tbody>
                             </table>
                           )}
-                          {records.length > 8 && (
-                            <div className="p-3 text-center text-xs font-bold uppercase tracking-wider opacity-50 border-t-2 border-[#1a1a1a]/10 bg-[#f5f0e8]">
-                              Mostrando 8 de {records.length} registros
+                          {records.length > 10 && (
+                            <div className="p-3 text-center text-[10px] font-black uppercase tracking-widest opacity-60 border-t-2 border-[#1a1a1a] bg-[#f5f0e8]">
+                              Mostrando 10 de {records.length} registros
                             </div>
                           )}
                         </div>
                       ) : (
-                        <p className="text-xs font-bold uppercase opacity-50 p-6 text-center border-2 border-dashed border-[#1a1a1a]/20 bg-[#f5f0e8]/50">
-                          Sin datos
-                        </p>
+                        <div className="p-10 text-center border-4 border-dashed border-[#1a1a1a]/20 bg-[#f5f0e8]/50">
+                           <p className="text-xs font-black uppercase opacity-40">Sin datos disponibles</p>
+                        </div>
                       )}
                     </div>
                   );
@@ -770,15 +770,15 @@ export default function Reportes() {
               </div>
             </motion.div>
           ) : (
-            <div className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,0.3)] p-12 flex flex-col items-center justify-center text-center">
-              <BarChart3 className="w-16 h-16 mb-4 opacity-20" />
-              <h3 className="text-lg font-black uppercase mb-2">SIN VISTA PREVIA</h3>
-              <p className="text-sm font-medium opacity-50 max-w-sm mb-4 uppercase">
-                CONFIGURA LOS FILTROS Y HAZ CLIC EN "VISTA PREVIA" PARA VER LOS DATOS ANTES DE GENERAR EL REPORTE.
+            <div className="bg-[#f5f0e8] border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-16 flex flex-col items-center justify-center text-center">
+              <BarChart3 className="w-20 h-20 mb-6 opacity-20" />
+              <h3 className="text-2xl font-black uppercase mb-3 font-['Space_Grotesk']">SIN VISTA PREVIA</h3>
+              <p className="text-xs font-bold opacity-60 max-w-sm mb-8 uppercase leading-relaxed">
+                CONFIGURA LOS FILTROS Y HAZ CLIC EN "CARGAR VISTA PREVIA" PARA ANALIZAR LOS DATOS ANTES DE GENERAR EL REPORTE FINAL.
               </p>
               <button
                 onClick={loadPreview}
-                className="px-6 py-3 bg-[#0055ff] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm hover:bg-[#1a1a1a] hover:text-white transition-all shadow-[4px_4px_0px_0px_rgba(26,26,26,0.3)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                className="px-8 py-4 bg-[#0055ff] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm hover:bg-[#1a1a1a] transition-all shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
               >
                 Cargar Vista Previa
               </button>
