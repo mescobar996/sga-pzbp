@@ -132,6 +132,7 @@ export interface Diligenciamiento {
   id: string;
   title: string;
   content: string;
+  category?: string;
   fecha?: string;
   createdAt: string;
   authorId: string;
@@ -149,6 +150,15 @@ export interface AppNotification {
   recipientId?: string;
 }
 
+export interface DiligenciamientoCategory {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+  createdAt: string;
+  authorId: string;
+}
+
 export type CollectionName =
   | 'tasks'
   | 'task_history'
@@ -157,4 +167,6 @@ export type CollectionName =
   | 'visitas'
   | 'novedades'
   | 'notifications'
+  | 'diligenciamientos'
+  | 'diligenciamiento_categories'
   | 'users';

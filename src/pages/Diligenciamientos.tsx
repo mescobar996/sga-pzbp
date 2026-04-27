@@ -15,6 +15,13 @@ import {
   ChevronRight,
   Save,
   Share2,
+  Monitor,
+  Globe,
+  Settings,
+  ShieldCheck,
+  Layout,
+  MoreHorizontal,
+  ArrowLeft,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -29,9 +36,21 @@ import {
   deleteDiligenciamiento,
   uploadDiligenciamientoAttachment,
   onDiligenciamientosChange,
+  getCategories,
+  onCategoriesChange,
 } from '../db/diligenciamientos';
 import { addNotification } from '../db/notifications';
 import { getCurrentUserId, supabase, withTimeout } from '../db/client';
+import * as LucideIcons from 'lucide-react';
+
+const DEFAULT_CATEGORIES = [
+  { id: 'REPARACIONES PC / NOTEBOOK', label: 'REPARACIONES PC / NOTEBOOK', icon: 'Monitor', color: 'bg-[#0055ff]' },
+  { id: 'CONFIGURACIONES REDES', label: 'CONFIGURACIONES REDES', icon: 'Globe', color: 'bg-[#00cc66]' },
+  { id: 'SOPORTE TÉCNICO', label: 'SOPORTE TÉCNICO', icon: 'Settings', color: 'bg-[#ff9900]' },
+  { id: 'MANTENIMIENTO PREVENTIVO', label: 'MANTENIMIENTO PREVENTIVO', icon: 'ShieldCheck', color: 'bg-[#1a1a1a]' },
+  { id: 'GESTIÓN ADMINISTRATIVA', label: 'GESTIÓN ADMINISTRATIVA', icon: 'Layout', color: 'bg-[#e63b2e]' },
+  { id: 'OTROS', label: 'OTROS', icon: 'MoreHorizontal', color: 'bg-gray-500' },
+];
 
 function handleError(error: unknown) {
   console.error('Error:', error);
@@ -48,16 +67,20 @@ interface Diligenciamiento {
   id: string;
   title: string;
   content: string;
+  category?: string;
   createdAt: string;
   authorId: string;
   authorName: string;
   attachments?: Attachment[];
+  fecha?: string;
 }
 
 export default function Diligenciamientos() {
   const { isAdmin } = useOutletContext<{ isAdmin: boolean }>();
   const [diligenciamientos, setDiligenciamientos] = useState<Diligenciamiento[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -89,17 +112,42 @@ export default function Diligenciamientos() {
 
   useEffect(() => {
     loadDiligenciamientos();
-    const unsub = onDiligenciamientosChange((data) => {
+    const unsubDili = onDiligenciamientosChange((data) => {
       setDiligenciamientos(data);
       setLoading(false);
     });
 
+    const unsubCat = onCategoriesChange((data) => {
+      const dbCats = data.map(c => ({ id: c.name, label: c.name, icon: c.icon, color: c.color, isDynamic: true }));
+      // Combine defaults (if not already in DB) with DB categories
+      const combined = [...dbCats];
+      DEFAULT_CATEGORIES.forEach(def => {
+        if (!combined.find(c => c.id === def.id)) {
+          combined.push(def);
+        }
+      });
+      setCategories(combined);
+    });
+
     // Auto-refresh when user returns to tab
-    const onFocus = () => loadDiligenciamientos();
+    const onFocus = () => {
+      loadDiligenciamientos();
+      getCategories().then(data => {
+        const dbCats = data.map(c => ({ id: c.name, label: c.name, icon: c.icon, color: c.color, isDynamic: true }));
+        const combined = [...dbCats];
+        DEFAULT_CATEGORIES.forEach(def => {
+          if (!combined.find(c => c.id === def.id)) {
+            combined.push(def);
+          }
+        });
+        setCategories(combined);
+      });
+    };
     window.addEventListener('focus', onFocus);
 
     return () => {
-      unsub();
+      unsubDili();
+      unsubCat();
       window.removeEventListener('focus', onFocus);
     };
   }, []);
@@ -116,7 +164,13 @@ export default function Diligenciamientos() {
   };
 
   const openNewModal = () => {
-    setCurrentDiligenciamiento({ title: '', content: '', fecha: '', attachments: [] });
+    setCurrentDiligenciamiento({ 
+      title: '', 
+      content: '', 
+      fecha: '', 
+      category: selectedCategory || 'REPARACIONES PC / NOTEBOOK',
+      attachments: [] 
+    });
     setPendingFiles([]);
     setAttachmentsToDelete([]);
     setIsEditing(false);
@@ -124,7 +178,10 @@ export default function Diligenciamientos() {
   };
 
   const openEditModal = (diligenciamiento: Diligenciamiento) => {
-    setCurrentDiligenciamiento(diligenciamiento);
+    setCurrentDiligenciamiento({
+      ...diligenciamiento,
+      category: diligenciamiento.category || 'OTROS'
+    });
     setPendingFiles([]);
     setAttachmentsToDelete([]);
     setIsEditing(true);
@@ -137,7 +194,6 @@ export default function Diligenciamientos() {
       currentDiligenciamiento.content?.trim() ||
       pendingFiles.length > 0;
     if (hasChanges && !isUploading) {
-      setConfirmModal({ isOpen: false, id: null });
       if (!window.confirm('¿Tenés cambios sin guardar? Si cerrás, se van a perder.')) return;
     }
     setIsModalOpen(false);
@@ -179,6 +235,7 @@ export default function Diligenciamientos() {
         await updateDiligenciamiento(currentDiligenciamiento.id, {
           title: currentDiligenciamiento.title,
           content: currentDiligenciamiento.content,
+          category: currentDiligenciamiento.category,
           fecha: currentDiligenciamiento.fecha,
           attachments: finalAttachments as any,
         });
@@ -187,6 +244,7 @@ export default function Diligenciamientos() {
         await addDiligenciamiento({
           title: currentDiligenciamiento.title,
           content: currentDiligenciamiento.content,
+          category: currentDiligenciamiento.category,
           fecha: currentDiligenciamiento.fecha,
           attachments: finalAttachments,
         });
@@ -258,7 +316,9 @@ export default function Diligenciamientos() {
       matchesDateTo = itemDate <= new Date(dateTo + 'T23:59:59');
     }
 
-    return matchesSearch && matchesDateFrom && matchesDateTo;
+    const matchesCategory = !selectedCategory || d.category === selectedCategory || (selectedCategory === 'OTROS' && !d.category);
+
+    return matchesSearch && matchesDateFrom && matchesDateTo && matchesCategory;
   }).sort((a, b) => {
     const dateA = a.fecha ? new Date(a.fecha) : new Date(a.createdAt);
     const dateB = b.fecha ? new Date(b.fecha) : new Date(b.createdAt);
@@ -276,183 +336,247 @@ export default function Diligenciamientos() {
   );
 
   return (
-    <div className="font-['Inter'] max-w-6xl mx-auto">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-        <h1 className="text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Diligenciamientos</h1>
+    <div className="font-['Inter'] max-w-6xl mx-auto px-3 sm:px-4 pb-24 lg:pb-8">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+        <div className="flex items-center gap-4">
+          {selectedCategory && (
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className="p-2 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
+              title="Volver a Módulos"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+          )}
+          <div>
+            <h1 className="text-xl sm:text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">
+              {selectedCategory ? selectedCategory : 'Diligenciamientos'}
+            </h1>
+            {selectedCategory && (
+              <p className="text-[10px] font-black opacity-40 uppercase tracking-widest mt-1">
+                MÓDULO OPERATIVO
+              </p>
+            )}
+          </div>
+        </div>
         <div className="flex gap-4">
           <button
             onClick={openNewModal}
-            className="px-4 py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-sm"
+            className="px-4 py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-xs sm:text-sm"
           >
             <Plus className="w-4 h-4" /> Nuevo Diligenciamiento
           </button>
         </div>
       </div>
 
-      <FilterBar
-        search={{
-          value: searchQuery,
-          onChange: setSearchQuery,
-          placeholder: 'BUSCAR DILIGENCIAMIENTOS...'
-        }}
-        dateRange={{
-          from: { value: dateFrom, onChange: setDateFrom, label: 'DESDE' },
-          to: { value: dateTo, onChange: setDateTo, label: 'HASTA' }
-        }}
-        sort={{
-          value: sortBy,
-          onChange: setSortBy,
-          label: 'ORDENAR POR',
-          options: [
-            { label: 'Fecha (Más reciente)', value: 'fecha_desc' },
-            { label: 'Fecha (Más antiguo)', value: 'fecha_asc' },
-            { label: 'Título (A-Z)', value: 'titulo_az' },
-            { label: 'Título (Z-A)', value: 'titulo_za' },
-          ]
-        }}
-        onClear={() => {
-          setSearchQuery('');
-          setDateFrom('');
-          setDateTo('');
-          setSortBy('fecha_desc');
-        }}
-      />
+      {!selectedCategory ? (
+        /* MODULE GRID VIEW */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+          {categories.map((cat) => {
+            const count = diligenciamientos.filter(d => 
+              d.category === cat.id || (cat.id === 'OTROS' && !d.category)
+            ).length;
 
-      <div className="flex flex-col gap-4">
-        {loading ? (
-          <SkeletonPage title="Diligenciamientos" cardCount={3} layout="list" />
-        ) : filteredDiligenciamientos.length === 0 ? (
-          <div className="text-center p-8 bg-white border-2 border-[#1a1a1a] font-black uppercase text-xl opacity-50">
-            No hay diligenciamientos que coincidan con los filtros
-          </div>
-        ) : (
-          <AnimatePresence mode="popLayout">
-            {paginatedDiligenciamientos.map((d) => (
+            const IconComponent = (LucideIcons as any)[cat.icon] || LucideIcons.Layout;
+
+            return (
               <motion.div
-                key={d.id}
-                layout
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                onClick={() => openEditModal(d)}
-                className="bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-5 group cursor-pointer hover:bg-[#f5f0e8] transition-colors"
+                key={cat.id}
+                whileHover={{ scale: 1.02, x: 2, y: 2 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setSelectedCategory(cat.id)}
+                className="bg-white border-4 border-[#1a1a1a] p-6 cursor-pointer shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] hover:shadow-none transition-all flex flex-col gap-6 group"
               >
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="text-xl font-black uppercase tracking-tight font-['Space_Grotesk'] mb-1">
-                      {d.title}
-                    </h3>
-                    <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest opacity-60">
-                      <span>{d.fecha ? new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-ES') : new Date(d.createdAt).toLocaleString()}</span>
-                      <span>•</span>
-                      <span>Por: {d.authorName}</span>
-                    </div>
-                  </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleShareDiligenciamiento(d);
-                      }}
-                      className="min-h-[44px] p-1.5 border-2 border-[#1a1a1a] hover:bg-[#00cc66] hover:text-white transition-colors"
-                      title="Compartir"
-                    >
-                      <Share2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEditModal(d);
-                      }}
-                      className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
-                      title="Editar"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    {isAdmin && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          triggerDelete(d.id);
-                        }}
-                        className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
+                <div className={`w-16 h-16 ${cat.color} border-4 border-[#1a1a1a] flex items-center justify-center text-white shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] group-hover:translate-x-1 group-hover:translate-y-1 group-hover:shadow-none transition-all`}>
+                  <IconComponent className="w-8 h-8" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-black font-['Space_Grotesk'] uppercase leading-tight mb-2">{cat.label}</h3>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-black opacity-40 uppercase tracking-widest">{count} REGISTROS</span>
+                    <ArrowLeft className="w-5 h-5 rotate-180 opacity-0 group-hover:opacity-100 transition-opacity" />
                   </div>
                 </div>
-                <div className="prose prose-sm max-w-none mb-3">
-                  <p className="whitespace-pre-wrap font-medium leading-relaxed text-sm">{d.content}</p>
-                </div>
-
-                {d.attachments && d.attachments.length > 0 && (
-                  <div className="mt-4 pt-4 border-t-2 border-[#1a1a1a]/10">
-                    <h4 className="text-xs font-bold uppercase tracking-widest opacity-70 mb-3">Archivos Adjuntos</h4>
-                    <div className="flex flex-wrap gap-4">
-                      {d.attachments.map((att, idx) => {
-                        const isImage = att.type.startsWith('image/');
-                        return (
-                          <div
-                            key={idx}
-                            onClick={() => (isImage ? setPreviewImage(att.url) : window.open(att.url, '_blank'))}
-                            className="flex flex-col border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors group w-48 overflow-hidden cursor-pointer"
-                            title={att.name}
-                          >
-                            {isImage ? (
-                              <div className="h-32 w-full border-b-2 border-[#1a1a1a] bg-white overflow-hidden">
-                                <img
-                                  src={att.url}
-                                  alt={att.name}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                />
-                              </div>
-                            ) : (
-                              <div className="h-32 w-full border-b-2 border-[#1a1a1a] bg-white flex items-center justify-center text-[#1a1a1a]">
-                                {getFileIcon(
-                                  att.type,
-                                  'w-12 h-12 opacity-50 group-hover:opacity-100 transition-opacity',
-                                )}
-                              </div>
-                            )}
-                            <div className="p-3 flex items-center gap-2">
-                              {getFileIcon(att.type, 'w-4 h-4 flex-shrink-0')}
-                              <span className="text-xs font-bold truncate">{att.name}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
               </motion.div>
-            ))}
-          </AnimatePresence>
-        )}
-      </div>
-
-      {/* Pagination Controls */}
-      {totalPages > 1 && (
-        <div className="flex justify-center items-center gap-4 mt-6">
-          <button
-            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-            disabled={currentPage === 1}
-            className="p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <span className="font-black uppercase tracking-widest text-sm">
-            Página {currentPage} de {totalPages}
-          </span>
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-            disabled={currentPage === totalPages}
-            className="p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+            );
+          })}
         </div>
+      ) : (
+        /* LIST VIEW */
+        <>
+          <FilterBar
+            search={{
+              value: searchQuery,
+              onChange: setSearchQuery,
+              placeholder: `BUSCAR EN ${selectedCategory}...`
+            }}
+            dateRange={{
+              from: { value: dateFrom, onChange: setDateFrom, label: 'DESDE' },
+              to: { value: dateTo, onChange: setDateTo, label: 'HASTA' }
+            }}
+            sort={{
+              value: sortBy,
+              onChange: setSortBy,
+              label: 'ORDENAR POR',
+              options: [
+                { label: 'Fecha (Más reciente)', value: 'fecha_desc' },
+                { label: 'Fecha (Más antiguo)', value: 'fecha_asc' },
+                { label: 'Título (A-Z)', value: 'titulo_az' },
+                { label: 'Título (Z-A)', value: 'titulo_za' },
+              ]
+            }}
+            onClear={() => {
+              setSearchQuery('');
+              setDateFrom('');
+              setDateTo('');
+              setSortBy('fecha_desc');
+            }}
+          />
+
+          <div className="flex flex-col gap-4">
+            {loading ? (
+              <SkeletonPage title="Diligenciamientos" cardCount={3} layout="list" />
+            ) : filteredDiligenciamientos.length === 0 ? (
+              <div className="text-center p-16 bg-white border-2 border-[#1a1a1a] font-black uppercase text-xl opacity-50 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+                No hay diligenciamientos en este módulo
+              </div>
+            ) : (
+              <AnimatePresence mode="popLayout">
+                {paginatedDiligenciamientos.map((d) => (
+                  <motion.div
+                    key={d.id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    onClick={() => openEditModal(d)}
+                    className="bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-5 group cursor-pointer hover:bg-[#f5f0e8] transition-colors"
+                  >
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <h3 className="text-xl font-black uppercase tracking-tight font-['Space_Grotesk'] mb-1">
+                          {d.title}
+                        </h3>
+                        <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest opacity-60">
+                          <span>{d.fecha ? new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-ES') : new Date(d.createdAt).toLocaleString()}</span>
+                          <span>•</span>
+                          <span>Por: {d.authorName}</span>
+                          {d.category && (
+                            <>
+                              <span>•</span>
+                              <span className="text-[#0055ff]">{d.category}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleShareDiligenciamiento(d);
+                          }}
+                          className="min-h-[44px] p-1.5 border-2 border-[#1a1a1a] hover:bg-[#00cc66] hover:text-white transition-colors"
+                          title="Compartir"
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openEditModal(d);
+                          }}
+                          className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                          title="Editar"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        {isAdmin && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              triggerDelete(d.id);
+                            }}
+                            className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="prose prose-sm max-w-none mb-3">
+                      <p className="whitespace-pre-wrap font-medium leading-relaxed text-sm">{d.content}</p>
+                    </div>
+
+                    {d.attachments && d.attachments.length > 0 && (
+                      <div className="mt-4 pt-4 border-t-2 border-[#1a1a1a]/10">
+                        <h4 className="text-xs font-bold uppercase tracking-widest opacity-70 mb-3">Archivos Adjuntos</h4>
+                        <div className="flex flex-wrap gap-4">
+                          {d.attachments.map((att, idx) => {
+                            const isImage = att.type.startsWith('image/');
+                            return (
+                              <div
+                                key={idx}
+                                onClick={() => (isImage ? setPreviewImage(att.url) : window.open(att.url, '_blank'))}
+                                className="flex flex-col border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors group w-48 overflow-hidden cursor-pointer"
+                                title={att.name}
+                              >
+                                {isImage ? (
+                                  <div className="h-32 w-full border-b-2 border-[#1a1a1a] bg-white overflow-hidden">
+                                    <img
+                                      src={att.url}
+                                      alt={att.name}
+                                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="h-32 w-full border-b-2 border-[#1a1a1a] bg-white flex items-center justify-center text-[#1a1a1a]">
+                                    {getFileIcon(
+                                      att.type,
+                                      'w-12 h-12 opacity-50 group-hover:opacity-100 transition-opacity',
+                                    )}
+                                  </div>
+                                )}
+                                <div className="p-3 flex items-center gap-2">
+                                  {getFileIcon(att.type, 'w-4 h-4 flex-shrink-0')}
+                                  <span className="text-xs font-bold truncate">{att.name}</span>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            )}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-6">
+              <button
+                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <span className="font-black uppercase tracking-widest text-sm">
+                Página {currentPage} de {totalPages}
+              </span>
+              <button
+                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+        </>
       )}
 
       <AnimatePresence>
@@ -480,6 +604,21 @@ export default function Diligenciamientos() {
 
             <form onSubmit={handleSave} className="p-4 sm:p-6">
               <div className="grid grid-cols-1 gap-4 mb-6">
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-widest mb-1">Categoría / Módulo</label>
+                  <select
+                    value={currentDiligenciamiento.category || ''}
+                    onChange={(e) => setCurrentDiligenciamiento({ ...currentDiligenciamiento, category: e.target.value })}
+                    className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
+                    required
+                  >
+                    <option value="" disabled>Seleccionar Categoría...</option>
+                    {categories.map(cat => (
+                      <option key={cat.id} value={cat.id}>{cat.label}</option>
+                    ))}
+                  </select>
+                </div>
+
                 <div>
                   <label className="block text-xs font-black uppercase tracking-widest">Título</label>
                   <input

@@ -12,24 +12,49 @@ import {
   FileJson,
   FileSpreadsheet,
   Crosshair,
+  Layout,
+  Monitor,
+  Globe,
+  Settings,
+  ShieldCheck,
+  MoreHorizontal,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
 import { getPersonal, addPersonal, updatePersonal, deletePersonal, onPersonalChange } from '../db/personal';
 import { getLocations, addLocation, updateLocation, deleteLocation, onLocationsChange } from '../db/locations';
+import { getCategories, addCategory, updateCategory, deleteCategory, onCategoriesChange } from '../db/diligenciamientos';
 import { supabase, getCurrentUserId } from '../db/client';
 import * as XLSX from 'xlsx';
 import { useOutletContext } from 'react-router-dom';
 import { personalSchema, locationSchema } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import { DataTable } from '../components/DataTable';
-import type { Personal, Location } from '../types';
+import type { Personal, Location, DiligenciamientoCategory } from '../types';
 import LocationMapPicker from '../components/LocationMapPicker';
 
 function handleError(error: unknown) {
   console.error('Error:', error);
   toast.error('Error al procesar la solicitud');
 }
+
+const ICON_OPTIONS = [
+  { name: 'Monitor', icon: Monitor },
+  { name: 'Globe', icon: Globe },
+  { name: 'Settings', icon: Settings },
+  { name: 'ShieldCheck', icon: ShieldCheck },
+  { name: 'Layout', icon: Layout },
+  { name: 'MoreHorizontal', icon: MoreHorizontal },
+];
+
+const COLOR_OPTIONS = [
+  { name: 'Azul', value: 'bg-[#0055ff]' },
+  { name: 'Verde', value: 'bg-[#00cc66]' },
+  { name: 'Naranja', value: 'bg-[#ff9900]' },
+  { name: 'Negro', value: 'bg-[#1a1a1a]' },
+  { name: 'Rojo', value: 'bg-[#e63b2e]' },
+  { name: 'Gris', value: 'bg-gray-500' },
+];
 
 export default function BaseDatos() {
   const { isAdmin } = useOutletContext<{ isAdmin: boolean }>();
@@ -49,6 +74,7 @@ export default function BaseDatos() {
   // Data states
   const [personnel, setPersonnel] = useState<Personal[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
+  const [categories, setCategories] = useState<DiligenciamientoCategory[]>([]);
 
   // System stats
   const [systemStats, setSystemStats] = useState({
@@ -60,8 +86,10 @@ export default function BaseDatos() {
   // Modal states
   const [isPersonalModalOpen, setIsPersonalModalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [editingPersonal, setEditingPersonal] = useState<Personal | null>(null);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [editingCategory, setEditingCategory] = useState<DiligenciamientoCategory | null>(null);
   const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
 
   // Form states
@@ -72,6 +100,11 @@ export default function BaseDatos() {
     status: 'Operativo',
     latitude: undefined as number | undefined,
     longitude: undefined as number | undefined,
+  });
+  const [categoryForm, setCategoryForm] = useState({
+    name: '',
+    icon: 'Layout',
+    color: 'bg-[#1a1a1a]',
   });
 
   // Filter states
@@ -89,8 +122,22 @@ export default function BaseDatos() {
       setLoading(false);
     });
 
+    const unsubCategories = onCategoriesChange((data) => {
+      setCategories(data);
+    });
+
     const fetchStats = async () => {
-      const cols = ['tasks', 'visitas', 'novedades', 'personal', 'locations', 'task_history', 'notifications'];
+      const cols = [
+        'tasks',
+        'visitas',
+        'novedades',
+        'personal',
+        'locations',
+        'task_history',
+        'notifications',
+        'diligenciamientos',
+        'diligenciamiento_categories',
+      ];
       const counts: Record<string, number> = {};
       let total = 0;
 
@@ -120,6 +167,7 @@ export default function BaseDatos() {
     return () => {
       unsubPersonal();
       unsubLocations();
+      unsubCategories();
       window.removeEventListener('focus', onFocus);
     };
   }, []);
@@ -212,6 +260,34 @@ export default function BaseDatos() {
     try {
       await deleteLocation(id);
       toast.success('Ubicación eliminada');
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const handleSaveCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!categoryForm.name.trim()) return;
+
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, categoryForm);
+        toast.success('Módulo actualizado');
+      } else {
+        await addCategory(categoryForm);
+        toast.success('Módulo añadido');
+      }
+      setIsCategoryModalOpen(false);
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    if (!window.confirm('¿Eliminar este módulo? Los registros existentes se moverán a OTROS.')) return;
+    try {
+      await deleteCategory(id);
+      toast.success('Módulo eliminado');
     } catch (error) {
       handleError(error);
     }
@@ -765,6 +841,45 @@ export default function BaseDatos() {
               accentColor="#0055ff"
             />
 
+            <DataTable<DiligenciamientoCategory>
+              data={categories}
+              columns={[
+                { 
+                  key: 'name', 
+                  label: 'Módulo',
+                  render: (c) => (
+                    <div className="flex items-center gap-3">
+                      <div className={`w-8 h-8 ${c.color} border-2 border-[#1a1a1a] flex items-center justify-center text-white`}>
+                        {(() => {
+                          const IconComp = (LucideIcons as any)[c.icon] || Layout;
+                          return <IconComp className="w-4 h-4" />;
+                        })()}
+                      </div>
+                      <span className="font-bold">{c.name}</span>
+                    </div>
+                  )
+                },
+                { 
+                  key: 'icon', 
+                  label: 'Icono',
+                  render: (c) => <span className="text-[10px] font-black opacity-40">{c.icon}</span>
+                },
+              ]}
+              onAdd={() => {
+                setEditingCategory(null);
+                setCategoryForm({ name: '', icon: 'Layout', color: 'bg-[#1a1a1a]' });
+                setIsCategoryModalOpen(true);
+              }}
+              onEdit={(c) => {
+                setEditingCategory(c);
+                setCategoryForm({ name: c.name, icon: c.icon, color: c.color });
+                setIsCategoryModalOpen(true);
+              }}
+              onDelete={(c) => handleDeleteCategory(c.id)}
+              addLabel="Módulo"
+              accentColor="#ff9900"
+            />
+
             {/* System Status & Actions */}
             <div className="lg:col-span-2 bg-[#1a1a1a] text-white border-2 border-[#1a1a1a] p-6 shadow-[8px_8px_0px_0px_rgba(0,85,255,1)]">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b-2 border-white pb-3">
@@ -1159,6 +1274,78 @@ export default function BaseDatos() {
                     </>
                   )}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* Category Modal */}
+          {isCategoryModalOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+              <div className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-6 w-full max-w-md">
+                <div className="flex justify-between items-center mb-6">
+                  <h2 className="text-2xl font-black uppercase font-['Space_Grotesk']">
+                    {editingCategory ? 'Editar Módulo' : 'Nuevo Módulo'}
+                  </h2>
+                  <button
+                    onClick={() => setIsCategoryModalOpen(false)}
+                    className="p-1 hover:bg-[#1a1a1a] hover:text-white transition-colors border-2 border-transparent hover:border-[#1a1a1a]"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+                <form onSubmit={handleSaveCategory} className="flex flex-col gap-4">
+                  <div>
+                    <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Nombre del Módulo</label>
+                    <input
+                      type="text"
+                      value={categoryForm.name}
+                      onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value.toUpperCase() })}
+                      className="w-full p-3 border-4 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none font-bold uppercase transition-colors"
+                      placeholder="EJ: REPARACIONES PC"
+                      required
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Seleccionar Icono</label>
+                    <div className="grid grid-cols-6 gap-2">
+                      {ICON_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.name}
+                          type="button"
+                          onClick={() => setCategoryForm({ ...categoryForm, icon: opt.name })}
+                          className={`p-2 border-2 transition-all ${categoryForm.icon === opt.name ? 'border-[#0055ff] bg-[#0055ff]/10 scale-110' : 'border-[#1a1a1a] bg-[#f5f0e8] opacity-50'}`}
+                        >
+                          <opt.icon className="w-5 h-5 mx-auto" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Color de Fondo</label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {COLOR_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setCategoryForm({ ...categoryForm, color: opt.value })}
+                          className={`p-2 border-2 text-[10px] font-black uppercase transition-all ${categoryForm.color === opt.value ? 'border-[#0055ff] ring-2 ring-[#0055ff] ring-offset-2' : 'border-[#1a1a1a] opacity-80'}`}
+                        >
+                          <div className={`w-full h-4 ${opt.value} mb-1 border border-black/20`}></div>
+                          {opt.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="mt-4 w-full py-4 border-4 border-[#1a1a1a] bg-[#ff9900] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#ff9900] transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none"
+                  >
+                    {editingCategory ? 'Guardar Cambios' : 'Crear Módulo'}
+                  </button>
+                </form>
               </div>
             </div>
           )}
