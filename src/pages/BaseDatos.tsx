@@ -931,7 +931,7 @@ export default function BaseDatos() {
                     Colecciones Activas
                   </p>
                   <p className="text-2xl font-black font-['Space_Grotesk']">
-                    {Object.values(systemStats.collections).filter((c) => c > 0).length}/7
+                    {Object.values(systemStats.collections || {}).filter((c) => c > 0).length}/9
                   </p>
                 </div>
               </div>
@@ -950,11 +950,13 @@ export default function BaseDatos() {
                     { label: 'Ubicaciones', key: 'locations', color: '#06b6d4' },
                     { label: 'Historial', key: 'task_history', color: '#ec4899' },
                     { label: 'Notificaciones', key: 'notifications', color: '#f43f5e' },
+                    { label: 'Diligenciamientos', key: 'diligenciamientos', color: '#0055ff' },
+                    { label: 'Módulos', key: 'diligenciamiento_categories', color: '#ff9900' },
                   ].map((item) => (
                     <div key={item.key} className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
                       <span className="text-[10px] font-bold uppercase opacity-60">{item.label}:</span>
-                      <span className="text-sm font-black">{systemStats.collections[item.key] || 0}</span>
+                      <span className="text-sm font-black">{(systemStats.collections || {})[item.key] || 0}</span>
                     </div>
                   ))}
                 </div>

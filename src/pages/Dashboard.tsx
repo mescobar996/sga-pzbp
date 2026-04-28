@@ -72,7 +72,7 @@ function BrutalTooltip({ active, payload, label }: any) {
   return (
     <div className="bg-[#1a1a1a] border-2 border-[#1a1a1a] px-3 py-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]">
       <p className="text-[10px] font-black uppercase tracking-widest text-white/70 mb-1">{label}</p>
-      {payload.map((p: any, i: number) => (
+      {(payload || []).map((p: any, i: number) => (
         <div key={i} className="flex items-center gap-2">
           <div className="w-2 h-2" style={{ backgroundColor: p.color || p.fill }}></div>
           <p className="text-xs font-black text-white uppercase">{p.name}: {p.value}</p>
@@ -319,7 +319,7 @@ export default function Dashboard() {
               <MapContainer center={[-33.25, -60.1]} zoom={10} style={{ height: '100%', width: '100%' }} zoomControl={false}>
                 <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <MapResizer />
-                {mapData.map((v, i) => (
+                {(mapData || []).map((v, i) => (
                   <Marker key={i} position={[v.coords!.latitude!, v.coords!.longitude!]}>
                     <Popup>
                       <div className="font-['Inter'] text-[10px]">

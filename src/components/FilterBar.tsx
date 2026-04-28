@@ -128,7 +128,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             <div className="p-4 sm:p-6 bg-[#f5f0e8] border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-1 max-h-[60vh] overflow-y-auto custom-scrollbar">
               
               {/* Dynamic Filters */}
-              {filters.map((filter, idx) => (
+              {(filters || []).map((filter, idx) => (
                 <div key={idx} className="flex flex-col">
                   <label className={labelStyles}>
                     <Filter className="w-3 h-3 text-[#0055ff]" />
@@ -142,7 +142,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                         className={`${commonStyles} cursor-pointer appearance-none pr-8 bg-transparent relative z-10`}
                       >
                         {filter.placeholder && <option value="todos">{filter.placeholder}</option>}
-                        {filter.options?.map((opt) => {
+                        {(filter.options || []).map((opt) => {
                           const label = typeof opt === 'string' ? opt : opt.label;
                           const val = typeof opt === 'string' ? opt : opt.value;
                           return (
@@ -209,7 +209,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                       onChange={(e) => sort.onChange(e.target.value)}
                       className={`${commonStyles} cursor-pointer appearance-none pr-8 bg-transparent relative z-10`}
                     >
-                      {sort.options.map((opt) => (
+                      {(sort.options || []).map((opt) => (
                         <option key={opt.value} value={opt.value}>
                           {opt.label}
                         </option>
