@@ -114,16 +114,16 @@ export default function BaseDatos() {
 
   useEffect(() => {
     const unsubPersonal = onPersonalChange((data) => {
-      setPersonnel(data);
+      setPersonnel(Array.isArray(data) ? data : []);
     });
 
     const unsubLocations = onLocationsChange((data) => {
-      setLocations(data);
+      setLocations(Array.isArray(data) ? data : []);
       setLoading(false);
     });
 
     const unsubCategories = onCategoriesChange((data) => {
-      setCategories(data);
+      setCategories(Array.isArray(data) ? data : []);
     });
 
     const fetchStats = async () => {
@@ -144,7 +144,10 @@ export default function BaseDatos() {
       for (const col of cols) {
         try {
           const { count, error } = await supabase.from(col).select('*', { count: 'exact', head: true });
-          if (error) throw error;
+          if (error) {
+            counts[col] = 0;
+            continue;
+          }
           counts[col] = count || 0;
           total += count || 0;
         } catch {

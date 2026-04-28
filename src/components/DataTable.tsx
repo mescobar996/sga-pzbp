@@ -23,11 +23,11 @@ interface DataTableProps<T> {
 }
 
 export function DataTable<T extends { id: string }>({
-  data,
-  columns,
-  filterValue,
-  filterField,
-  filterOptions,
+  data = [],
+  columns = [],
+  filterValue = 'Todos',
+  filterField = '',
+  filterOptions = [],
   onFilterChange,
   onAdd,
   onEdit,
@@ -36,8 +36,12 @@ export function DataTable<T extends { id: string }>({
   addLabel = 'Añadir',
   accentColor = '#0055ff',
 }: DataTableProps<T>) {
+  const safeData = Array.isArray(data) ? data : [];
+  const safeColumns = Array.isArray(columns) ? columns : [];
+  const safeFilterOptions = Array.isArray(filterOptions) ? filterOptions : [];
+
   const filteredData =
-    filterValue === 'Todos' ? data : data.filter((item) => (item as any)[filterField] === filterValue);
+    filterValue === 'Todos' ? safeData : safeData.filter((item) => (item as any)[filterField] === filterValue);
 
   return (
     <div className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 lg:p-6 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col min-h-[300px]">
@@ -48,7 +52,7 @@ export function DataTable<T extends { id: string }>({
             onChange={(e) => onFilterChange(e.target.value)}
             className="text-xs font-bold uppercase border-2 border-[#1a1a1a] p-1.5 bg-[#f5f0e8] focus:outline-none min-h-[44px]"
           >
-            {filterOptions.map((opt) => (
+            {safeFilterOptions.map((opt) => (
               <option key={opt} value={opt}>
                 {opt}
               </option>
@@ -68,7 +72,7 @@ export function DataTable<T extends { id: string }>({
         <table className="w-full text-left border-collapse min-w-[500px]">
           <thead>
             <tr className="border-b-2 border-[#1a1a1a] bg-[#f5f0e8]">
-              {columns.map((col) => (
+              {safeColumns.map((col) => (
                 <th key={col.key} className="p-2 sm:p-3 font-black uppercase tracking-widest text-xs">
                   {col.label}
                 </th>
@@ -77,12 +81,12 @@ export function DataTable<T extends { id: string }>({
             </tr>
           </thead>
           <tbody>
-            {filteredData.map((item) => (
+            {(filteredData || []).map((item) => (
               <tr
                 key={item.id}
                 className="border-b border-[#1a1a1a]/20 hover:bg-[#0055ff] hover:text-white transition-colors"
               >
-                {columns.map((col) => (
+                {safeColumns.map((col) => (
                   <td key={col.key} className="p-2 sm:p-3 font-bold uppercase text-xs sm:text-sm whitespace-nowrap">
                     {col.render ? col.render(item) : (item as any)[col.key]}
                   </td>
