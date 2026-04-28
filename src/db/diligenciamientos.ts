@@ -133,8 +133,13 @@ export async function updateDiligenciamiento(id: string, updates: Partial<Dilige
   if (updates.fecha !== undefined) mapped.fecha = updates.fecha || null;
   if (updates.attachments !== undefined) mapped.attachments = updates.attachments;
 
+  // Execute update and log error if status 400
   const { error } = await supabase.from('diligenciamientos').update(mapped).eq('id', id);
-  if (error) throw error;
+  
+  if (error) {
+    console.error('[DB ERROR] Update Diligenciamiento failed:', error);
+    throw error;
+  }
 }
 
 export async function deleteDiligenciamiento(id: string): Promise<void> {

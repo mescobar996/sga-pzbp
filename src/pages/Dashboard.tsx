@@ -292,8 +292,8 @@ export default function Dashboard() {
                 <div className="flex items-center gap-1.5"><div className="w-2 h-2 bg-[#0055ff]"></div><span className="text-[8px] font-black">T</span></div>
               </div>
             </div>
-            <div className="h-[180px] sm:h-[240px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="h-[180px] sm:h-[240px] w-full min-h-[180px]">
+              <ResponsiveContainer width="99%" height="100%" minHeight={180}>
                 <AreaChart data={pulseData}>
                   <defs>
                     <linearGradient id="colorVisitas" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#00cc66" stopOpacity={0.1}/><stop offset="95%" stopColor="#00cc66" stopOpacity={0}/></linearGradient>

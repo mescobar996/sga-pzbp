@@ -146,7 +146,7 @@ export default function Tareas() {
     });
 
     // Auto-refresh when user returns to tab
-    const onFocus = () => loadTasks();
+    const onFocus = () => getTasks().then(setTasks);
     window.addEventListener('focus', onFocus);
 
     // Save pins
