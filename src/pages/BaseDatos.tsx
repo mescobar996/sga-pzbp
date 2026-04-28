@@ -19,6 +19,7 @@ import {
   ShieldCheck,
   MoreHorizontal,
 } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
 import { getPersonal, addPersonal, updatePersonal, deletePersonal, onPersonalChange } from '../db/personal';

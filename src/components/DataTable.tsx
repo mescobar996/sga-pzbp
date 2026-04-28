@@ -10,10 +10,10 @@ interface DataTableColumn<T> {
 interface DataTableProps<T> {
   data: T[];
   columns: DataTableColumn<T>[];
-  filterValue: string;
-  filterField: string;
-  filterOptions: string[];
-  onFilterChange: (value: string) => void;
+  filterValue?: string;
+  filterField?: string;
+  filterOptions?: string[];
+  onFilterChange?: (value: string) => void;
   onAdd: () => void;
   onEdit: (item: T) => void;
   onDelete: (item: T) => void;
@@ -47,17 +47,19 @@ export function DataTable<T extends { id: string }>({
     <div className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 lg:p-6 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col min-h-[300px]">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-3 sm:mb-4 border-b-2 border-[#1a1a1a] pb-2 gap-2">
         <div className="flex gap-2 items-center flex-wrap">
-          <select
-            value={filterValue}
-            onChange={(e) => onFilterChange(e.target.value)}
-            className="text-xs font-bold uppercase border-2 border-[#1a1a1a] p-1.5 bg-[#f5f0e8] focus:outline-none min-h-[44px]"
-          >
-            {safeFilterOptions.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
-              </option>
-            ))}
-          </select>
+          {onFilterChange && safeFilterOptions.length > 0 && (
+            <select
+              value={filterValue}
+              onChange={(e) => onFilterChange(e.target.value)}
+              className="text-xs font-bold uppercase border-2 border-[#1a1a1a] p-1.5 bg-[#f5f0e8] focus:outline-none min-h-[44px]"
+            >
+              {safeFilterOptions.map((opt) => (
+                <option key={opt} value={opt}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          )}
           <button
             onClick={onAdd}
             className="px-3 py-2 min-h-[44px] border-2 border-[#1a1a1a] text-white font-black uppercase text-xs tracking-widest hover:bg-[#1a1a1a] transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
