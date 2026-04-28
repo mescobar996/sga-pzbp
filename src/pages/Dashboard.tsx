@@ -347,9 +347,31 @@ export default function Dashboard() {
           <p className="text-[8px] sm:text-[9px] font-black uppercase opacity-40 leading-none mb-1 truncate">PERSONAL ACTIVO</p>
           <p className="text-2xl sm:text-3xl font-black font-['Space_Grotesk'] leading-none">{personal.length}</p>
         </div>
-        <div className="p-3 sm:p-4 border-2 border-[#1a1a1a] bg-white shadow-[3px_3px_0px_0px_rgba(0,204,102,1)] active:shadow-none transition-all">
+        <div 
+          className="p-3 sm:p-4 border-2 border-[#1a1a1a] bg-white shadow-[3px_3px_0px_0px_rgba(0,204,102,1)] active:shadow-none transition-all cursor-pointer group"
+          onClick={() => navigate('/diligenciamientos')}
+        >
           <p className="text-[8px] sm:text-[9px] font-black uppercase opacity-40 leading-none mb-1 truncate">DILIGENCIAS</p>
-          <p className="text-2xl sm:text-3xl font-black font-['Space_Grotesk'] leading-none">{diligenciamientos.length}</p>
+          <div className="flex items-end justify-between">
+            <p className="text-2xl sm:text-3xl font-black font-['Space_Grotesk'] leading-none">{diligenciamientos.length}</p>
+            <div className="flex flex-col items-end gap-0.5">
+              {(() => {
+                const stats: Record<string, number> = {};
+                diligenciamientos.forEach(d => {
+                  const cat = d.category || 'OTROS';
+                  stats[cat] = (stats[cat] || 0) + 1;
+                });
+                return Object.entries(stats)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 2)
+                  .map(([cat, count]) => (
+                    <span key={cat} className="text-[6px] font-black uppercase opacity-30 group-hover:opacity-100 transition-opacity">
+                      {cat.slice(0, 15)}: {count}
+                    </span>
+                  ));
+              })()}
+            </div>
+          </div>
         </div>
         <div className="p-3 sm:p-4 border-2 border-[#1a1a1a] bg-white shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] active:shadow-none transition-all">
           <p className="text-[8px] sm:text-[9px] font-black uppercase opacity-40 leading-none mb-1 truncate">ADJUNTOS</p>

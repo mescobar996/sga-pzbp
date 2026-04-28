@@ -252,7 +252,7 @@ export default function Diligenciamientos() {
         });
 
         await addNotification({
-          title: 'Nuevo Diligenciamiento',
+          title: `Nuevo Diligenciamiento: ${currentDiligenciamiento.category || 'OTROS'}`,
           message: currentDiligenciamiento.title!,
           type: 'novedad',
         });
