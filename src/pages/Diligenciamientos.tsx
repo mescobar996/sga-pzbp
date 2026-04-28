@@ -118,7 +118,8 @@ export default function Diligenciamientos() {
     });
 
     const unsubCat = onCategoriesChange((data) => {
-      const dbCats = data.map(c => ({ id: c.name, label: c.name, icon: c.icon, color: c.color, isDynamic: true }));
+      const validData = Array.isArray(data) ? data : [];
+      const dbCats = validData.map(c => ({ id: c.name, label: c.name, icon: c.icon, color: c.color, isDynamic: true }));
       // Combine defaults (if not already in DB) with DB categories
       const combined = [...dbCats];
       DEFAULT_CATEGORIES.forEach(def => {
@@ -133,7 +134,8 @@ export default function Diligenciamientos() {
     const onFocus = () => {
       loadDiligenciamientos();
       getCategories().then(data => {
-        const dbCats = data.map(c => ({ id: c.name, label: c.name, icon: c.icon, color: c.color, isDynamic: true }));
+        const validData = Array.isArray(data) ? data : [];
+        const dbCats = validData.map(c => ({ id: c.name, label: c.name, icon: c.icon, color: c.color, isDynamic: true }));
         const combined = [...dbCats];
         DEFAULT_CATEGORIES.forEach(def => {
           if (!combined.find(c => c.id === def.id)) {

@@ -583,6 +583,8 @@ export default function BaseDatos() {
         novedades: ['id', 'title', 'content', 'author_id', 'author_name', 'attachments', 'created_at'],
         task_history: ['id', 'task_id', 'task_title', 'action', 'user_id', 'user_email', 'timestamp'],
         notifications: ['id', 'title', 'message', 'type', 'author_id', 'recipient_id', 'created_at'],
+        diligenciamientos: ['id', 'title', 'content', 'category', 'fecha', 'author_id', 'author_name', 'attachments', 'created_at'],
+        diligenciamiento_categories: ['id', 'name', 'icon', 'color', 'author_id', 'created_at'],
       };
 
       const newRecord: any = {};
@@ -628,7 +630,7 @@ export default function BaseDatos() {
 
     try {
       if (importMode === 'multi') {
-        const order = ['users', 'locations', 'personal', 'tasks', 'visitas', 'novedades', 'task_history', 'notifications'];
+        const order = ['users', 'locations', 'personal', 'tasks', 'visitas', 'novedades', 'task_history', 'notifications', 'diligenciamientos', 'diligenciamiento_categories'];
         let totalSuccess = 0;
 
         for (const table of order) {

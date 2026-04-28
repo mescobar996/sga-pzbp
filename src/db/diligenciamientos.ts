@@ -10,19 +10,33 @@ export interface DiligenciamientoAttachment {
 
 // Categorías Dinámicas
 export async function getCategories(): Promise<DiligenciamientoCategory[]> {
-  const { data, error } = await supabase
-    .from('diligenciamiento_categories')
-    .select('*')
-    .order('name', { ascending: true });
-  if (error) throw error;
-  return data.map(row => ({
-    id: row.id,
-    name: row.name,
-    icon: row.icon || 'Layout',
-    color: row.color || 'bg-[#1a1a1a]',
-    createdAt: row.created_at,
-    authorId: row.author_id,
-  }));
+  try {
+    const { data, error } = await supabase
+      .from('diligenciamiento_categories')
+      .select('*')
+      .order('name', { ascending: true });
+    
+    if (error) {
+      // 42P01 is PostgreSql error for "relation does not exist"
+      if (error.code === '42P01' || error.status === 404) {
+        console.warn('[DB] Tabla diligenciamiento_categories no encontrada. Usando valores por defecto.');
+        return [];
+      }
+      throw error;
+    }
+    
+    return (data || []).map(row => ({
+      id: row.id,
+      name: row.name,
+      icon: row.icon || 'Layout',
+      color: row.color || 'bg-[#1a1a1a]',
+      createdAt: row.created_at,
+      authorId: row.author_id,
+    }));
+  } catch (err) {
+    console.error('[DB] Error cargando categorías:', err);
+    return [];
+  }
 }
 
 export async function addCategory(category: { name: string; icon?: string; color?: string }): Promise<void> {
