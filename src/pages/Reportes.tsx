@@ -1,5 +1,5 @@
-import { FileText, Download, Database, Eye, BarChart3, Users, HardHat, ListChecks, Newspaper, ClipboardList } from 'lucide-react';
-import { useState } from 'react';
+import { FileText, Download, Database, Eye, BarChart3, Users, HardHat, ListChecks, Newspaper, ClipboardList, Filter } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../db/client';
 import { pdf } from '@react-pdf/renderer';
@@ -8,10 +8,13 @@ import * as XLSX from 'xlsx';
 import { motion } from 'motion/react';
 import { FormatSelector } from '../components/FormatSelector';
 import { DateRangePicker } from '../components/DateRangePicker';
+import { getCategories } from '../db/diligenciamientos';
 
 export default function Reportes() {
   const [format, setFormat] = useState<'pdf' | 'excel' | 'json'>('pdf');
   const [dataSource, setDataSource] = useState('todas');
+  const [selectedCategory, setSelectedCategory] = useState('todas');
+  const [availableCategories, setCategories] = useState<any[]>([]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [sortBy, setSortBy] = useState('fecha_desc');
@@ -20,11 +23,28 @@ export default function Reportes() {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  useEffect(() => {
+    getCategories().then(data => {
+      setCategories(data);
+    });
+  }, []);
+
   const fetchData = async () => {
     const data: Record<string, any[]> = {};
 
-    const fetchCollection = async (colName: string) => {
-      const { data: docs, error } = await supabase.from(colName).select('*');
+    const fetchCollection = async (colName: string, categoryFilter?: string) => {
+      let query = supabase.from(colName).select('*');
+      
+      if (colName === 'diligenciamientos' && categoryFilter && categoryFilter !== 'todas') {
+        if (categoryFilter === 'OTROS') {
+          // Special case for OTHERS (null or 'OTROS')
+          query = query.or('category.is.null,category.eq.OTROS');
+        } else {
+          query = query.eq('category', categoryFilter);
+        }
+      }
+
+      const { data: docs, error } = await query;
       if (error) throw error;
       let result = docs || [];
 
@@ -66,7 +86,9 @@ export default function Reportes() {
     if (dataSource === 'todas' || dataSource === 'tareas') data.tareas = await fetchCollection('tasks');
     if (dataSource === 'todas' || dataSource === 'personal') data.personal = await fetchCollection('personal');
     if (dataSource === 'todas' || dataSource === 'novedades') data.novedades = await fetchCollection('novedades');
-    if (dataSource === 'todas' || dataSource === 'diligenciamientos') data.diligenciamientos = await fetchCollection('diligenciamientos');
+    if (dataSource === 'todas' || dataSource === 'diligenciamientos') {
+      data.diligenciamientos = await fetchCollection('diligenciamientos', selectedCategory);
+    }
 
     return data;
   };
@@ -145,6 +167,16 @@ export default function Reportes() {
         ],
         color: { header: 'f59e0b', altRow: 'fffbeb' },
       },
+      diligenciamientos: {
+        columns: [
+          { key: 'fecha', header: 'Fecha', width: 14 },
+          { key: 'category', header: 'Categoría', width: 24 },
+          { key: 'title', header: 'Título', width: 30 },
+          { key: 'authorName', header: 'Autor', width: 20 },
+          { key: 'content', header: 'Contenido', width: 50 },
+        ],
+        color: { header: '0055ff', altRow: 'eff6ff' },
+      },
     };
 
     const sheetLabels: Record<string, string> = {
@@ -161,6 +193,16 @@ export default function Reportes() {
     const totalNovedades = data.novedades?.length || 0;
     const totalDiligenciamientos = data.diligenciamientos?.length || 0;
     const totalRecords = totalVisitas + totalTareas + totalPersonal + totalNovedades + totalDiligenciamientos;
+    
+    // Category Breakdown for Resumen
+    const categoryCounts: Record<string, number> = {};
+    if (data.diligenciamientos) {
+      data.diligenciamientos.forEach((d: any) => {
+        const cat = d.category || 'OTROS';
+        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+      });
+    }
+
     const tareasCompletadas = data.tareas?.filter((t: any) => t.status === 'completado').length || 0;
     const tasaCompletitud = totalTareas > 0 ? Math.round((tareasCompletadas / totalTareas) * 100) : 0;
     const tareasVencidas =
@@ -186,6 +228,10 @@ export default function Reportes() {
       { A: 'Tareas Operativas', B: totalTareas },
       { A: 'Personal Activo', B: totalPersonal },
       { A: 'Novedades', B: totalNovedades },
+      { A: 'Diligenciamientos', B: totalDiligenciamientos },
+      {},
+      { A: 'DESGLOSE POR MÓDULOS (DILIGENCIAS)' },
+      ...Object.entries(categoryCounts).map(([cat, count]) => ({ A: cat, B: count })),
       {},
       { A: 'INDICADORES' },
       { A: 'Tasa de completitud', B: `${tasaCompletitud}%` },
@@ -566,6 +612,29 @@ export default function Reportes() {
                 <option value="diligenciamientos">Diligenciamientos</option>
               </select>
             </div>
+
+            {dataSource === 'diligenciamientos' && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                className="overflow-hidden"
+              >
+                <label className="block text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2">
+                  <Filter className="w-3.5 h-3.5 text-[#0055ff]" /> Filtrar por Módulo
+                </label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full p-3 border-2 border-[#1a1a1a] bg-white focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
+                >
+                  <option value="todas">Todos los módulos</option>
+                  {availableCategories.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                  <option value="OTROS">OTROS (SIN CATEGORÍA)</option>
+                </select>
+              </motion.div>
+            )}
 
             <DateRangePicker
               dateFrom={dateFrom}

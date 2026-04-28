@@ -338,43 +338,45 @@ export default function Diligenciamientos() {
   );
 
   return (
-    <div className="font-['Inter'] max-w-6xl mx-auto px-3 sm:px-4 pb-24 lg:pb-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
-        <div className="flex items-center gap-4">
-          {selectedCategory && (
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className="p-2 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
-              title="Volver a Módulos"
-            >
-              <ArrowLeft className="w-5 h-5" />
-            </button>
-          )}
-          <div>
-            <h1 className="text-xl sm:text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">
-              {selectedCategory ? selectedCategory : 'Diligenciamientos'}
-            </h1>
+    <div className="font-['Inter'] max-w-6xl mx-auto px-3 sm:px-4 pb-24 lg:pb-8 relative">
+      {/* Header - Sticky for better PWA navigation */}
+      <div className="sticky top-0 z-40 bg-[#f5f0e8]/95 backdrop-blur-md pt-4 pb-2 mb-4 -mx-3 px-3 sm:mx-0 sm:px-0">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div className="flex items-center gap-4">
             {selectedCategory && (
-              <p className="text-[10px] font-black opacity-40 uppercase tracking-widest mt-1">
-                MÓDULO OPERATIVO
-              </p>
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className="p-2.5 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                title="Volver a Módulos"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
             )}
+            <div>
+              <h1 className="text-xl sm:text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter truncate max-w-[200px] sm:max-w-none">
+                {selectedCategory ? selectedCategory : 'Diligenciamientos'}
+              </h1>
+              {selectedCategory && (
+                <p className="text-[9px] font-black opacity-40 uppercase tracking-widest mt-0.5">
+                  MÓDULO OPERATIVO
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-        <div className="flex gap-4">
-          <button
-            onClick={openNewModal}
-            className="px-4 py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-xs sm:text-sm"
-          >
-            <Plus className="w-4 h-4" /> Nuevo Diligenciamiento
-          </button>
+          <div className="hidden sm:flex gap-4">
+            <button
+              onClick={openNewModal}
+              className="px-4 py-3 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors flex items-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none text-xs sm:text-sm"
+            >
+              <Plus className="w-4 h-4" /> Nuevo Diligenciamiento
+            </button>
+          </div>
         </div>
       </div>
 
       {!selectedCategory ? (
-        /* MODULE GRID VIEW */
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+        /* MODULE LIST/GRID VIEW - Mobile First */
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-12">
           {categories.map((cat) => {
             const count = diligenciamientos.filter(d => 
               d.category === cat.id || (cat.id === 'OTROS' && !d.category)
@@ -385,21 +387,22 @@ export default function Diligenciamientos() {
             return (
               <motion.div
                 key={cat.id}
-                whileHover={{ scale: 1.02, x: 2, y: 2 }}
+                whileHover={{ scale: 1.01, x: 1, y: 1 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setSelectedCategory(cat.id)}
-                className="bg-white border-4 border-[#1a1a1a] p-6 cursor-pointer shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] hover:shadow-none transition-all flex flex-col gap-6 group"
+                className="bg-white border-2 sm:border-4 border-[#1a1a1a] p-4 sm:p-6 cursor-pointer shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] sm:shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] hover:shadow-none transition-all flex items-center sm:flex-col gap-4 sm:gap-6 group"
               >
-                <div className={`w-16 h-16 ${cat.color} border-4 border-[#1a1a1a] flex items-center justify-center text-white shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] group-hover:translate-x-1 group-hover:translate-y-1 group-hover:shadow-none transition-all`}>
-                  <IconComponent className="w-8 h-8" />
+                <div className={`w-12 h-12 sm:w-16 sm:h-16 ${cat.color} border-2 sm:border-4 border-[#1a1a1a] flex items-center justify-center text-white shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] group-hover:translate-x-0.5 group-hover:translate-y-0.5 group-hover:shadow-none transition-all shrink-0`}>
+                  <IconComponent className="w-6 h-6 sm:w-8 sm:h-8" />
                 </div>
-                <div>
-                  <h3 className="text-xl font-black font-['Space_Grotesk'] uppercase leading-tight mb-2">{cat.label}</h3>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-black opacity-40 uppercase tracking-widest">{count} REGISTROS</span>
-                    <ArrowLeft className="w-5 h-5 rotate-180 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="min-w-0 flex-1 sm:text-center">
+                  <h3 className="text-sm sm:text-xl font-black font-['Space_Grotesk'] uppercase leading-tight mb-1 sm:mb-2 truncate">{cat.label}</h3>
+                  <div className="flex items-center justify-between sm:justify-center">
+                    <span className="text-[10px] font-black opacity-40 uppercase tracking-widest">{count} REGISTROS</span>
+                    <ArrowLeft className="w-4 h-4 rotate-180 opacity-40 sm:hidden" />
                   </div>
                 </div>
+                <ArrowLeft className="hidden sm:block w-5 h-5 rotate-180 opacity-0 group-hover:opacity-100 transition-opacity" />
               </motion.div>
             );
           })}
@@ -580,6 +583,16 @@ export default function Diligenciamientos() {
           )}
         </>
       )}
+
+      {/* Mobile Floating Action Button (FAB) */}
+      <div className="fixed bottom-24 right-4 z-50 sm:hidden">
+        <button
+          onClick={openNewModal}
+          className="w-14 h-14 bg-[#0055ff] text-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] rounded-none flex items-center justify-center active:translate-x-0.5 active:translate-y-0.5 active:shadow-none transition-all"
+        >
+          <Plus className="w-8 h-8" />
+        </button>
+      </div>
 
       <AnimatePresence>
       {isModalOpen && (

@@ -449,14 +449,21 @@ export default function ReportPDF({ data, now, dateStr }: Props) {
               {diligenciamientos.map((d: any, i: number) => (
                 <View key={i} style={[S.card, { borderLeftColor: COLORS.gold }]}>
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={S.cardTitle}>{d.title?.toUpperCase()}</Text>
+                    <View style={{ flexDirection: 'column' }}>
+                      <Text style={S.cardTitle}>{d.title?.toUpperCase()}</Text>
+                      {d.category && (
+                        <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: COLORS.accent, marginTop: 2 }}>
+                          MÓDULO: {d.category.toUpperCase()}
+                        </Text>
+                      )}
+                    </View>
                     <Text style={{ fontSize: 7, color: COLORS.gray }}>
-                      {new Date(d.created_at || d.fecha).toLocaleDateString().toUpperCase()}
+                      {new Date(d.created_at || d.fecha).toLocaleDateString('es-ES').toUpperCase()}
                     </Text>
                   </View>
                   <Text style={S.cardContent}>{d.content?.toUpperCase()}</Text>
                   <Text style={{ fontSize: 6, color: COLORS.gold, marginTop: 6, fontFamily: 'Helvetica-Bold' }}>
-                    AUTORIZADO POR: {d.authorName?.toUpperCase() || 'SISTEMA'}
+                    AUTOR: {d.authorName?.toUpperCase() || 'SISTEMA'}
                   </Text>
                 </View>
               ))}
