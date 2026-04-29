@@ -24,7 +24,13 @@ import { toast } from 'sonner';
 import { useState, useEffect, useRef } from 'react';
 import { getPersonal, addPersonal, updatePersonal, deletePersonal, onPersonalChange } from '../db/personal';
 import { getLocations, addLocation, updateLocation, deleteLocation, onLocationsChange } from '../db/locations';
-import { getCategories, addCategory, updateCategory, deleteCategory, onCategoriesChange } from '../db/diligenciamientos';
+import {
+  getCategories,
+  addCategory,
+  updateCategory,
+  deleteCategory,
+  onCategoriesChange,
+} from '../db/diligenciamientos';
 import { supabase, getCurrentUserId } from '../db/client';
 import * as XLSX from 'xlsx';
 import { useOutletContext } from 'react-router-dom';
@@ -282,6 +288,10 @@ export default function BaseDatos() {
         toast.success('Módulo añadido');
       }
       setIsCategoryModalOpen(false);
+      // Force reload categories
+      const { getCategories } = await import('../db/diligenciamientos');
+      const updated = await getCategories();
+      setCategories(updated);
     } catch (error) {
       handleError(error);
     }
@@ -292,6 +302,10 @@ export default function BaseDatos() {
     try {
       await deleteCategory(id);
       toast.success('Módulo eliminado');
+      // Force reload categories
+      const { getCategories } = await import('../db/diligenciamientos');
+      const updated = await getCategories();
+      setCategories(updated);
     } catch (error) {
       handleError(error);
     }
@@ -300,7 +314,16 @@ export default function BaseDatos() {
   const handleExportJSON = async () => {
     setIsExporting(true);
     try {
-      const collectionsToExport = ['tasks', 'visitas', 'novedades', 'task_history', 'personal', 'locations', 'notifications', 'users'];
+      const collectionsToExport = [
+        'tasks',
+        'visitas',
+        'novedades',
+        'task_history',
+        'personal',
+        'locations',
+        'notifications',
+        'users',
+      ];
       const backupData: Record<string, any[]> = {};
 
       for (const col of collectionsToExport) {
@@ -323,7 +346,7 @@ export default function BaseDatos() {
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      
+
       toast.success('Backup JSON descargado con éxito');
     } catch (error) {
       console.error('Error exportando JSON:', error);
@@ -481,16 +504,19 @@ export default function BaseDatos() {
       reader.onload = (event) => {
         try {
           const data = JSON.parse(event.target?.result as string);
-          
+
           // Detect multi-table backup
           const multiTableKeys = ['tasks', 'visitas', 'novedades', 'personal', 'locations', 'users'];
-          const isMultiTable = !Array.isArray(data) && multiTableKeys.some(key => key in data);
+          const isMultiTable = !Array.isArray(data) && multiTableKeys.some((key) => key in data);
 
           if (isMultiTable) {
             setImportMode('multi');
             setImportDataMap(data);
-            const totalRecords = Object.values(data).reduce((acc: number, curr: any) => acc + (Array.isArray(curr) ? curr.length : 0), 0);
-            setImportPreview([]); 
+            const totalRecords = Object.values(data).reduce(
+              (acc: number, curr: any) => acc + (Array.isArray(curr) ? curr.length : 0),
+              0,
+            );
+            setImportPreview([]);
             toast.success(`Backup multi-tabla detectado: ${totalRecords} registros totales`);
           } else {
             const records = Array.isArray(data) ? data : data.registros || data.records || data.datos || [];
@@ -550,14 +576,7 @@ export default function BaseDatos() {
       };
 
       // Define columns that must be UUIDs in the database
-      const uuidColumns = [
-        'id', 
-        'author_id', 
-        'assigned_to', 
-        'user_id', 
-        'task_id', 
-        'recipient_id'
-      ];
+      const uuidColumns = ['id', 'author_id', 'assigned_to', 'user_id', 'task_id', 'recipient_id'];
 
       // Helper to convert any string to a deterministic valid UUID format
       const toUUID = (str: any) => {
@@ -582,12 +601,48 @@ export default function BaseDatos() {
         users: ['id', 'name', 'email', 'role', 'photo_url', 'created_at'],
         locations: ['id', 'name', 'type', 'status', 'latitude', 'longitude', 'author_id', 'created_at'],
         personal: ['id', 'name', 'role', 'status', 'author_id', 'created_at'],
-        tasks: ['id', 'title', 'description', 'priority', 'status', 'due_date', 'author_id', 'assigned_to', 'tags', 'attachments', 'subtasks', 'comments', 'recurrence', 'created_at'],
-        visitas: ['id', 'origen', 'destino', 'fecha', 'hora', 'responsable', 'observaciones', 'comments', 'author_id', 'created_at'],
+        tasks: [
+          'id',
+          'title',
+          'description',
+          'priority',
+          'status',
+          'due_date',
+          'author_id',
+          'assigned_to',
+          'tags',
+          'attachments',
+          'subtasks',
+          'comments',
+          'recurrence',
+          'created_at',
+        ],
+        visitas: [
+          'id',
+          'origen',
+          'destino',
+          'fecha',
+          'hora',
+          'responsable',
+          'observaciones',
+          'comments',
+          'author_id',
+          'created_at',
+        ],
         novedades: ['id', 'title', 'content', 'author_id', 'author_name', 'attachments', 'created_at'],
         task_history: ['id', 'task_id', 'task_title', 'action', 'user_id', 'user_email', 'timestamp'],
         notifications: ['id', 'title', 'message', 'type', 'author_id', 'recipient_id', 'created_at'],
-        diligenciamientos: ['id', 'title', 'content', 'category', 'fecha', 'author_id', 'author_name', 'attachments', 'created_at'],
+        diligenciamientos: [
+          'id',
+          'title',
+          'content',
+          'category',
+          'fecha',
+          'author_id',
+          'author_name',
+          'attachments',
+          'created_at',
+        ],
         diligenciamiento_categories: ['id', 'name', 'icon', 'color', 'author_id', 'created_at'],
       };
 
@@ -613,7 +668,14 @@ export default function BaseDatos() {
           }
 
           // Skip empty date fields - PostgreSQL date columns reject empty strings
-          if (value === '' && (mappedKey === 'due_date' || mappedKey === 'created_at' || mappedKey === 'fecha' || mappedKey === 'hora' || mappedKey === 'timestamp')) {
+          if (
+            value === '' &&
+            (mappedKey === 'due_date' ||
+              mappedKey === 'created_at' ||
+              mappedKey === 'fecha' ||
+              mappedKey === 'hora' ||
+              mappedKey === 'timestamp')
+          ) {
             return;
           }
 
@@ -634,7 +696,18 @@ export default function BaseDatos() {
 
     try {
       if (importMode === 'multi') {
-        const order = ['users', 'locations', 'personal', 'tasks', 'visitas', 'novedades', 'task_history', 'notifications', 'diligenciamientos', 'diligenciamiento_categories'];
+        const order = [
+          'users',
+          'locations',
+          'personal',
+          'tasks',
+          'visitas',
+          'novedades',
+          'task_history',
+          'notifications',
+          'diligenciamientos',
+          'diligenciamiento_categories',
+        ];
         let totalSuccess = 0;
 
         for (const table of order) {
@@ -642,12 +715,12 @@ export default function BaseDatos() {
           if (!rawRecords || !Array.isArray(rawRecords) || rawRecords.length === 0) continue;
 
           // Map and filter records before upsert
-          const records = rawRecords.map(r => mapRecord(r, table));
+          const records = rawRecords.map((r) => mapRecord(r, table));
 
           setImportStatus(`Importando ${table.toUpperCase()} (${records.length} registros)...`);
-          
+
           const { error } = await supabase.from(table).upsert(records, { onConflict: 'id' });
-          
+
           if (error) {
             console.error(`Error en ${table}:`, error);
             toast.error(`Error en tabla ${table}: ${error.message} (${error.code})`);
@@ -656,17 +729,17 @@ export default function BaseDatos() {
             totalSuccess += records.length;
           }
         }
-        
+
         toast.success(`Restauración masiva completada: ${totalSuccess} registros actualizados`);
       } else {
         setImportStatus(`Importando ${importPreview.length} registros a ${importCollection}...`);
-        
+
         // Map and filter records before upsert
-        const records = importPreview.map(r => mapRecord(r, importCollection));
+        const records = importPreview.map((r) => mapRecord(r, importCollection));
 
         // Single table import with upsert to prevent duplicates
         const { error } = await supabase.from(importCollection).upsert(records, { onConflict: 'id' });
-        
+
         if (error) {
           console.error('Error importing records:', error);
           toast.error(`Error al importar: ${error.message} (${error.code})`);
@@ -850,12 +923,14 @@ export default function BaseDatos() {
             <DataTable<DiligenciamientoCategory>
               data={categories}
               columns={[
-                { 
-                  key: 'name', 
+                {
+                  key: 'name',
                   label: 'Módulo',
                   render: (c) => (
                     <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 ${c.color} border-2 border-[#1a1a1a] flex items-center justify-center text-white`}>
+                      <div
+                        className={`w-8 h-8 ${c.color} border-2 border-[#1a1a1a] flex items-center justify-center text-white`}
+                      >
                         {(() => {
                           const IconComp = (LucideIcons as any)[c.icon] || Layout;
                           return <IconComp className="w-4 h-4" />;
@@ -863,12 +938,12 @@ export default function BaseDatos() {
                       </div>
                       <span className="font-bold">{c.name}</span>
                     </div>
-                  )
+                  ),
                 },
-                { 
-                  key: 'icon', 
+                {
+                  key: 'icon',
                   label: 'Icono',
-                  render: (c) => <span className="text-[10px] font-black opacity-40">{c.icon}</span>
+                  render: (c) => <span className="text-[10px] font-black opacity-40">{c.icon}</span>,
                 },
               ]}
               onAdd={() => {
@@ -1198,7 +1273,8 @@ export default function BaseDatos() {
                   <p className="text-[10px] font-bold opacity-50 mt-2">Formatos soportados: JSON, Excel (.xlsx), CSV</p>
                   {importFile && (
                     <div className="mt-2 p-2 bg-green-50 border-2 border-green-400 text-green-800 text-xs font-bold flex items-center gap-2">
-                      <FileJson className="w-4 h-4" /> {importFile.name} {importMode === 'single' ? `(${importPreview.length} registros)` : '(Backup Full)'}
+                      <FileJson className="w-4 h-4" /> {importFile.name}{' '}
+                      {importMode === 'single' ? `(${importPreview.length} registros)` : '(Backup Full)'}
                     </div>
                   )}
                 </div>
@@ -1303,7 +1379,9 @@ export default function BaseDatos() {
                 </div>
                 <form onSubmit={handleSaveCategory} className="flex flex-col gap-4">
                   <div>
-                    <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Nombre del Módulo</label>
+                    <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">
+                      Nombre del Módulo
+                    </label>
                     <input
                       type="text"
                       value={categoryForm.name}
@@ -1313,9 +1391,11 @@ export default function BaseDatos() {
                       required
                     />
                   </div>
-                  
+
                   <div>
-                    <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Seleccionar Icono</label>
+                    <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">
+                      Seleccionar Icono
+                    </label>
                     <div className="grid grid-cols-6 gap-2">
                       {ICON_OPTIONS.map((opt) => (
                         <button
@@ -1331,7 +1411,9 @@ export default function BaseDatos() {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">Color de Fondo</label>
+                    <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">
+                      Color de Fondo
+                    </label>
                     <div className="grid grid-cols-3 gap-2">
                       {COLOR_OPTIONS.map((opt) => (
                         <button
