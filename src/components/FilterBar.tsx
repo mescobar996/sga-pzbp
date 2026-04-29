@@ -1,5 +1,19 @@
-import React, { useState } from 'react';
-import { Search, X, SlidersHorizontal, ChevronDown, ChevronUp, Calendar, ArrowUpDown, Filter, RotateCcw } from 'lucide-react';
+import React, { useState, useCallback, useMemo } from 'react';
+import {
+  Search,
+  X,
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  ArrowUpDown,
+  Filter,
+  RotateCcw,
+  Clock,
+  Tag,
+  Bookmark,
+  BookmarkCheck,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export interface FilterOption {
@@ -7,12 +21,19 @@ export interface FilterOption {
   value: string;
 }
 
+export interface QuickFilter {
+  label: string;
+  value: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 interface FilterProps {
   value: string;
   onChange: (val: string) => void;
   options?: (FilterOption | string)[];
   placeholder?: string;
-  title?: string; // Legacy support
+  title?: string;
   label?: string;
   type?: 'text' | 'select' | 'date';
 }
@@ -43,6 +64,18 @@ interface FilterBarProps {
     label?: string;
   };
   onClear?: () => void;
+  quickFilters?: QuickFilter[];
+  tags?: {
+    value: string[];
+    onChange: (val: string[]) => void;
+    available: string[];
+  };
+  presets?: {
+    save: (name: string) => void;
+    load: (name: string) => void;
+    delete: (name: string) => void;
+    list: { name: string; filters: Record<string, string> }[];
+  };
 }
 
 export const FilterBar: React.FC<FilterBarProps> = ({
@@ -51,23 +84,88 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   dateRange,
   sort,
   onClear,
+  quickFilters,
+  tags,
+  presets,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showSavePreset, setShowSavePreset] = useState(false);
+  const [presetName, setPresetName] = useState('');
+
+  // Get today's date for quick filters
+  const getToday = () => new Date().toISOString().split('T')[0];
+  const getWeekStart = () => {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
+    return new Date(now.setDate(diff)).toISOString().split('T')[0];
+  };
+  const getMonthStart = () => {
+    return new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+  };
+
+  // Default quick filters if none provided
+  const defaultQuickFilters: QuickFilter[] = quickFilters || [
+    { label: 'HOY', value: 'today', dateFrom: getToday(), dateTo: getToday() },
+    { label: '7 DÍAS', value: 'week', dateFrom: getWeekStart(), dateTo: getToday() },
+    { label: 'ESTE MES', value: 'month', dateFrom: getMonthStart(), dateTo: getToday() },
+  ];
+
+  const handleQuickFilter = useCallback(
+    (qf: QuickFilter) => {
+      if (dateRange) {
+        dateRange.from.onChange(qf.dateFrom || '');
+        dateRange.to.onChange(qf.dateTo || '');
+      }
+    },
+    [dateRange],
+  );
+
+  const handleTagToggle = useCallback(
+    (tag: string) => {
+      if (!tags) return;
+      const current = tags.value;
+      const newTags = current.includes(tag) ? current.filter((t) => t !== tag) : [...current, tag];
+      tags.onChange(newTags);
+    },
+    [tags],
+  );
+
+  const handleSavePreset = useCallback(() => {
+    if (!presetName.trim() || !presets) return;
+    const filterState: Record<string, string> = {};
+    filters.forEach((f) => {
+      if (f.value !== 'todos') filterState[f.value] = f.value;
+    });
+    if (dateRange?.from.value) filterState.dateFrom = dateRange.from.value;
+    if (dateRange?.to.value) filterState.dateTo = dateRange.to.value;
+    if (sort?.value) filterState.sortBy = sort.value;
+    presets.save(presetName.trim());
+    setPresetName('');
+    setShowSavePreset(false);
+  }, [presetName, presets, filters, dateRange, sort]);
 
   const commonStyles =
-    "p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] text-[10px] sm:text-xs h-full w-full hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]";
+    'p-2 sm:p-3 border-2 border-[#1a1a1a] bg-white focus:bg-[#f5f0e8] focus:outline-none focus:ring-0 font-bold uppercase transition-all shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] text-[10px] sm:text-xs h-full w-full hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]';
 
-  const labelStyles = "block text-[9px] sm:text-[10px] font-black uppercase tracking-tighter mb-1.5 ml-1 flex items-center gap-1.5";
+  const labelStyles =
+    'block text-[9px] sm:text-[10px] font-black uppercase tracking-tighter mb-1.5 ml-1 flex items-center gap-1.5';
 
-  const hasActiveFilters = 
-    filters.some(f => f.value !== 'todos' && f.value !== '') || 
+  const hasActiveFilters =
+    filters.some((f) => f.value !== 'todos' && f.value !== '') ||
     (dateRange && (dateRange.from.value !== '' || dateRange.to.value !== '')) ||
-    (sort && sort.value !== sort.options[0]?.value);
+    (sort && sort.value !== sort.options[0]?.value) ||
+    (tags && tags.value.length > 0) ||
+    search.value.length > 0;
 
-  const activeFilterCount = 
-    filters.filter(f => f.value !== 'todos' && f.value !== '').length +
+  const activeFilterCount =
+    filters.filter((f) => f.value !== 'todos' && f.value !== '').length +
     (dateRange?.from.value ? 1 : 0) +
-    (dateRange?.to.value ? 1 : 0);
+    (dateRange?.to.value ? 1 : 0) +
+    (tags?.value.length || 0);
+
+  // Quick Filters Row
+  const renderQuickFilters = quickFilters || defaultQuickFilters;
 
   return (
     <div className="mb-6 sm:mb-8 flex flex-col gap-3 sm:gap-4 sticky top-0 z-30 bg-[#f5f0e8]/80 backdrop-blur-md pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
@@ -81,12 +179,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             type="text"
             value={search.value}
             onChange={(e) => search.onChange(e.target.value)}
-            placeholder={search.placeholder || "BUSCAR..."}
+            placeholder={search.placeholder || 'BUSCAR...'}
             autoComplete="off"
             className={`${commonStyles} pl-10 sm:pl-12 !shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:!shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] !text-xs sm:!text-base py-2.5 sm:py-4 placeholder-[#1a1a1a]/40`}
           />
         </div>
-        
+
         <div className="flex gap-2 sm:gap-3">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -99,7 +197,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 {activeFilterCount}
               </span>
             )}
-            {isExpanded ? <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1" /> : <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1" />}
+            {isExpanded ? (
+              <ChevronUp className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5 sm:w-4 sm:h-4 ml-1" />
+            )}
           </button>
 
           {onClear && (
@@ -115,6 +217,48 @@ export const FilterBar: React.FC<FilterBarProps> = ({
         </div>
       </div>
 
+      {/* Quick Filters Row */}
+      {renderQuickFilters.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <span className="text-[9px] font-black uppercase text-[#1a1a1a]/40 flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            Rápido:
+          </span>
+          {renderQuickFilters.map((qf) => (
+            <button
+              key={qf.value}
+              onClick={() => handleQuickFilter(qf)}
+              className="px-2 py-1 text-[9px] font-black uppercase border border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
+            >
+              {qf.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Tags Filter */}
+      {tags && tags.available.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-[9px] font-black uppercase text-[#1a1a1a]/40 flex items-center gap-1">
+            <Tag className="w-3 h-3" />
+            Etiquetas:
+          </span>
+          {tags.available.map((tag) => (
+            <button
+              key={tag}
+              onClick={() => handleTagToggle(tag)}
+              className={`px-2 py-1 text-[9px] font-black uppercase border transition-all shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] ${
+                tags.value.includes(tag)
+                  ? 'bg-[#0055ff] text-white border-[#0055ff]'
+                  : 'border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white'
+              }`}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Advanced Filters Drawer */}
       <AnimatePresence>
         {isExpanded && (
@@ -126,7 +270,6 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             className="overflow-hidden"
           >
             <div className="p-4 sm:p-6 bg-[#f5f0e8] border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mt-1 max-h-[60vh] overflow-y-auto custom-scrollbar">
-              
               {/* Dynamic Filters */}
               {(filters || []).map((filter, idx) => (
                 <div key={idx} className="flex flex-col">
@@ -172,7 +315,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   <div className="flex flex-col">
                     <label className={labelStyles}>
                       <Calendar className="w-3 h-3 text-[#0055ff]" />
-                      {dateRange.from.label || "Desde"}
+                      {dateRange.from.label || 'Desde'}
                     </label>
                     <input
                       type="date"
@@ -184,7 +327,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   <div className="flex flex-col">
                     <label className={labelStyles}>
                       <Calendar className="w-3 h-3 text-[#e63b2e]" />
-                      {dateRange.to.label || "Hasta"}
+                      {dateRange.to.label || 'Hasta'}
                     </label>
                     <input
                       type="date"
@@ -201,7 +344,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 <div className="flex flex-col">
                   <label className={labelStyles}>
                     <ArrowUpDown className="w-3 h-3 text-[#0055ff]" />
-                    {sort.label || "Ordenar por"}
+                    {sort.label || 'Ordenar por'}
                   </label>
                   <div className="relative">
                     <select
@@ -225,18 +368,32 @@ export const FilterBar: React.FC<FilterBarProps> = ({
       </AnimatePresence>
 
       {/* Active Filter Badges */}
-      {hasActiveFilters && (
+      {(hasActiveFilters || (tags && tags.value.length > 0)) && (
         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 px-1 -mx-1">
           <span className="text-[9px] font-black uppercase text-[#1a1a1a]/50 whitespace-nowrap">Activos:</span>
-          <div className="flex gap-2">
-            {filters.filter(f => f.value !== 'todos' && f.value !== '').map((f, i) => (
-              <span key={i} className="px-2 py-1 bg-white border border-[#1a1a1a] text-[9px] font-bold uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] whitespace-nowrap shrink-0">
-                {f.value}
-                <button onClick={() => f.onChange('todos')} className="hover:text-[#e63b2e] p-0.5">
+          <div className="flex gap-2 flex-wrap">
+            {search.value && (
+              <span className="px-2 py-1 bg-[#1a1a1a] text-white border border-[#1a1a1a] text-[9px] font-bold uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] whitespace-nowrap shrink-0">
+                "{search.value.substring(0, 15)}
+                {search.value.length > 15 ? '...' : ''}"
+                <button onClick={() => search.onChange('')} className="hover:text-[#e63b2e] p-0.5">
                   <X className="w-3 h-3" />
                 </button>
               </span>
-            ))}
+            )}
+            {filters
+              .filter((f) => f.value !== 'todos' && f.value !== '')
+              .map((f, i) => (
+                <span
+                  key={i}
+                  className="px-2 py-1 bg-white border border-[#1a1a1a] text-[9px] font-bold uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] whitespace-nowrap shrink-0"
+                >
+                  {f.value}
+                  <button onClick={() => f.onChange('todos')} className="hover:text-[#e63b2e] p-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
             {dateRange?.from.value && (
               <span className="px-2 py-1 bg-white border border-[#1a1a1a] text-[9px] font-bold uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] whitespace-nowrap shrink-0">
                 Desde: {dateRange.from.value}
@@ -253,10 +410,20 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 </button>
               </span>
             )}
+            {tags?.value.map((tag) => (
+              <span
+                key={tag}
+                className="px-2 py-1 bg-[#0055ff] text-white border border-[#0055ff] text-[9px] font-bold uppercase flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] whitespace-nowrap shrink-0"
+              >
+                {tag}
+                <button onClick={() => handleTagToggle(tag)} className="hover:text-[#e63b2e] p-0.5">
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))}
           </div>
         </div>
       )}
     </div>
   );
 };
-

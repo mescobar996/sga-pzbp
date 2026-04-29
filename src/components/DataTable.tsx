@@ -79,7 +79,9 @@ export function DataTable<T extends { id: string }>({
                   {col.label}
                 </th>
               ))}
-              {showActions && <th className="p-2 sm:p-3 font-black uppercase tracking-widest text-xs text-right">Acciones</th>}
+              {showActions && (
+                <th className="p-2 sm:p-3 font-black uppercase tracking-widest text-xs text-right">Acciones</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -96,15 +98,23 @@ export function DataTable<T extends { id: string }>({
                 {showActions && (
                   <td className="p-2 sm:p-3 flex sm:justify-end gap-1.5 sm:gap-2">
                     <button
-                      onClick={() => onEdit(item)}
-                      className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center p-1.5 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] hover:bg-[#0055ff] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log('Edit clicked for item:', item.id);
+                        onEdit(item);
+                      }}
+                      className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center p-1.5 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] hover:bg-[#0055ff] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] cursor-pointer"
                       title="Editar"
                     >
                       <Edit className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
                     </button>
                     <button
-                      onClick={() => onDelete(item)}
-                      className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center p-1.5 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        console.log('Delete clicked for item:', item.id);
+                        onDelete(item);
+                      }}
+                      className="min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px] flex items-center justify-center p-1.5 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] cursor-pointer"
                       title="Eliminar"
                     >
                       <Trash2 className="w-4 h-4 sm:w-3.5 sm:h-3.5" />
