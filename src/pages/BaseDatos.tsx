@@ -289,7 +289,6 @@ export default function BaseDatos() {
       }
       setIsCategoryModalOpen(false);
       // Force reload categories
-      const { getCategories } = await import('../db/diligenciamientos');
       const updated = await getCategories();
       setCategories(updated);
     } catch (error) {
@@ -303,7 +302,6 @@ export default function BaseDatos() {
       await deleteCategory(id);
       toast.success('Módulo eliminado');
       // Force reload categories
-      const { getCategories } = await import('../db/diligenciamientos');
       const updated = await getCategories();
       setCategories(updated);
     } catch (error) {
@@ -779,6 +777,8 @@ export default function BaseDatos() {
         'personal',
         'locations',
         'notifications',
+        'diligenciamientos',
+        'diligenciamiento_categories',
       ];
       const backupData: Record<string, unknown[]> = {};
 
@@ -809,6 +809,8 @@ export default function BaseDatos() {
         'notifications',
         'personal',
         'locations',
+        'diligenciamientos',
+        'diligenciamiento_categories',
       ];
 
       for (const colName of collectionsToDelete) {

@@ -35,9 +35,6 @@ export default function AdminUsuarios() {
 
       if (error) throw error;
 
-      // Get sign-in info from auth.users via a separate call
-      const { data: authData } = await supabase.auth.admin?.listUsers?.() ?? { data: { users: [] } };
-
       const mapped: UserRecord[] = (data || []).map((row: any) => ({
         id: row.id,
         name: row.name || row.email?.split('@')[0] || 'Sin nombre',
@@ -45,7 +42,7 @@ export default function AdminUsuarios() {
         role: row.role || 'user',
         photo_url: row.photo_url,
         created_at: row.created_at,
-        last_sign_in_at: authData?.users?.find((u: any) => u.id === row.id)?.last_sign_in_at || row.created_at,
+        last_sign_in_at: row.created_at, // Use created_at since last_sign_in_at is in auth.users
       }));
 
       setUsers(mapped);
