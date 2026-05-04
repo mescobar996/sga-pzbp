@@ -296,6 +296,29 @@ export default function BaseDatos() {
     }
   };
 
+  const handleDeleteAllCategories = async () => {
+    if (!window.confirm('¿ELIMINAR TODOS LOS MÓDULOS? Esta acción no se puede deshacer y todos los registros se moverán a OTROS.')) return;
+    
+    const confirmText = window.prompt('Escribe "ELIMINAR TODO" para confirmar:');
+    if (confirmText !== 'ELIMINAR TODO') {
+      toast.error('Confirmación incorrecta');
+      return;
+    }
+
+    try {
+      // In Supabase, if we want to delete everything without a complex WHERE, 
+      // we can use a "neq" filter that matches everything (like id != '')
+      const { error } = await supabase.from('diligenciamiento_categories').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      if (error) throw error;
+      
+      toast.success('Todos los módulos han sido eliminados');
+      const updated = await getCategories();
+      setCategories(updated);
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
   const handleDeleteCategory = async (id: string) => {
     if (!window.confirm('¿Eliminar este módulo? Los registros existentes se moverán a OTROS.')) return;
     try {
@@ -922,46 +945,56 @@ export default function BaseDatos() {
               accentColor="#0055ff"
             />
 
-            <DataTable<DiligenciamientoCategory>
-              data={categories}
-              columns={[
-                {
-                  key: 'name',
-                  label: 'Módulo',
-                  render: (c) => (
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={`w-8 h-8 ${c.color} border-2 border-[#1a1a1a] flex items-center justify-center text-white`}
-                      >
-                        {(() => {
-                          const IconComp = (LucideIcons as any)[c.icon] || Layout;
-                          return <IconComp className="w-4 h-4" />;
-                        })()}
+            <div className="relative group">
+              <DataTable<DiligenciamientoCategory>
+                data={categories}
+                columns={[
+                  {
+                    key: 'name',
+                    label: 'Módulo',
+                    render: (c) => (
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-8 h-8 ${c.color} border-2 border-[#1a1a1a] flex items-center justify-center text-white`}
+                        >
+                          {(() => {
+                            const IconComp = (LucideIcons as any)[c.icon] || Layout;
+                            return <IconComp className="w-4 h-4" />;
+                          })()}
+                        </div>
+                        <span className="font-bold">{c.name}</span>
                       </div>
-                      <span className="font-bold">{c.name}</span>
-                    </div>
-                  ),
-                },
-                {
-                  key: 'icon',
-                  label: 'Icono',
-                  render: (c) => <span className="text-[10px] font-black opacity-40">{c.icon}</span>,
-                },
-              ]}
-              onAdd={() => {
-                setEditingCategory(null);
-                setCategoryForm({ name: '', icon: 'Layout', color: 'bg-[#1a1a1a]' });
-                setIsCategoryModalOpen(true);
-              }}
-              onEdit={(c) => {
-                setEditingCategory(c);
-                setCategoryForm({ name: c.name, icon: c.icon, color: c.color });
-                setIsCategoryModalOpen(true);
-              }}
-              onDelete={(c) => handleDeleteCategory(c.id)}
-              addLabel="Módulo"
-              accentColor="#ff9900"
-            />
+                    ),
+                  },
+                  {
+                    key: 'icon',
+                    label: 'Icono',
+                    render: (c) => <span className="text-[10px] font-black opacity-40">{c.icon}</span>,
+                  },
+                ]}
+                onAdd={() => {
+                  setEditingCategory(null);
+                  setCategoryForm({ name: '', icon: 'Layout', color: 'bg-[#1a1a1a]' });
+                  setIsCategoryModalOpen(true);
+                }}
+                onEdit={(c) => {
+                  setEditingCategory(c);
+                  setCategoryForm({ name: c.name, icon: c.icon, color: c.color });
+                  setIsCategoryModalOpen(true);
+                }}
+                onDelete={(c) => handleDeleteCategory(c.id)}
+                addLabel="Módulo"
+                accentColor="#ff9900"
+              />
+              {isAdmin && categories.length > 0 && (
+                <button
+                  onClick={handleDeleteAllCategories}
+                  className="absolute top-2 right-44 z-10 px-3 py-1.5 border-2 border-[#e63b2e] bg-white text-[#e63b2e] font-black uppercase text-[10px] tracking-widest hover:bg-[#e63b2e] hover:text-white transition-colors flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(230,59,46,0.3)]"
+                >
+                  <Trash2 className="w-3 h-3" /> Borrar Todo
+                </button>
+              )}
+            </div>
 
             {/* System Status & Actions */}
             <div className="lg:col-span-2 bg-[#1a1a1a] text-white border-2 border-[#1a1a1a] p-6 shadow-[8px_8px_0px_0px_rgba(0,85,255,1)]">

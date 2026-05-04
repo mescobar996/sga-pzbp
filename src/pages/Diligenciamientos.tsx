@@ -120,14 +120,18 @@ export default function Diligenciamientos() {
     const unsubCat = onCategoriesChange((data) => {
       const validData = Array.isArray(data) ? data : [];
       const dbCats = validData.map(c => ({ id: c.name, label: c.name, icon: c.icon, color: c.color, isDynamic: true }));
-      // Combine defaults (if not already in DB) with DB categories
-      const combined = [...dbCats];
-      DEFAULT_CATEGORIES.forEach(def => {
-        if (!combined.find(c => c.id === def.id)) {
-          combined.push(def);
+      
+      // If no categories in DB, show OTROS as fallback
+      if (dbCats.length === 0) {
+        setCategories([{ id: 'OTROS', label: 'OTROS', icon: 'MoreHorizontal', color: 'bg-gray-500' }]);
+      } else {
+        // Always add OTROS at the end if not present
+        const combined = [...dbCats];
+        if (!combined.find(c => c.id === 'OTROS')) {
+          combined.push({ id: 'OTROS', label: 'OTROS', icon: 'MoreHorizontal', color: 'bg-gray-500' });
         }
-      });
-      setCategories(combined);
+        setCategories(combined);
+      }
     });
 
     // Auto-refresh when user returns to tab
@@ -137,11 +141,9 @@ export default function Diligenciamientos() {
         const validData = Array.isArray(data) ? data : [];
         const dbCats = validData.map(c => ({ id: c.name, label: c.name, icon: c.icon, color: c.color, isDynamic: true }));
         const combined = [...dbCats];
-        DEFAULT_CATEGORIES.forEach(def => {
-          if (!combined.find(c => c.id === def.id)) {
-            combined.push(def);
-          }
-        });
+        if (!combined.find(c => c.id === 'OTROS')) {
+          combined.push({ id: 'OTROS', label: 'OTROS', icon: 'MoreHorizontal', color: 'bg-gray-500' });
+        }
         setCategories(combined);
       });
     };
