@@ -33,64 +33,64 @@ type ReportRecord = Record<string, string | number | null | undefined>;
 type ReportData = Record<string, ReportRecord[]>;
 
 const SOURCE_LABELS: Record<string, string> = {
-  todas: 'Todas las fuentes',
-  visitas: 'Visitas técnicas',
-  tareas: 'Tareas operativas',
-  personal: 'Personal',
-  novedades: 'Novedades',
-  diligenciamientos: 'Diligenciamientos',
+  todas: 'TODAS LAS FUENTES',
+  visitas: 'VISITAS TÉCNICAS',
+  tareas: 'TAREAS OPERATIVAS',
+  personal: 'PERSONAL',
+  novedades: 'NOVEDADES',
+  diligenciamientos: 'DILIGENCIAMIENTOS',
 };
 
 const SORT_LABELS: Record<string, string> = {
-  fecha_desc: 'Más recientes primero',
-  fecha_asc: 'Más antiguos primero',
-  prioridad: 'Prioridad operativa',
+  fecha_desc: 'MÁS RECIENTES PRIMERO',
+  fecha_asc: 'MÁS ANTIGUOS PRIMERO',
+  prioridad: 'PRIORIDAD OPERATIVA',
 };
 
 const SOURCE_ORDER = ['visitas', 'tareas', 'personal', 'novedades', 'diligenciamientos'];
 
 const REPORT_COLUMNS: Record<string, ReportColumn[]> = {
   visitas: [
-    { key: 'fecha', label: 'Fecha', priority: 'meta' },
-    { key: 'hora', label: 'Hora', priority: 'meta' },
-    { key: 'origen', label: 'Origen', priority: 'primary' },
-    { key: 'destino', label: 'Destino', priority: 'primary' },
-    { key: 'responsable', label: 'Responsable' },
-    { key: 'observaciones', label: 'Observaciones', priority: 'long' },
-    { key: 'comentarios', label: 'Com.', priority: 'count' },
-    { key: 'adjuntos', label: 'Adj.', priority: 'count' },
+    { key: 'fecha', label: 'FECHA', priority: 'meta' },
+    { key: 'hora', label: 'HORA', priority: 'meta' },
+    { key: 'origen', label: 'ORIGEN', priority: 'primary' },
+    { key: 'destino', label: 'DESTINO', priority: 'primary' },
+    { key: 'responsable', label: 'RESPONSABLE' },
+    { key: 'observaciones', label: 'OBSERVACIONES', priority: 'long' },
+    { key: 'comentarios', label: 'COM.', priority: 'count' },
+    { key: 'adjuntos', label: 'ADJ.', priority: 'count' },
   ],
   tareas: [
-    { key: 'titulo', label: 'Tarea', priority: 'primary' },
-    { key: 'prioridad', label: 'Prioridad', priority: 'badge' },
-    { key: 'estado', label: 'Estado', priority: 'badge' },
-    { key: 'vencimiento', label: 'Vencimiento', priority: 'meta' },
-    { key: 'descripcion', label: 'Descripción', priority: 'long' },
-    { key: 'etiquetas', label: 'Etiquetas' },
-    { key: 'subtareas', label: 'Subtareas', priority: 'count' },
-    { key: 'comentarios', label: 'Com.', priority: 'count' },
-    { key: 'adjuntos', label: 'Adj.', priority: 'count' },
-    { key: 'recurrencia', label: 'Recurrencia' },
+    { key: 'titulo', label: 'TAREA', priority: 'primary' },
+    { key: 'prioridad', label: 'PRIORIDAD', priority: 'badge' },
+    { key: 'estado', label: 'ESTADO', priority: 'badge' },
+    { key: 'vencimiento', label: 'VENCIMIENTO', priority: 'meta' },
+    { key: 'descripcion', label: 'DESCRIPCIÓN', priority: 'long' },
+    { key: 'etiquetas', label: 'ETIQUETAS' },
+    { key: 'subtareas', label: 'SUBTAREAS', priority: 'count' },
+    { key: 'comentarios', label: 'COM.', priority: 'count' },
+    { key: 'adjuntos', label: 'ADJ.', priority: 'count' },
+    { key: 'recurrencia', label: 'RECURRENCIA' },
   ],
   personal: [
-    { key: 'nombre', label: 'Nombre', priority: 'primary' },
-    { key: 'rol', label: 'Rol / función' },
-    { key: 'estado', label: 'Estado', priority: 'badge' },
+    { key: 'nombre', label: 'NOMBRE', priority: 'primary' },
+    { key: 'rol', label: 'ROL / FUNCIÓN' },
+    { key: 'estado', label: 'ESTADO', priority: 'badge' },
   ],
   novedades: [
-    { key: 'fecha', label: 'Fecha', priority: 'meta' },
-    { key: 'titulo', label: 'Título', priority: 'primary' },
-    { key: 'autor', label: 'Autor' },
-    { key: 'contenido', label: 'Contenido', priority: 'long' },
-    { key: 'adjuntos', label: 'Adj.', priority: 'count' },
+    { key: 'fecha', label: 'FECHA', priority: 'meta' },
+    { key: 'titulo', label: 'TÍTULO', priority: 'primary' },
+    { key: 'autor', label: 'AUTOR' },
+    { key: 'contenido', label: 'CONTENIDO', priority: 'long' },
+    { key: 'adjuntos', label: 'ADJ.', priority: 'count' },
   ],
   diligenciamientos: [
-    { key: 'fecha', label: 'Fecha', priority: 'meta' },
-    { key: 'categoria', label: 'Categoría', priority: 'badge' },
-    { key: 'titulo', label: 'Título', priority: 'primary' },
-    { key: 'autor', label: 'Autor' },
-    { key: 'detalle', label: 'Detalle', priority: 'long' },
-    { key: 'adjuntos', label: 'Adj.', priority: 'count' },
+    { key: 'fecha', label: 'FECHA', priority: 'meta' },
+    { key: 'categoria', label: 'CATEGORÍA', priority: 'badge' },
+    { key: 'titulo', label: 'TÍTULO', priority: 'primary' },
+    { key: 'autor', label: 'AUTOR' },
+    { key: 'detalle', label: 'DETALLE', priority: 'long' },
+    { key: 'adjuntos', label: 'ADJ.', priority: 'count' },
   ],
 };
 
@@ -104,8 +104,9 @@ const SOURCE_COLORS: Record<string, string> = {
 
 function safeText(value: unknown, fallback = '—'): string {
   if (value === null || value === undefined || value === '') return fallback;
-  if (Array.isArray(value)) return value.length ? value.join(', ') : fallback;
-  return String(value).trim() || fallback;
+  const raw = Array.isArray(value) ? value.join(', ') : String(value);
+  const cleaned = raw.replace(/\s+/g, ' ').trim();
+  return (cleaned || fallback).toUpperCase();
 }
 
 function arrayCount(value: unknown): number {
@@ -113,11 +114,11 @@ function arrayCount(value: unknown): number {
 }
 
 function formatDate(value: unknown, includeTime = false): string {
-  const text = safeText(value, '');
+  const text = value === null || value === undefined || value === '' ? '' : String(value);
   if (!text) return '—';
   const date = new Date(text);
-  if (Number.isNaN(date.getTime())) return text;
-  return includeTime ? date.toLocaleString('es-ES') : date.toLocaleDateString('es-ES');
+  if (Number.isNaN(date.getTime())) return safeText(text);
+  return safeText(includeTime ? date.toLocaleString('es-ES') : date.toLocaleDateString('es-ES'));
 }
 
 function getRecordDate(row: Record<string, any>, source: string): Date | null {
@@ -154,11 +155,11 @@ function normalizeRecord(source: string, row: Record<string, any>): ReportRecord
       estado: safeText(row.status),
       vencimiento: formatDate(row.due_date || row.dueDate),
       descripcion: safeText(row.description),
-      etiquetas: Array.isArray(row.tags) && row.tags.length ? row.tags.join(', ') : '—',
+      etiquetas: Array.isArray(row.tags) && row.tags.length ? safeText(row.tags.join(', ')) : '—',
       subtareas: subtasks.length ? `${completedSubtasks}/${subtasks.length}` : '0',
       comentarios: arrayCount(row.comments),
       adjuntos: arrayCount(row.attachments),
-      recurrencia: safeText(row.recurrence, 'none'),
+      recurrencia: safeText(row.recurrence, 'NONE'),
     };
   }
 
@@ -197,6 +198,14 @@ function normalizeRecord(source: string, row: Record<string, any>): ReportRecord
 function truncate(value: unknown, maxLength = 120): string {
   const text = safeText(value);
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
+function getNonEmptyReportData(data: ReportData): ReportData {
+  return Object.fromEntries(Object.entries(data).filter(([, records]) => records.length > 0));
+}
+
+function getReportTotal(data: ReportData): number {
+  return Object.values(data).reduce((sum, records) => sum + records.length, 0);
 }
 
 export default function Reportes() {
@@ -242,10 +251,10 @@ export default function Reportes() {
   const taskCompletion = useMemo(() => {
     const tasks = dataPreview.tareas || [];
     if (!tasks.length) return 0;
-    return Math.round((tasks.filter((task) => task.estado === 'completado').length / tasks.length) * 100);
+    return Math.round((tasks.filter((task) => safeText(task.estado) === 'COMPLETADO').length / tasks.length) * 100);
   }, [dataPreview]);
 
-  const periodLabel = `${dateFrom || 'Sin inicio'} — ${dateTo || 'Sin fin'}`;
+  const periodLabel = `${dateFrom || 'SIN INICIO'} — ${dateTo || 'SIN FIN'}`;
 
   const fetchData = async (): Promise<ReportData> => {
     const reportData: ReportData = {};
@@ -300,7 +309,7 @@ export default function Reportes() {
       setShowPreview(true);
     } catch (error) {
       console.error(error);
-      toast.error('Error al cargar la vista previa');
+      toast.error('ERROR AL CARGAR LA VISTA PREVIA');
     } finally {
       setIsLoadingPreview(false);
     }
@@ -328,7 +337,7 @@ export default function Reportes() {
     link.download = `Reporte_SGA_PZBP_${new Date().toISOString().split('T')[0]}.pdf`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success('PDF descargado con éxito', { id: 'report-gen' });
+    toast.success('PDF DESCARGADO CON ÉXITO', { id: 'report-gen' });
   };
 
   const generateExcel = (data: ReportData) => {
@@ -336,16 +345,16 @@ export default function Reportes() {
 
     const summaryRows = [
       ['REPORTE SGA PZBP'],
-      ['Generado', new Date().toLocaleString('es-ES')],
-      ['Fuente', SOURCE_LABELS[dataSource] || dataSource],
-      ['Período', periodLabel],
-      ['Orden', SORT_LABELS[sortBy] || sortBy],
+      ['GENERADO', safeText(new Date().toLocaleString('es-ES'))],
+      ['FUENTE', SOURCE_LABELS[dataSource] || safeText(dataSource)],
+      ['PERÍODO', periodLabel],
+      ['ORDEN', SORT_LABELS[sortBy] || safeText(sortBy)],
       [],
-      ['Módulo', 'Registros'],
-      ...Object.entries(data).map(([source, records]) => [SOURCE_LABELS[source] || source, records.length]),
+      ['MÓDULO', 'REGISTROS'],
+      ...Object.entries(data).map(([source, records]) => [SOURCE_LABELS[source] || safeText(source), records.length]),
       [],
-      ['Total', totalRecords],
-      ['Completitud tareas', `${taskCompletion}%`],
+      ['TOTAL', getReportTotal(data)],
+      ['COMPLETITUD TAREAS', `${data.tareas?.length ? Math.round((data.tareas.filter((task) => safeText(task.estado) === 'COMPLETADO').length / data.tareas.length) * 100) : 0}%`],
     ];
 
     const summarySheet = XLSX.utils.aoa_to_sheet(summaryRows);
@@ -362,23 +371,23 @@ export default function Reportes() {
         return row;
       });
 
-      const worksheet = XLSX.utils.json_to_sheet(worksheetRows.length ? worksheetRows : [{ Estado: 'Sin datos' }]);
+      const worksheet = XLSX.utils.json_to_sheet(worksheetRows);
       worksheet['!cols'] = columns.map((column) => ({ wch: column.priority === 'long' ? 48 : column.priority === 'primary' ? 30 : 16 }));
       XLSX.utils.book_append_sheet(workbook, worksheet, SOURCE_LABELS[source].slice(0, 31));
     });
 
     XLSX.writeFile(workbook, `Reporte_SGA_PZBP_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast.success('Excel descargado con éxito', { id: 'report-gen' });
+    toast.success('EXCEL DESCARGADO CON ÉXITO', { id: 'report-gen' });
   };
 
   const generateJSON = (data: ReportData) => {
     const payload = {
       metadata: {
         generatedAt: new Date().toISOString(),
-        source: SOURCE_LABELS[dataSource] || dataSource,
+        source: SOURCE_LABELS[dataSource] || safeText(dataSource),
         period: { from: dateFrom || null, to: dateTo || null },
-        order: SORT_LABELS[sortBy] || sortBy,
-        totalRecords,
+        order: SORT_LABELS[sortBy] || safeText(sortBy),
+        totalRecords: getReportTotal(data),
       },
       data,
     };
@@ -389,20 +398,24 @@ export default function Reportes() {
     link.download = `Reporte_SGA_PZBP_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
-    toast.success('JSON descargado con éxito', { id: 'report-gen' });
+    toast.success('JSON DESCARGADO CON ÉXITO', { id: 'report-gen' });
   };
 
   const handleGenerateReport = async () => {
     setIsGenerating(true);
-    toast.loading('Generando reporte...', { id: 'report-gen' });
+    toast.loading('GENERANDO REPORTE...', { id: 'report-gen' });
     try {
-      const data = showPreview ? dataPreview : await fetchData();
+      const data = getNonEmptyReportData(showPreview ? dataPreview : await fetchData());
+      if (getReportTotal(data) === 0) {
+        toast.error('NO HAY DATOS PARA EXPORTAR CON LOS FILTROS ACTUALES', { id: 'report-gen' });
+        return;
+      }
       if (format === 'pdf') await generatePDF(data);
       if (format === 'excel') generateExcel(data);
       if (format === 'json') generateJSON(data);
     } catch (error) {
       console.error(error);
-      toast.error('Error al generar el reporte', { id: 'report-gen' });
+      toast.error('ERROR AL GENERAR EL REPORTE', { id: 'report-gen' });
     } finally {
       setIsGenerating(false);
     }
@@ -421,18 +434,18 @@ export default function Reportes() {
       <div className="mb-6 overflow-hidden border-2 border-[#1a1a1a] bg-white shadow-[6px_6px_0px_0px_rgba(26,26,26,1)]">
         <div className="bg-[#1a1a1a] text-white px-5 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#8fb2ff] mb-1">Centro de reportes</p>
-            <h1 className="text-2xl sm:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Reporte operativo</h1>
+            <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#8fb2ff] mb-1">CENTRO DE REPORTES</p>
+            <h1 className="text-2xl sm:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">REPORTE OPERATIVO</h1>
           </div>
           <div className="flex items-center gap-3 text-xs font-black uppercase">
             <BarChart3 className="w-5 h-5 text-[#8fb2ff]" />
-            {showPreview ? `${totalRecords} registros listos` : 'Configura y previsualiza'}
+            {showPreview ? `${totalRecords} REGISTROS LISTOS` : 'CONFIGURA Y PREVISUALIZA'}
           </div>
         </div>
         <div className="px-5 py-4 bg-[#f5f0e8] grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-bold uppercase">
-          <div><span className="opacity-50 block text-[10px] font-black">Fuente</span>{SOURCE_LABELS[dataSource] || dataSource}</div>
-          <div><span className="opacity-50 block text-[10px] font-black">Período</span>{periodLabel}</div>
-          <div><span className="opacity-50 block text-[10px] font-black">Orden</span>{SORT_LABELS[sortBy]}</div>
+          <div><span className="opacity-50 block text-[10px] font-black">FUENTE</span>{SOURCE_LABELS[dataSource] || dataSource}</div>
+          <div><span className="opacity-50 block text-[10px] font-black">PERÍODO</span>{periodLabel}</div>
+          <div><span className="opacity-50 block text-[10px] font-black">ORDEN</span>{SORT_LABELS[sortBy]}</div>
         </div>
       </div>
 
@@ -440,12 +453,12 @@ export default function Reportes() {
         <aside className="bg-white border-2 border-[#1a1a1a] p-5 shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] h-fit xl:sticky xl:top-4">
           <div className="flex items-center gap-2 border-b-2 border-[#1a1a1a] pb-3 mb-5">
             <Filter className="w-5 h-5" />
-            <h2 className="text-lg font-black uppercase font-['Space_Grotesk']">Configuración</h2>
+            <h2 className="text-lg font-black uppercase font-['Space_Grotesk']">CONFIGURACIÓN</h2>
           </div>
 
           <div className="space-y-5">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest mb-2">Fuente de datos</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-2">FUENTE DE DATOS</label>
               <select
                 value={dataSource}
                 onChange={(event) => {
@@ -454,18 +467,18 @@ export default function Reportes() {
                 }}
                 className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:outline-none font-black uppercase text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
               >
-                <option value="todas">Todas las fuentes</option>
-                <option value="visitas">Visitas técnicas</option>
-                <option value="tareas">Tareas operativas</option>
-                <option value="personal">Personal</option>
-                <option value="novedades">Novedades</option>
-                <option value="diligenciamientos">Diligenciamientos</option>
+                <option value="todas">TODAS LAS FUENTES</option>
+                <option value="visitas">VISITAS TÉCNICAS</option>
+                <option value="tareas">TAREAS OPERATIVAS</option>
+                <option value="personal">PERSONAL</option>
+                <option value="novedades">NOVEDADES</option>
+                <option value="diligenciamientos">DILIGENCIAMIENTOS</option>
               </select>
             </div>
 
             {dataSource === 'diligenciamientos' && (
               <div>
-                <label className="block text-[10px] font-black uppercase tracking-widest mb-2">Categoría</label>
+                <label className="block text-[10px] font-black uppercase tracking-widest mb-2">CATEGORÍA</label>
                 <select
                   value={selectedCategory}
                   onChange={(event) => {
@@ -474,10 +487,10 @@ export default function Reportes() {
                   }}
                   className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:outline-none font-black uppercase text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
                 >
-                  <option value="todas">Todas las categorías</option>
+                  <option value="todas">TODAS LAS CATEGORÍAS</option>
                   {availableCategories.map((category) => (
-                    <option key={category.id || category.name} value={category.name}>
-                      {category.name}
+                    <option key={category.id || category.name} value={safeText(category.name)}>
+                      {safeText(category.name)}
                     </option>
                   ))}
                   <option value="OTROS">OTROS</option>
@@ -499,7 +512,7 @@ export default function Reportes() {
             />
 
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest mb-2">Ordenamiento</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-2">ORDENAMIENTO</label>
               <select
                 value={sortBy}
                 onChange={(event) => {
@@ -508,9 +521,9 @@ export default function Reportes() {
                 }}
                 className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:outline-none font-black uppercase text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
               >
-                <option value="fecha_desc">Más recientes primero</option>
-                <option value="fecha_asc">Más antiguos primero</option>
-                <option value="prioridad">Prioridad operativa</option>
+                <option value="fecha_desc">MÁS RECIENTES PRIMERO</option>
+                <option value="fecha_asc">MÁS ANTIGUOS PRIMERO</option>
+                <option value="prioridad">PRIORIDAD OPERATIVA</option>
               </select>
             </div>
 
@@ -522,14 +535,14 @@ export default function Reportes() {
                 disabled={isLoadingPreview}
                 className="w-full py-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 text-xs sm:text-sm"
               >
-                <Eye className="w-4 h-4" /> {isLoadingPreview ? 'Cargando...' : 'Cargar vista previa'}
+                <Eye className="w-4 h-4" /> {isLoadingPreview ? 'CARGANDO...' : 'CARGAR VISTA PREVIA'}
               </button>
               <button
                 onClick={handleGenerateReport}
                 disabled={isGenerating}
                 className="w-full py-4 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed text-sm"
               >
-                <Download className="w-5 h-5" /> {isGenerating ? 'Generando...' : 'Descargar reporte'}
+                <Download className="w-5 h-5" /> {isGenerating ? 'GENERANDO...' : 'DESCARGAR REPORTE'}
               </button>
             </div>
           </div>
@@ -540,19 +553,19 @@ export default function Reportes() {
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                 <div className="col-span-2 p-5 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[#8fb2ff] mb-2">Resumen</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[#8fb2ff] mb-2">RESUMEN</p>
                   <p className="text-4xl font-black font-['Space_Grotesk']">{totalRecords}</p>
-                  <p className="text-xs font-bold uppercase opacity-70">registros normalizados</p>
+                  <p className="text-xs font-bold uppercase opacity-70">REGISTROS NORMALIZADOS</p>
                 </div>
                 <div className="p-5 border-2 border-[#1a1a1a] bg-white shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2">Tareas</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2">TAREAS</p>
                   <p className="text-3xl font-black font-['Space_Grotesk']">{taskCompletion}%</p>
-                  <p className="text-xs font-bold uppercase opacity-60">completitud</p>
+                  <p className="text-xs font-bold uppercase opacity-60">COMPLETITUD</p>
                 </div>
                 <div className="p-5 border-2 border-[#1a1a1a] bg-white shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2">Formato</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2">FORMATO</p>
                   <p className="text-3xl font-black font-['Space_Grotesk'] uppercase">{format}</p>
-                  <p className="text-xs font-bold uppercase opacity-60">salida</p>
+                  <p className="text-xs font-bold uppercase opacity-60">SALIDA</p>
                 </div>
               </section>
 
@@ -570,8 +583,8 @@ export default function Reportes() {
 
               {Object.entries(dataPreview).length === 0 && (
                 <section className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-10 text-center">
-                  <p className="text-sm font-black uppercase opacity-60">No hay datos para exportar con los filtros actuales.</p>
-                  <p className="text-xs font-bold uppercase opacity-40 mt-2">Probá cambiar la fuente, categoría o rango de fechas.</p>
+                  <p className="text-sm font-black uppercase opacity-60">NO HAY DATOS PARA EXPORTAR CON LOS FILTROS ACTUALES.</p>
+                  <p className="text-xs font-bold uppercase opacity-40 mt-2">PROBÁ CAMBIAR LA FUENTE, CATEGORÍA O RANGO DE FECHAS.</p>
                 </section>
               )}
 
@@ -587,7 +600,7 @@ export default function Reportes() {
                         {sourceIcons[source] || <Database className="w-4 h-4" />}
                         {SOURCE_LABELS[source]}
                       </h2>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-[#8fb2ff]">{records.length} registros</span>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#8fb2ff]">{records.length} REGISTROS</span>
                     </div>
 
                     {records.length > 0 ? (
@@ -624,13 +637,13 @@ export default function Reportes() {
                         ))}
                         {records.length > 8 && (
                           <div className="p-3 text-center text-[10px] font-black uppercase tracking-widest opacity-60 bg-[#f5f0e8]">
-                            Mostrando 8 de {records.length}. El archivo descargado incluye todos los registros.
+                            MOSTRANDO 8 DE {records.length}. EL ARCHIVO DESCARGADO INCLUYE TODOS LOS REGISTROS.
                           </div>
                         )}
                       </div>
                     ) : (
                       <div className="p-10 text-center bg-[#f5f0e8]">
-                        <p className="text-xs font-black uppercase opacity-50">Sin datos disponibles para los filtros actuales</p>
+                        <p className="text-xs font-black uppercase opacity-50">SIN DATOS DISPONIBLES PARA LOS FILTROS ACTUALES</p>
                       </div>
                     )}
                   </section>
@@ -642,16 +655,16 @@ export default function Reportes() {
               <div className="p-5 border-2 border-[#1a1a1a] bg-white shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] mb-6">
                 <FileText className="w-16 h-16 opacity-30" />
               </div>
-              <h3 className="text-2xl font-black uppercase mb-3 font-['Space_Grotesk']">Vista previa pendiente</h3>
+              <h3 className="text-2xl font-black uppercase mb-3 font-['Space_Grotesk']">VISTA PREVIA PENDIENTE</h3>
               <p className="text-xs font-bold opacity-60 max-w-md mb-8 uppercase leading-relaxed">
-                El reporte ahora ordena los datos por módulo y normaliza nombres, fechas, estados y conteos. Carga la vista previa para revisar cómo quedará antes de descargarlo.
+                EL REPORTE USA EL DISEÑO DEL SISTEMA, NORMALIZA LOS DATOS EN UPPERCASE Y EXPORTA SOLO LOS MÓDULOS CON INFORMACIÓN.
               </p>
               <button
                 onClick={loadPreview}
                 disabled={isLoadingPreview}
                 className="px-8 py-4 bg-[#0055ff] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm hover:bg-[#1a1a1a] transition-all shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50"
               >
-                {isLoadingPreview ? 'Cargando...' : 'Cargar vista previa'}
+                {isLoadingPreview ? 'CARGANDO...' : 'CARGAR VISTA PREVIA'}
               </button>
             </div>
           )}

@@ -1,7 +1,9 @@
 import React from 'react';
-import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer';
+import { Document, Image, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 
 type ReportRecord = Record<string, string | number | null | undefined>;
+
+type ReportEntry = [string, ReportRecord[]];
 
 interface ReportPDFProps {
   data: Record<string, ReportRecord[]>;
@@ -15,192 +17,287 @@ interface ReportPDFProps {
 }
 
 const COLORS = {
-  ink: '#18202f',
-  muted: '#647084',
-  line: '#d8dee9',
-  soft: '#f3f6fb',
-  white: '#ffffff',
+  black: '#1a1a1a',
   blue: '#0055ff',
-  green: '#0f9f6e',
-  orange: '#d97706',
-  red: '#dc2626',
+  paper: '#f5f0e8',
+  white: '#ffffff',
+  gray: '#6b7280',
+  line: '#1a1a1a',
+  green: '#00cc66',
+  orange: '#ff9900',
+  red: '#e63b2e',
 };
 
 const SECTION_LABELS: Record<string, string> = {
-  visitas: 'Visitas técnicas',
-  tareas: 'Tareas operativas',
-  personal: 'Personal',
-  novedades: 'Novedades',
-  diligenciamientos: 'Diligenciamientos',
+  visitas: 'VISITAS TÉCNICAS',
+  tareas: 'TAREAS OPERATIVAS',
+  personal: 'PERSONAL',
+  novedades: 'NOVEDADES',
+  diligenciamientos: 'DILIGENCIAMIENTOS',
 };
 
-const COLUMN_MAP: Record<string, { key: string; label: string; width: string }[]> = {
+const COLUMN_MAP: Record<string, { key: string; label: string; width: string; long?: boolean }[]> = {
   visitas: [
-    { key: 'fecha', label: 'Fecha', width: '13%' },
-    { key: 'hora', label: 'Hora', width: '9%' },
-    { key: 'origen', label: 'Origen', width: '18%' },
-    { key: 'destino', label: 'Destino', width: '18%' },
-    { key: 'responsable', label: 'Responsable', width: '20%' },
-    { key: 'observaciones', label: 'Observaciones', width: '22%' },
+    { key: 'fecha', label: 'FECHA', width: '13%' },
+    { key: 'hora', label: 'HORA', width: '9%' },
+    { key: 'origen', label: 'ORIGEN', width: '18%' },
+    { key: 'destino', label: 'DESTINO', width: '18%' },
+    { key: 'responsable', label: 'RESPONSABLE', width: '20%' },
+    { key: 'observaciones', label: 'OBSERVACIONES', width: '22%', long: true },
   ],
   tareas: [
-    { key: 'titulo', label: 'Tarea', width: '28%' },
-    { key: 'prioridad', label: 'Prioridad', width: '12%' },
-    { key: 'estado', label: 'Estado', width: '14%' },
-    { key: 'vencimiento', label: 'Vence', width: '13%' },
-    { key: 'descripcion', label: 'Descripción', width: '23%' },
-    { key: 'subtareas', label: 'Sub.', width: '10%' },
+    { key: 'titulo', label: 'TAREA', width: '28%' },
+    { key: 'prioridad', label: 'PRIORIDAD', width: '12%' },
+    { key: 'estado', label: 'ESTADO', width: '14%' },
+    { key: 'vencimiento', label: 'VENCE', width: '13%' },
+    { key: 'descripcion', label: 'DESCRIPCIÓN', width: '23%', long: true },
+    { key: 'subtareas', label: 'SUB.', width: '10%' },
   ],
   personal: [
-    { key: 'nombre', label: 'Nombre', width: '42%' },
-    { key: 'rol', label: 'Rol / función', width: '36%' },
-    { key: 'estado', label: 'Estado', width: '22%' },
+    { key: 'nombre', label: 'NOMBRE', width: '42%' },
+    { key: 'rol', label: 'ROL / FUNCIÓN', width: '36%' },
+    { key: 'estado', label: 'ESTADO', width: '22%' },
   ],
   novedades: [
-    { key: 'fecha', label: 'Fecha', width: '15%' },
-    { key: 'titulo', label: 'Título', width: '28%' },
-    { key: 'autor', label: 'Autor', width: '20%' },
-    { key: 'contenido', label: 'Contenido', width: '37%' },
+    { key: 'fecha', label: 'FECHA', width: '15%' },
+    { key: 'titulo', label: 'TÍTULO', width: '28%' },
+    { key: 'autor', label: 'AUTOR', width: '20%' },
+    { key: 'contenido', label: 'CONTENIDO', width: '37%', long: true },
   ],
   diligenciamientos: [
-    { key: 'fecha', label: 'Fecha', width: '14%' },
-    { key: 'categoria', label: 'Categoría', width: '18%' },
-    { key: 'titulo', label: 'Título', width: '25%' },
-    { key: 'autor', label: 'Autor', width: '18%' },
-    { key: 'detalle', label: 'Detalle', width: '25%' },
+    { key: 'fecha', label: 'FECHA', width: '14%' },
+    { key: 'categoria', label: 'CATEGORÍA', width: '18%' },
+    { key: 'titulo', label: 'TÍTULO', width: '25%' },
+    { key: 'autor', label: 'AUTOR', width: '18%' },
+    { key: 'detalle', label: 'DETALLE', width: '25%', long: true },
   ],
 };
 
 const styles = StyleSheet.create({
   page: {
-    padding: 30,
+    padding: 28,
     fontFamily: 'Helvetica',
-    color: COLORS.ink,
+    color: COLORS.black,
+    backgroundColor: COLORS.paper,
+  },
+  coverPage: {
+    padding: 26,
+    fontFamily: 'Helvetica',
+    backgroundColor: COLORS.paper,
+    color: COLORS.black,
+  },
+  coverFrame: {
+    height: '100%',
+    borderWidth: 4,
+    borderColor: COLORS.black,
     backgroundColor: COLORS.white,
   },
-  cover: {
-    padding: 42,
-    height: '100%',
-    backgroundColor: COLORS.ink,
+  coverTopBar: {
+    backgroundColor: COLORS.black,
     color: COLORS.white,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  topBarTitle: {
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+    letterSpacing: 1.8,
+  },
+  topBarCode: {
+    fontSize: 9,
+    color: COLORS.paper,
+    fontFamily: 'Helvetica-Bold',
+    letterSpacing: 1.4,
+  },
+  coverBody: {
+    flex: 1,
+    paddingHorizontal: 34,
+    paddingVertical: 30,
+    alignItems: 'center',
     justifyContent: 'space-between',
   },
-  coverTop: {
+  logoPanel: {
     alignItems: 'center',
-    paddingTop: 8,
   },
-  coverLogoWrap: {
-    width: 136,
-    height: 136,
-    borderRadius: 68,
+  logoShadow: {
+    width: 170,
+    height: 170,
+    backgroundColor: COLORS.black,
+    marginLeft: 10,
+    marginTop: 10,
+  },
+  logoBox: {
+    position: 'absolute',
+    width: 170,
+    height: 170,
     backgroundColor: COLORS.white,
+    borderWidth: 4,
+    borderColor: COLORS.black,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 26,
   },
-  coverLogo: {
-    width: 102,
-    height: 102,
+  logo: {
+    width: 128,
+    height: 128,
     objectFit: 'contain',
   },
-  coverKicker: {
+  coverLabel: {
+    marginTop: 24,
+    backgroundColor: COLORS.blue,
+    color: COLORS.white,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+    borderWidth: 2,
+    borderColor: COLORS.black,
     fontSize: 9,
-    color: '#9bb8ff',
-    textTransform: 'uppercase',
-    letterSpacing: 1.8,
     fontFamily: 'Helvetica-Bold',
-    marginBottom: 18,
-    textAlign: 'center',
+    letterSpacing: 1.6,
+  },
+  coverTitleWrap: {
+    alignItems: 'center',
+    marginTop: 22,
   },
   coverTitle: {
-    fontSize: 34,
-    lineHeight: 1.08,
+    fontSize: 36,
+    lineHeight: 1,
     fontFamily: 'Helvetica-Bold',
-    marginBottom: 14,
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
   coverSubtitle: {
-    fontSize: 12,
-    color: '#dbe7ff',
-    lineHeight: 1.5,
-    width: '82%',
+    marginTop: 10,
+    fontSize: 11,
+    lineHeight: 1.45,
     textAlign: 'center',
-  },
-  coverMetaGrid: {
-    flexDirection: 'row',
-    marginTop: 24,
-  },
-  coverMetaBox: {
-    width: '33.33%',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#30415f',
-    marginRight: 8,
-  },
-  coverMetaLabel: {
-    fontSize: 7,
-    textTransform: 'uppercase',
-    letterSpacing: 1.1,
-    color: '#9badc8',
-    marginBottom: 6,
-  },
-  coverMetaValue: {
-    fontSize: 13,
+    maxWidth: 360,
     fontFamily: 'Helvetica-Bold',
-    color: COLORS.white,
+    color: COLORS.gray,
+  },
+  metaGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  metaCard: {
+    width: '48.5%',
+    minHeight: 58,
+    borderWidth: 2,
+    borderColor: COLORS.black,
+    backgroundColor: COLORS.paper,
+    padding: 9,
+    marginBottom: 9,
+  },
+  metaLabel: {
+    fontSize: 7,
+    fontFamily: 'Helvetica-Bold',
+    letterSpacing: 1.4,
+    color: COLORS.blue,
+    marginBottom: 5,
+  },
+  metaValue: {
+    fontSize: 10,
+    lineHeight: 1.25,
+    fontFamily: 'Helvetica-Bold',
   },
   header: {
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.line,
-    paddingBottom: 12,
-    marginBottom: 18,
+    backgroundColor: COLORS.black,
+    color: COLORS.white,
+    borderWidth: 2,
+    borderColor: COLORS.black,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+    marginBottom: 14,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   headerTitle: {
-    fontSize: 15,
+    fontSize: 11,
     fontFamily: 'Helvetica-Bold',
+    letterSpacing: 1.1,
   },
   headerMeta: {
-    fontSize: 8,
-    color: COLORS.muted,
+    fontSize: 7,
+    color: COLORS.paper,
     textAlign: 'right',
   },
   summaryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    marginBottom: 18,
+    marginBottom: 14,
   },
   stat: {
-    width: '19%',
+    width: '24%',
     minHeight: 58,
-    padding: 9,
+    padding: 8,
     marginRight: '1%',
-    marginBottom: 8,
-    backgroundColor: COLORS.soft,
-    borderLeftWidth: 3,
-    borderLeftColor: COLORS.blue,
+    marginBottom: 7,
+    backgroundColor: COLORS.white,
+    borderWidth: 2,
+    borderColor: COLORS.black,
   },
   statValue: {
     fontSize: 18,
     fontFamily: 'Helvetica-Bold',
+    color: COLORS.black,
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 7,
-    color: COLORS.muted,
-    textTransform: 'uppercase',
+    fontSize: 6.5,
+    color: COLORS.gray,
+    fontFamily: 'Helvetica-Bold',
+    lineHeight: 1.2,
+  },
+  criteriaBox: {
+    borderWidth: 2,
+    borderColor: COLORS.black,
+    backgroundColor: COLORS.white,
+    marginTop: 8,
+  },
+  criteriaHeader: {
+    backgroundColor: COLORS.blue,
+    color: COLORS.white,
+    padding: 8,
+    fontSize: 10,
+    fontFamily: 'Helvetica-Bold',
+    letterSpacing: 1,
+  },
+  criteriaRow: {
+    flexDirection: 'row',
+    borderTopWidth: 2,
+    borderTopColor: COLORS.black,
+    minHeight: 29,
+  },
+  criteriaKey: {
+    width: '28%',
+    padding: 7,
+    fontSize: 7.5,
+    fontFamily: 'Helvetica-Bold',
+    backgroundColor: COLORS.paper,
+    borderRightWidth: 2,
+    borderRightColor: COLORS.black,
+  },
+  criteriaValue: {
+    width: '72%',
+    padding: 7,
+    fontSize: 7.5,
+    fontFamily: 'Helvetica-Bold',
     lineHeight: 1.25,
   },
   section: {
-    marginTop: 14,
-    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: COLORS.black,
+    backgroundColor: COLORS.white,
   },
   sectionHeader: {
-    backgroundColor: COLORS.ink,
+    backgroundColor: COLORS.black,
     color: COLORS.white,
     paddingVertical: 9,
-    paddingHorizontal: 11,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -208,94 +305,98 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 12,
     fontFamily: 'Helvetica-Bold',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   sectionCount: {
-    fontSize: 8,
-    color: '#c7d2e5',
+    fontSize: 7,
+    color: COLORS.paper,
+    fontFamily: 'Helvetica-Bold',
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#eef3fb',
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: COLORS.line,
+    backgroundColor: COLORS.blue,
+    color: COLORS.white,
   },
   tableHeaderCell: {
     padding: 6,
-    fontSize: 7,
-    color: COLORS.muted,
+    fontSize: 6.5,
     fontFamily: 'Helvetica-Bold',
-    textTransform: 'uppercase',
     borderRightWidth: 1,
-    borderRightColor: COLORS.line,
+    borderRightColor: COLORS.black,
   },
   tableRow: {
     flexDirection: 'row',
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: COLORS.line,
+    borderTopWidth: 1.5,
+    borderTopColor: COLORS.black,
     minHeight: 30,
   },
   tableCell: {
     padding: 6,
-    fontSize: 7.2,
-    lineHeight: 1.25,
+    fontSize: 6.9,
+    lineHeight: 1.22,
     borderRightWidth: 1,
-    borderRightColor: COLORS.line,
+    borderRightColor: COLORS.black,
   },
-  muted: {
-    color: COLORS.muted,
-  },
-  empty: {
-    padding: 18,
-    borderWidth: 1,
-    borderColor: COLORS.line,
-    color: COLORS.muted,
-    fontSize: 9,
+  note: {
+    padding: 9,
+    fontSize: 7,
+    fontFamily: 'Helvetica-Bold',
+    color: COLORS.gray,
     textAlign: 'center',
+    borderTopWidth: 2,
+    borderTopColor: COLORS.black,
+    backgroundColor: COLORS.paper,
   },
   footer: {
     position: 'absolute',
-    left: 30,
-    right: 30,
-    bottom: 16,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.line,
+    left: 28,
+    right: 28,
+    bottom: 12,
+    paddingTop: 6,
+    borderTopWidth: 2,
+    borderTopColor: COLORS.black,
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   footerText: {
-    fontSize: 7,
-    color: COLORS.muted,
+    fontSize: 6.5,
+    fontFamily: 'Helvetica-Bold',
+    color: COLORS.black,
   },
 });
 
-function clean(value: unknown, max = 90): string {
-  if (value === null || value === undefined || value === '') return '—';
-  const text = String(value).replace(/\s+/g, ' ').trim();
+function reportText(value: unknown, fallback = '—'): string {
+  if (value === null || value === undefined || value === '') return fallback;
+  const raw = Array.isArray(value) ? value.join(', ') : String(value);
+  const cleaned = raw.replace(/\s+/g, ' ').trim();
+  return (cleaned || fallback).toUpperCase();
+}
+
+function truncateText(value: unknown, max = 90): string {
+  const text = reportText(value);
   return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
+function getNonEmptyEntries(data: Record<string, ReportRecord[]>): ReportEntry[] {
+  return Object.entries(data).filter(([, records]) => records.length > 0);
+}
+
 function getTotal(data: Record<string, ReportRecord[]>): number {
-  return Object.values(data).reduce((sum, records) => sum + records.length, 0);
+  return getNonEmptyEntries(data).reduce((sum, [, records]) => sum + records.length, 0);
 }
 
 function getTaskCompletion(data: Record<string, ReportRecord[]>): string {
   const tasks = data.tareas || [];
   if (tasks.length === 0) return '0%';
-  const done = tasks.filter((task) => String(task.estado).toLowerCase() === 'completado').length;
+  const done = tasks.filter((task) => reportText(task.estado) === 'COMPLETADO').length;
   return `${Math.round((done / tasks.length) * 100)}%`;
 }
 
 function Header({ now }: { now: string }) {
   return (
     <View style={styles.header} fixed>
-      <Text style={styles.headerTitle}>SGA PZBP · Reporte operativo</Text>
-      <Text style={styles.headerMeta}>Generado: {now}</Text>
+      <Text style={styles.headerTitle}>SGA PZBP · REPORTE OPERATIVO</Text>
+      <Text style={styles.headerMeta}>GENERADO: {reportText(now)}</Text>
     </View>
   );
 }
@@ -303,29 +404,31 @@ function Header({ now }: { now: string }) {
 function Footer() {
   return (
     <View style={styles.footer} fixed>
-      <Text style={styles.footerText}>Prefectura Naval Argentina · SGA PZBP</Text>
-      <Text style={styles.footerText} render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`} />
+      <Text style={styles.footerText}>PREFECTURA NAVAL ARGENTINA · SGA PZBP</Text>
+      <Text style={styles.footerText} render={({ pageNumber, totalPages }) => `PÁGINA ${pageNumber} DE ${totalPages}`} />
     </View>
   );
 }
 
-function getNonEmptyEntries(data: Record<string, ReportRecord[]>): [string, ReportRecord[]][] {
-  return Object.entries(data).filter(([, records]) => records.length > 0);
-}
-
 function Summary({ data }: { data: Record<string, ReportRecord[]> }) {
-  const sections = getNonEmptyEntries(data).map(([key, records]) => ({ key, label: SECTION_LABELS[key] || key, count: records.length }));
+  const sections = getNonEmptyEntries(data).map(([key, records]) => ({
+    key,
+    label: SECTION_LABELS[key] || reportText(key),
+    count: records.length,
+  }));
 
   return (
     <View style={styles.summaryGrid}>
       <View style={styles.stat}>
         <Text style={styles.statValue}>{getTotal(data)}</Text>
-        <Text style={styles.statLabel}>Total de registros</Text>
+        <Text style={styles.statLabel}>TOTAL DE REGISTROS</Text>
       </View>
-      <View style={styles.stat}>
-        <Text style={styles.statValue}>{getTaskCompletion(data)}</Text>
-        <Text style={styles.statLabel}>Completitud tareas</Text>
-      </View>
+      {data.tareas?.length ? (
+        <View style={styles.stat}>
+          <Text style={styles.statValue}>{getTaskCompletion(data)}</Text>
+          <Text style={styles.statLabel}>COMPLETITUD TAREAS</Text>
+        </View>
+      ) : null}
       {sections.map((item) => (
         <View key={item.key} style={styles.stat}>
           <Text style={styles.statValue}>{item.count}</Text>
@@ -336,76 +439,103 @@ function Summary({ data }: { data: Record<string, ReportRecord[]> }) {
   );
 }
 
+function Criteria({ filters }: { filters?: ReportPDFProps['filters'] }) {
+  return (
+    <View style={styles.criteriaBox}>
+      <Text style={styles.criteriaHeader}>CRITERIOS DEL REPORTE</Text>
+      <View style={styles.criteriaRow}>
+        <Text style={styles.criteriaKey}>FUENTE</Text>
+        <Text style={styles.criteriaValue}>{reportText(filters?.source || 'TODAS LAS FUENTES')}</Text>
+      </View>
+      <View style={styles.criteriaRow}>
+        <Text style={styles.criteriaKey}>PERÍODO</Text>
+        <Text style={styles.criteriaValue}>{reportText(filters?.period || 'SIN LÍMITE')}</Text>
+      </View>
+      <View style={styles.criteriaRow}>
+        <Text style={styles.criteriaKey}>ORDEN</Text>
+        <Text style={styles.criteriaValue}>{reportText(filters?.order || 'FECHA DESCENDENTE')}</Text>
+      </View>
+    </View>
+  );
+}
+
 function DataSection({ name, records }: { name: string; records: ReportRecord[] }) {
   const columns = COLUMN_MAP[name] || [];
-  const limitedRecords = records.slice(0, 60);
+  const limitedRecords = records.slice(0, 70);
 
   return (
-    <View style={styles.section} wrap={false}>
+    <View style={styles.section}>
       <View style={styles.sectionHeader}>
-        <Text style={styles.sectionTitle}>{SECTION_LABELS[name] || name}</Text>
-        <Text style={styles.sectionCount}>{records.length} registros</Text>
+        <Text style={styles.sectionTitle}>{SECTION_LABELS[name] || reportText(name)}</Text>
+        <Text style={styles.sectionCount}>{records.length} REGISTROS</Text>
       </View>
-
-      {records.length === 0 ? (
-        <Text style={styles.empty}>Sin datos para esta sección.</Text>
-      ) : (
-        <>
-          <View style={styles.tableHeader}>
-            {columns.map((column) => (
-              <Text key={column.key} style={[styles.tableHeaderCell, { width: column.width }]}>
-                {column.label}
-              </Text>
-            ))}
-          </View>
-          {limitedRecords.map((record, index) => (
-            <View key={`${name}-${index}`} style={[styles.tableRow, { backgroundColor: index % 2 === 0 ? COLORS.white : COLORS.soft }]}>
-              {columns.map((column) => (
-                <Text key={column.key} style={[styles.tableCell, { width: column.width }]}>
-                  {clean(record[column.key], column.key === 'observaciones' || column.key === 'contenido' || column.key === 'detalle' || column.key === 'descripcion' ? 120 : 54)}
-                </Text>
-              ))}
-            </View>
+      <View style={styles.tableHeader}>
+        {columns.map((column) => (
+          <Text key={column.key} style={[styles.tableHeaderCell, { width: column.width }]}>
+            {column.label}
+          </Text>
+        ))}
+      </View>
+      {limitedRecords.map((record, index) => (
+        <View key={`${name}-${index}`} style={[styles.tableRow, { backgroundColor: index % 2 === 0 ? COLORS.white : COLORS.paper }]}>
+          {columns.map((column) => (
+            <Text key={column.key} style={[styles.tableCell, { width: column.width }]}>
+              {truncateText(record[column.key], column.long ? 130 : 58)}
+            </Text>
           ))}
-          {records.length > limitedRecords.length && (
-            <Text style={[styles.empty, styles.muted]}>Se muestran {limitedRecords.length} de {records.length} registros para mantener legible el PDF.</Text>
-          )}
-        </>
+        </View>
+      ))}
+      {records.length > limitedRecords.length && (
+        <Text style={styles.note}>SE MUESTRAN {limitedRecords.length} DE {records.length} REGISTROS PARA MANTENER LEGIBLE EL PDF.</Text>
       )}
     </View>
   );
 }
 
 export default function ReportPDF({ data, now, dateStr, filters }: ReportPDFProps) {
-  const total = getTotal(data);
   const dataEntries = getNonEmptyEntries(data);
-  const logoSrc = typeof window !== 'undefined' ? `${window.location.origin}/logo-pna.png` : '/logo-pna.png';
+  const total = getTotal(data);
+  const iconSrc = typeof window !== 'undefined' ? `${window.location.origin}/pwa-192x192.png` : '/pwa-192x192.png';
 
   return (
     <Document>
-      <Page size="A4" style={styles.cover}>
-        <View style={styles.coverTop}>
-          <View style={styles.coverLogoWrap}>
-            <Image src={logoSrc} style={styles.coverLogo} />
+      <Page size="A4" style={styles.coverPage}>
+        <View style={styles.coverFrame}>
+          <View style={styles.coverTopBar}>
+            <Text style={styles.topBarTitle}>PREFECTURA NAVAL ARGENTINA</Text>
+            <Text style={styles.topBarCode}>SGA PZBP</Text>
           </View>
-          <Text style={styles.coverKicker}>Prefectura Naval Argentina · SGA PZBP</Text>
-          <Text style={styles.coverTitle}>Reporte operativo consolidado</Text>
-          <Text style={styles.coverSubtitle}>
-            Informe ordenado por módulos, con columnas normalizadas para lectura rápida, control interno y distribución operativa.
-          </Text>
-        </View>
-        <View style={styles.coverMetaGrid}>
-          <View style={styles.coverMetaBox}>
-            <Text style={styles.coverMetaLabel}>Fecha</Text>
-            <Text style={styles.coverMetaValue}>{dateStr}</Text>
-          </View>
-          <View style={styles.coverMetaBox}>
-            <Text style={styles.coverMetaLabel}>Registros</Text>
-            <Text style={styles.coverMetaValue}>{total}</Text>
-          </View>
-          <View style={styles.coverMetaBox}>
-            <Text style={styles.coverMetaLabel}>Período</Text>
-            <Text style={styles.coverMetaValue}>{filters?.period || 'Sin límite'}</Text>
+          <View style={styles.coverBody}>
+            <View style={styles.logoPanel}>
+              <View style={styles.logoShadow} />
+              <View style={styles.logoBox}>
+                <Image src={iconSrc} style={styles.logo} />
+              </View>
+              <Text style={styles.coverLabel}>SISTEMA DE GESTIÓN DE ACTIVIDADES</Text>
+              <View style={styles.coverTitleWrap}>
+                <Text style={styles.coverTitle}>REPORTE OPERATIVO</Text>
+                <Text style={styles.coverSubtitle}>INFORME INSTITUCIONAL NORMALIZADO PARA CONTROL, SEGUIMIENTO Y DISTRIBUCIÓN OPERATIVA.</Text>
+              </View>
+            </View>
+
+            <View style={styles.metaGrid}>
+              <View style={styles.metaCard}>
+                <Text style={styles.metaLabel}>FUENTE</Text>
+                <Text style={styles.metaValue}>{reportText(filters?.source || 'TODAS LAS FUENTES')}</Text>
+              </View>
+              <View style={styles.metaCard}>
+                <Text style={styles.metaLabel}>PERÍODO</Text>
+                <Text style={styles.metaValue}>{reportText(filters?.period || 'SIN LÍMITE')}</Text>
+              </View>
+              <View style={styles.metaCard}>
+                <Text style={styles.metaLabel}>REGISTROS</Text>
+                <Text style={styles.metaValue}>{total}</Text>
+              </View>
+              <View style={styles.metaCard}>
+                <Text style={styles.metaLabel}>GENERADO</Text>
+                <Text style={styles.metaValue}>{reportText(dateStr)}</Text>
+              </View>
+            </View>
           </View>
         </View>
       </Page>
@@ -413,20 +543,7 @@ export default function ReportPDF({ data, now, dateStr, filters }: ReportPDFProp
       <Page size="A4" style={styles.page}>
         <Header now={now} />
         <Summary data={data} />
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Criterios del reporte</Text>
-            <Text style={styles.sectionCount}>configuración</Text>
-          </View>
-          <View style={styles.tableRow}>
-            <Text style={[styles.tableCell, { width: '28%', fontFamily: 'Helvetica-Bold' }]}>Fuente</Text>
-            <Text style={[styles.tableCell, { width: '72%' }]}>{filters?.source || 'Todas las fuentes'}</Text>
-          </View>
-          <View style={styles.tableRow}>
-            <Text style={[styles.tableCell, { width: '28%', fontFamily: 'Helvetica-Bold' }]}>Orden</Text>
-            <Text style={[styles.tableCell, { width: '72%' }]}>{filters?.order || 'Fecha descendente'}</Text>
-          </View>
-        </View>
+        <Criteria filters={filters} />
         <Footer />
       </Page>
 
