@@ -8,6 +8,10 @@ This contains everything you need to run your app locally.
 
 View your app in AI Studio: https://ai.studio/apps/b794c53b-a898-4b3b-a5b0-4f8cfb63fa64
 
+## Git / PR troubleshooting
+
+Si una rama de PR queda trabada por cambios locales, rebase, checkout o errores como `import: command not found` al intentar abrir archivos `.tsx`, seguí la guía de recuperación: [docs/git-pr-recovery.md](docs/git-pr-recovery.md).
+
 ## Run Locally
 
 **Prerequisites:**  Node.js
