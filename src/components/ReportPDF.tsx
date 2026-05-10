@@ -1,509 +1,410 @@
 import React from 'react';
-import { Document, Page, Text, View, Image, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 
-// ═══════════════════════════════════════════════════════════════
-// PREMIUM OPERATIONAL DESIGN SYSTEM — SGA 2026
-// ═══════════════════════════════════════════════════════════════
+type ReportRecord = Record<string, string | number | null | undefined>;
+
+interface ReportPDFProps {
+  data: Record<string, ReportRecord[]>;
+  now: string;
+  dateStr: string;
+  filters?: {
+    source: string;
+    period: string;
+    order: string;
+  };
+}
+
 const COLORS = {
-  navy:      '#0A1628', // AZUL PROFUNDO PNA
-  gold:      '#B08D57', // DORADO PREMIUM ACENTO
-  cream:     '#FDFCF8', // FONDO PAPEL REVISTA
-  slate:     '#1E293B', // TEXTO PRINCIPAL
-  gray:      '#64748B', // TEXTO SECUNDARIO
-  divider:   '#E2E8F0',
-  white:     '#FFFFFF',
-  accent:    '#1B4FD8', // AZUL ELÉCTRICO
-  success:   '#10B981', // VERDE COMPLETADO
-  warning:   '#F59E0B', // AMARILLO EN PROCESO
-  error:     '#EF4444', // ROJO PENDIENTE/VENCIDO
+  ink: '#18202f',
+  muted: '#647084',
+  line: '#d8dee9',
+  soft: '#f3f6fb',
+  white: '#ffffff',
+  blue: '#0055ff',
+  green: '#0f9f6e',
+  orange: '#d97706',
+  red: '#dc2626',
 };
 
-const S = StyleSheet.create({
-  // ─── GENERAL ────────────────────────────────────────────────
+const SECTION_LABELS: Record<string, string> = {
+  visitas: 'Visitas técnicas',
+  tareas: 'Tareas operativas',
+  personal: 'Personal',
+  novedades: 'Novedades',
+  diligenciamientos: 'Diligenciamientos',
+};
+
+const COLUMN_MAP: Record<string, { key: string; label: string; width: string }[]> = {
+  visitas: [
+    { key: 'fecha', label: 'Fecha', width: '13%' },
+    { key: 'hora', label: 'Hora', width: '9%' },
+    { key: 'origen', label: 'Origen', width: '18%' },
+    { key: 'destino', label: 'Destino', width: '18%' },
+    { key: 'responsable', label: 'Responsable', width: '20%' },
+    { key: 'observaciones', label: 'Observaciones', width: '22%' },
+  ],
+  tareas: [
+    { key: 'titulo', label: 'Tarea', width: '28%' },
+    { key: 'prioridad', label: 'Prioridad', width: '12%' },
+    { key: 'estado', label: 'Estado', width: '14%' },
+    { key: 'vencimiento', label: 'Vence', width: '13%' },
+    { key: 'descripcion', label: 'Descripción', width: '23%' },
+    { key: 'subtareas', label: 'Sub.', width: '10%' },
+  ],
+  personal: [
+    { key: 'nombre', label: 'Nombre', width: '42%' },
+    { key: 'rol', label: 'Rol / función', width: '36%' },
+    { key: 'estado', label: 'Estado', width: '22%' },
+  ],
+  novedades: [
+    { key: 'fecha', label: 'Fecha', width: '15%' },
+    { key: 'titulo', label: 'Título', width: '28%' },
+    { key: 'autor', label: 'Autor', width: '20%' },
+    { key: 'contenido', label: 'Contenido', width: '37%' },
+  ],
+  diligenciamientos: [
+    { key: 'fecha', label: 'Fecha', width: '14%' },
+    { key: 'categoria', label: 'Categoría', width: '18%' },
+    { key: 'titulo', label: 'Título', width: '25%' },
+    { key: 'autor', label: 'Autor', width: '18%' },
+    { key: 'detalle', label: 'Detalle', width: '25%' },
+  ],
+};
+
+const styles = StyleSheet.create({
   page: {
-    padding: 0,
-    backgroundColor: COLORS.cream,
+    padding: 30,
     fontFamily: 'Helvetica',
+    color: COLORS.ink,
+    backgroundColor: COLORS.white,
   },
-  contentWrapper: {
-    paddingHorizontal: 40,
-    paddingTop: 50,
-    paddingBottom: 40,
-  },
-  
-  // ─── COVER ──────────────────────────────────────────────────
   cover: {
+    padding: 34,
     height: '100%',
-    backgroundColor: COLORS.navy,
-    position: 'relative',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 80,
-  },
-  logo: {
-    width: 100,
-    marginBottom: 40,
-  },
-  magazineTitle: {
-    fontSize: 50,
-    fontFamily: 'Helvetica-Bold',
+    backgroundColor: COLORS.ink,
     color: COLORS.white,
-    letterSpacing: 4,
-    lineHeight: 1,
   },
-  magazineSubtitle: {
-    fontSize: 18,
-    fontFamily: 'Helvetica-Bold',
-    color: COLORS.gold,
-    letterSpacing: 12,
-    marginTop: 25,
-    textTransform: 'uppercase',
-  },
-  coverDate: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontFamily: 'Helvetica-Bold',
-    marginTop: 40,
-    letterSpacing: 2,
-  },
-  coverRecords: {
-    position: 'absolute',
-    bottom: 60,
-    alignItems: 'center',
-  },
-  totalCount: {
-    color: COLORS.white,
-    fontSize: 28,
-    fontFamily: 'Helvetica-Bold',
-  },
-  totalLabel: {
-    color: COLORS.gold,
-    fontSize: 8,
-    letterSpacing: 2,
-    marginTop: 5,
-  },
-
-  // ─── SECTIONS ───────────────────────────────────────────────
-  sectionHeader: {
-    marginBottom: 20,
-    borderBottomWidth: 2,
-    borderBottomColor: COLORS.gold,
-    paddingBottom: 8,
-  },
-  categoryLabel: {
+  coverKicker: {
     fontSize: 9,
-    fontFamily: 'Helvetica-Bold',
-    color: COLORS.accent,
-    letterSpacing: 2,
+    color: COLORS.blue,
     textTransform: 'uppercase',
-    marginBottom: 4,
-  },
-  sectionTitle: {
-    fontSize: 22,
+    letterSpacing: 1.8,
     fontFamily: 'Helvetica-Bold',
-    color: COLORS.slate,
-    letterSpacing: -0.5,
+    marginBottom: 22,
   },
-
-  // ─── DATA GRID / CARDS ──────────────────────────────────────
-  statsGrid: {
+  coverTitle: {
+    fontSize: 38,
+    lineHeight: 1.06,
+    fontFamily: 'Helvetica-Bold',
+    marginBottom: 14,
+  },
+  coverSubtitle: {
+    fontSize: 12,
+    color: '#dbe7ff',
+    lineHeight: 1.5,
+    width: '78%',
+    marginBottom: 34,
+  },
+  coverMetaGrid: {
+    flexDirection: 'row',
+    marginTop: 30,
+  },
+  coverMetaBox: {
+    width: '33.33%',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#30415f',
+    marginRight: 8,
+  },
+  coverMetaLabel: {
+    fontSize: 7,
+    textTransform: 'uppercase',
+    letterSpacing: 1.1,
+    color: '#9badc8',
+    marginBottom: 6,
+  },
+  coverMetaValue: {
+    fontSize: 13,
+    fontFamily: 'Helvetica-Bold',
+    color: COLORS.white,
+  },
+  header: {
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.line,
+    paddingBottom: 12,
+    marginBottom: 18,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  headerTitle: {
+    fontSize: 15,
+    fontFamily: 'Helvetica-Bold',
+  },
+  headerMeta: {
+    fontSize: 8,
+    color: COLORS.muted,
+    textAlign: 'right',
+  },
+  summaryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 15,
-    marginVertical: 30,
-    justifyContent: 'center',
+    marginBottom: 18,
   },
-  statBox: {
-    width: 80,
-    height: 80,
-    backgroundColor: COLORS.navy,
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 4,
-    borderBottomWidth: 3,
-    borderBottomColor: COLORS.gold,
+  stat: {
+    width: '19%',
+    minHeight: 58,
+    padding: 9,
+    marginRight: '1%',
+    marginBottom: 8,
+    backgroundColor: COLORS.soft,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.blue,
   },
   statValue: {
-    fontSize: 22,
+    fontSize: 18,
     fontFamily: 'Helvetica-Bold',
-    color: COLORS.white,
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 6,
-    color: COLORS.gold,
+    fontSize: 7,
+    color: COLORS.muted,
     textTransform: 'uppercase',
-    letterSpacing: 1.5,
-    fontFamily: 'Helvetica-Bold',
+    lineHeight: 1.25,
   },
-
-  // ─── TABLES ─────────────────────────────────────────────────
-  table: {
-    display: 'flex',
-    width: 'auto',
-    marginTop: 10,
+  section: {
+    marginTop: 14,
+    marginBottom: 16,
+  },
+  sectionHeader: {
+    backgroundColor: COLORS.ink,
+    color: COLORS.white,
+    paddingVertical: 9,
+    paddingHorizontal: 11,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sectionTitle: {
+    fontSize: 12,
+    fontFamily: 'Helvetica-Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionCount: {
+    fontSize: 8,
+    color: '#c7d2e5',
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: '#eef3fb',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: COLORS.line,
+  },
+  tableHeaderCell: {
+    padding: 6,
+    fontSize: 7,
+    color: COLORS.muted,
+    fontFamily: 'Helvetica-Bold',
+    textTransform: 'uppercase',
+    borderRightWidth: 1,
+    borderRightColor: COLORS.line,
   },
   tableRow: {
     flexDirection: 'row',
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.divider,
+    borderColor: COLORS.line,
     minHeight: 30,
-    alignItems: 'center',
-  },
-  tableHeader: {
-    backgroundColor: COLORS.navy,
-    color: COLORS.white,
-    fontFamily: 'Helvetica-Bold',
-    fontSize: 8,
-    textTransform: 'uppercase',
   },
   tableCell: {
     padding: 6,
-    fontSize: 7,
-    color: COLORS.slate,
+    fontSize: 7.2,
+    lineHeight: 1.25,
+    borderRightWidth: 1,
+    borderRightColor: COLORS.line,
   },
-
-  // ─── BADGES ─────────────────────────────────────────────────
-  badge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 2,
-    fontSize: 6,
-    fontFamily: 'Helvetica-Bold',
-    color: COLORS.white,
-    textTransform: 'uppercase',
+  muted: {
+    color: COLORS.muted,
+  },
+  empty: {
+    padding: 18,
+    borderWidth: 1,
+    borderColor: COLORS.line,
+    color: COLORS.muted,
+    fontSize: 9,
     textAlign: 'center',
-    width: 70,
   },
-  badgeSuccess: { backgroundColor: COLORS.success },
-  badgeWarning: { backgroundColor: COLORS.warning },
-  badgeError:   { backgroundColor: COLORS.error },
-  badgeInfo:    { backgroundColor: COLORS.accent },
-
-  // ─── CARD LISTING ───────────────────────────────────────────
-  card: {
-    backgroundColor: COLORS.white,
-    padding: 12,
-    borderLeftWidth: 4,
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-  },
-  cardTitle: {
-    fontSize: 10,
-    fontFamily: 'Helvetica-Bold',
-    color: COLORS.navy,
-    marginBottom: 4,
-  },
-  cardMeta: {
-    fontSize: 7,
-    color: COLORS.gray,
-    marginBottom: 6,
-  },
-  cardContent: {
-    fontSize: 8,
-    lineHeight: 1.4,
-    color: COLORS.slate,
-    textAlign: 'justify',
-  },
-
-  // ─── FOOTER ─────────────────────────────────────────────────
-  pageFolio: {
+  footer: {
     position: 'absolute',
-    bottom: 25,
-    right: 40,
-    fontSize: 8,
-    fontFamily: 'Helvetica-Bold',
-    color: COLORS.gray,
+    left: 30,
+    right: 30,
+    bottom: 16,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.line,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  pageLogoSmall: {
-    position: 'absolute',
-    bottom: 25,
-    left: 40,
+  footerText: {
     fontSize: 7,
-    color: COLORS.gray,
-    letterSpacing: 1,
-    fontFamily: 'Helvetica-Bold',
-  }
+    color: COLORS.muted,
+  },
 });
 
-// ─── HELPER COMPONENTS ───────────────────────────────────────
-
-const StatusBadge = ({ status }: { status: string }) => {
-  const s = status?.toLowerCase() || '';
-  let style = S.badgeInfo;
-  if (s.includes('completado') || s.includes('activo') || s.includes('operativo')) style = S.badgeSuccess;
-  if (s.includes('pendiente') || s.includes('proceso') || s.includes('mantenimiento')) style = S.badgeError;
-  if (s.includes('urgente') || s.includes('alta')) style = S.badgeError;
-  
-  return <Text style={[S.badge, style]}>{status?.toUpperCase() || 'S/E'}</Text>;
-};
-
-const SectionHeader = ({ category, title }: any) => (
-  <View style={S.sectionHeader}>
-    <Text style={S.categoryLabel}>{category?.toUpperCase()}</Text>
-    <Text style={S.sectionTitle}>{title?.toUpperCase()}</Text>
-  </View>
-);
-
-interface Props {
-  data: any;
-  now: string;
-  dateStr: string;
+function clean(value: unknown, max = 90): string {
+  if (value === null || value === undefined || value === '') return '—';
+  const text = String(value).replace(/\s+/g, ' ').trim();
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
 }
 
-export default function ReportPDF({ data, now, dateStr }: Props) {
-  const { visitas = [], tareas = [], novedades = [], diligenciamientos = [], personal = [] } = data;
-  const total = visitas.length + tareas.length + novedades.length + diligenciamientos.length + personal.length;
+function getTotal(data: Record<string, ReportRecord[]>): number {
+  return Object.values(data).reduce((sum, records) => sum + records.length, 0);
+}
+
+function getTaskCompletion(data: Record<string, ReportRecord[]>): string {
+  const tasks = data.tareas || [];
+  if (tasks.length === 0) return '0%';
+  const done = tasks.filter((task) => String(task.estado).toLowerCase() === 'completado').length;
+  return `${Math.round((done / tasks.length) * 100)}%`;
+}
+
+function Header({ now }: { now: string }) {
+  return (
+    <View style={styles.header} fixed>
+      <Text style={styles.headerTitle}>SGA PZBP · Reporte operativo</Text>
+      <Text style={styles.headerMeta}>Generado: {now}</Text>
+    </View>
+  );
+}
+
+function Footer() {
+  return (
+    <View style={styles.footer} fixed>
+      <Text style={styles.footerText}>Prefectura Naval Argentina · SGA PZBP</Text>
+      <Text style={styles.footerText} render={({ pageNumber, totalPages }) => `Página ${pageNumber} de ${totalPages}`} />
+    </View>
+  );
+}
+
+function Summary({ data }: { data: Record<string, ReportRecord[]> }) {
+  const sections = Object.entries(SECTION_LABELS).map(([key, label]) => ({ key, label, count: data[key]?.length || 0 }));
 
   return (
-    <Document title={`SGA REPORT - ${dateStr.toUpperCase()}`}>
-      {/* ═══════════════════════════════════════════════════════
-          PÁGINA 1: PORTADA
-          ═══════════════════════════════════════════════════════ */}
-      <Page size="A4" style={S.page}>
-        <View style={S.cover}>
-          <Image src="/logo-pna.png" style={S.logo} />
-          <Text style={S.magazineTitle}>S G A</Text>
-          <Text style={[S.magazineTitle, { color: COLORS.gold, fontSize: 35, marginTop: 15 }]}>P Z B P</Text>
-          <Text style={S.coverDate}>{dateStr.toUpperCase()}</Text>
-          
-          <View style={S.coverRecords}>
-            <Text style={S.totalCount}>{total}</Text>
-            <Text style={S.totalLabel}>REGISTROS TOTALES</Text>
+    <View style={styles.summaryGrid}>
+      <View style={styles.stat}>
+        <Text style={styles.statValue}>{getTotal(data)}</Text>
+        <Text style={styles.statLabel}>Total de registros</Text>
+      </View>
+      <View style={styles.stat}>
+        <Text style={styles.statValue}>{getTaskCompletion(data)}</Text>
+        <Text style={styles.statLabel}>Completitud tareas</Text>
+      </View>
+      {sections.map((item) => (
+        <View key={item.key} style={styles.stat}>
+          <Text style={styles.statValue}>{item.count}</Text>
+          <Text style={styles.statLabel}>{item.label}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function DataSection({ name, records }: { name: string; records: ReportRecord[] }) {
+  const columns = COLUMN_MAP[name] || [];
+  const limitedRecords = records.slice(0, 60);
+
+  return (
+    <View style={styles.section} wrap={false}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{SECTION_LABELS[name] || name}</Text>
+        <Text style={styles.sectionCount}>{records.length} registros</Text>
+      </View>
+
+      {records.length === 0 ? (
+        <Text style={styles.empty}>Sin datos para esta sección.</Text>
+      ) : (
+        <>
+          <View style={styles.tableHeader}>
+            {columns.map((column) => (
+              <Text key={column.key} style={[styles.tableHeaderCell, { width: column.width }]}>
+                {column.label}
+              </Text>
+            ))}
+          </View>
+          {limitedRecords.map((record, index) => (
+            <View key={`${name}-${index}`} style={[styles.tableRow, { backgroundColor: index % 2 === 0 ? COLORS.white : COLORS.soft }]}>
+              {columns.map((column) => (
+                <Text key={column.key} style={[styles.tableCell, { width: column.width }]}>
+                  {clean(record[column.key], column.key === 'observaciones' || column.key === 'contenido' || column.key === 'detalle' || column.key === 'descripcion' ? 120 : 54)}
+                </Text>
+              ))}
+            </View>
+          ))}
+          {records.length > limitedRecords.length && (
+            <Text style={[styles.empty, styles.muted]}>Se muestran {limitedRecords.length} de {records.length} registros para mantener legible el PDF.</Text>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
+export default function ReportPDF({ data, now, dateStr, filters }: ReportPDFProps) {
+  const total = getTotal(data);
+
+  return (
+    <Document>
+      <Page size="A4" style={styles.cover}>
+        <Text style={styles.coverKicker}>Prefectura Naval Argentina · SGA PZBP</Text>
+        <Text style={styles.coverTitle}>Reporte operativo consolidado</Text>
+        <Text style={styles.coverSubtitle}>
+          Informe ordenado por módulos, con columnas normalizadas para lectura rápida, control interno y distribución operativa.
+        </Text>
+        <View style={styles.coverMetaGrid}>
+          <View style={styles.coverMetaBox}>
+            <Text style={styles.coverMetaLabel}>Fecha</Text>
+            <Text style={styles.coverMetaValue}>{dateStr}</Text>
+          </View>
+          <View style={styles.coverMetaBox}>
+            <Text style={styles.coverMetaLabel}>Registros</Text>
+            <Text style={styles.coverMetaValue}>{total}</Text>
+          </View>
+          <View style={styles.coverMetaBox}>
+            <Text style={styles.coverMetaLabel}>Período</Text>
+            <Text style={styles.coverMetaValue}>{filters?.period || 'Sin límite'}</Text>
           </View>
         </View>
       </Page>
 
-      {/* ═══════════════════════════════════════════════════════
-          PÁGINA 2: RESUMEN DE INDICADORES
-          ═══════════════════════════════════════════════════════ */}
-      <Page size="A4" style={S.page}>
-        <View style={S.contentWrapper}>
-          <SectionHeader category="INTELIGENCIA OPERATIVA" title="ESTADÍSTICAS GENERALES" />
-          
-          <View style={S.statsGrid}>
-            <View style={S.statBox}>
-              <Text style={S.statValue}>{visitas.length}</Text>
-              <Text style={S.statLabel}>VISITAS</Text>
-            </View>
-            <View style={[S.statBox, { backgroundColor: COLORS.accent }]}>
-              <Text style={S.statValue}>{tareas.length}</Text>
-              <Text style={S.statLabel}>TAREAS</Text>
-            </View>
-            <View style={S.statBox}>
-              <Text style={S.statValue}>{novedades.length}</Text>
-              <Text style={S.statLabel}>NOVEDADES</Text>
-            </View>
-            <View style={S.statBox}>
-              <Text style={S.statValue}>{personal.length}</Text>
-              <Text style={S.statLabel}>PERSONAL</Text>
-            </View>
-            <View style={S.statBox}>
-              <Text style={S.statValue}>{diligenciamientos.length}</Text>
-              <Text style={S.statLabel}>DILIGENCIAS</Text>
-            </View>
+      <Page size="A4" style={styles.page}>
+        <Header now={now} />
+        <Summary data={data} />
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Criterios del reporte</Text>
+            <Text style={styles.sectionCount}>configuración</Text>
           </View>
-
-          <View style={{ marginTop: 30 }}>
-            <SectionHeader category="ANÁLISIS DE FUERZA" title="RECURSOS Y GESTIÓN" />
-            <View style={{ flexDirection: 'row', gap: 15 }}>
-              <View style={[S.card, { flex: 1, borderLeftColor: COLORS.navy }]}>
-                <Text style={S.cardTitle}>PERSONAL ACTIVO</Text>
-                <Text style={S.cardContent}>
-                  EL DESPLIEGUE ACTUAL CUENTA CON {personal.length} EFECTIVOS EN ESTADO OPERATIVO, 
-                  GARANTIZANDO LA COBERTURA DE SEGURIDAD EN LA ZONA BAJO PARANÁ.
-                </Text>
-              </View>
-              <View style={[S.card, { flex: 1, borderLeftColor: COLORS.gold }]}>
-                <Text style={S.cardTitle}>DILIGENCIAS ADMINISTRATIVAS</Text>
-                <Text style={S.cardContent}>
-                  SE HAN TRAMITADO {diligenciamientos.length} DOCUMENTOS ADMINISTRATIVOS, 
-                  CUMPLIENDO CON LOS PROTOCOLES DE GESTIÓN INTERNA.
-                </Text>
-              </View>
-            </View>
+          <View style={styles.tableRow}>
+            <Text style={[styles.tableCell, { width: '28%', fontFamily: 'Helvetica-Bold' }]}>Fuente</Text>
+            <Text style={[styles.tableCell, { width: '72%' }]}>{filters?.source || 'Todas las fuentes'}</Text>
+          </View>
+          <View style={styles.tableRow}>
+            <Text style={[styles.tableCell, { width: '28%', fontFamily: 'Helvetica-Bold' }]}>Orden</Text>
+            <Text style={[styles.tableCell, { width: '72%' }]}>{filters?.order || 'Fecha descendente'}</Text>
           </View>
         </View>
-        
-        <Text style={S.pageLogoSmall}>SGA PZBP | {now.toUpperCase()}</Text>
-        <Text style={S.pageFolio} render={({ pageNumber }) => `— ${pageNumber} —`} />
+        <Footer />
       </Page>
 
-      {/* ═══════════════════════════════════════════════════════
-          PÁGINA: TAREAS OPERATIVAS (CON COLORES)
-          ═══════════════════════════════════════════════════════ */}
-      {tareas.length > 0 && (
-        <Page size="A4" style={S.page}>
-          <View style={S.contentWrapper}>
-            <SectionHeader category="OPERACIONES" title="LISTADO DE TAREAS" />
-            
-            <View style={S.table}>
-              <View style={[S.tableRow, S.tableHeader]}>
-                <Text style={[S.tableCell, { width: '45%' }]}>TÍTULO DE LA TAREA</Text>
-                <Text style={[S.tableCell, { width: '15%', textAlign: 'center' }]}>PRIORIDAD</Text>
-                <Text style={[S.tableCell, { width: '20%', textAlign: 'center' }]}>ESTADO</Text>
-                <Text style={[S.tableCell, { width: '20%', textAlign: 'right' }]}>FECHA LÍMITE</Text>
-              </View>
-              {tareas.map((t: any, i: number) => (
-                <View key={i} style={S.tableRow}>
-                  <Text style={[S.tableCell, { width: '45%', fontFamily: 'Helvetica-Bold' }]}>{t.title?.toUpperCase()}</Text>
-                  <View style={{ width: '15%', alignItems: 'center' }}>
-                    <StatusBadge status={t.priority} />
-                  </View>
-                  <View style={{ width: '20%', alignItems: 'center' }}>
-                    <StatusBadge status={t.status} />
-                  </View>
-                  <Text style={[S.tableCell, { width: '20%', textAlign: 'right', color: COLORS.gray }]}>
-                    {t.dueDate ? new Date(t.dueDate).toLocaleDateString().toUpperCase() : '—'}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-          <Text style={S.pageLogoSmall}>SGA PZBP | {now.toUpperCase()}</Text>
-          <Text style={S.pageFolio} render={({ pageNumber }) => `— ${pageNumber} —`} />
+      {Object.entries(data).map(([name, records]) => (
+        <Page key={name} size="A4" style={styles.page}>
+          <Header now={now} />
+          <DataSection name={name} records={records} />
+          <Footer />
         </Page>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════
-          PÁGINA: VISITAS TÉCNICAS
-          ═══════════════════════════════════════════════════════ */}
-      {visitas.length > 0 && (
-        <Page size="A4" style={S.page}>
-          <View style={S.contentWrapper}>
-            <SectionHeader category="REGISTRO" title="BITÁCORA DE VISITAS TÉCNICAS" />
-            
-            <View style={{ marginTop: 10 }}>
-              {visitas.map((v: any, i: number) => (
-                <View key={i} style={[S.card, { borderLeftColor: COLORS.gold }]}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: COLORS.accent }}>
-                      {v.fecha?.toUpperCase()} | {v.hora?.toUpperCase()}
-                    </Text>
-                    <Text style={{ fontSize: 7, fontFamily: 'Helvetica-Bold', color: COLORS.navy }}>
-                      RESPONSABLE: {v.responsable?.toUpperCase()}
-                    </Text>
-                  </View>
-                  <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: COLORS.slate, marginBottom: 4 }}>
-                    {v.origen?.toUpperCase()} → {v.destino?.toUpperCase()}
-                  </Text>
-                  {v.observaciones && (
-                    <Text style={[S.cardContent, { color: COLORS.gray }]}>
-                      OBSERVACIONES: {v.observaciones.toUpperCase()}
-                    </Text>
-                  )}
-                </View>
-              ))}
-            </View>
-          </View>
-          <Text style={S.pageLogoSmall}>SGA PZBP | {now.toUpperCase()}</Text>
-          <Text style={S.pageFolio} render={({ pageNumber }) => `— ${pageNumber} —`} />
-        </Page>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════
-          PÁGINA: NOVEDADES
-          ═══════════════════════════════════════════════════════ */}
-      {novedades.length > 0 && (
-        <Page size="A4" style={S.page}>
-          <View style={S.contentWrapper}>
-            <SectionHeader category="CRÓNICAS" title="NOVEDADES OPERATIVAS" />
-            
-            <View style={{ marginTop: 10 }}>
-              {novedades.map((n: any, i: number) => (
-                <View key={i} style={[S.card, { borderLeftColor: COLORS.navy, paddingVertical: 15 }]}>
-                  <Text style={S.cardTitle}>{n.title?.toUpperCase() || 'SIN TÍTULO'}</Text>
-                  <Text style={[S.cardContent, { marginBottom: 10 }]}>{n.content?.toUpperCase()}</Text>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: COLORS.divider, paddingTop: 6 }}>
-                    <Text style={{ fontSize: 6, color: COLORS.accent, fontFamily: 'Helvetica-Bold' }}>
-                      AUTOR: {n.authorName?.toUpperCase() || 'SISTEMA'}
-                    </Text>
-                    <Text style={{ fontSize: 6, color: COLORS.gray }}>
-                      {new Date(n.created_at || n.createdAt).toLocaleString().toUpperCase()}
-                    </Text>
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-          <Text style={S.pageLogoSmall}>SGA PZBP | {now.toUpperCase()}</Text>
-          <Text style={S.pageFolio} render={({ pageNumber }) => `— ${pageNumber} —`} />
-        </Page>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════
-          PÁGINA: DILIGENCIAMIENTOS
-          ═══════════════════════════════════════════════════════ */}
-      {diligenciamientos.length > 0 && (
-        <Page size="A4" style={S.page}>
-          <View style={S.contentWrapper}>
-            <SectionHeader category="ADMINISTRACIÓN" title="REGISTRO DE DILIGENCIAS" />
-            
-            <View style={{ marginTop: 10 }}>
-              {diligenciamientos.map((d: any, i: number) => (
-                <View key={i} style={[S.card, { borderLeftColor: COLORS.gold }]}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                    <View style={{ flexDirection: 'column' }}>
-                      <Text style={S.cardTitle}>{d.title?.toUpperCase()}</Text>
-                      {d.category && (
-                        <Text style={{ fontSize: 6, fontFamily: 'Helvetica-Bold', color: COLORS.accent, marginTop: 2 }}>
-                          MÓDULO: {d.category.toUpperCase()}
-                        </Text>
-                      )}
-                    </View>
-                    <Text style={{ fontSize: 7, color: COLORS.gray }}>
-                      {new Date(d.created_at || d.fecha).toLocaleDateString('es-ES').toUpperCase()}
-                    </Text>
-                  </View>
-                  <Text style={S.cardContent}>{d.content?.toUpperCase()}</Text>
-                  <Text style={{ fontSize: 6, color: COLORS.gold, marginTop: 6, fontFamily: 'Helvetica-Bold' }}>
-                    AUTOR: {d.authorName?.toUpperCase() || 'SISTEMA'}
-                  </Text>
-                </View>
-              ))}
-            </View>
-          </View>
-          <Text style={S.pageLogoSmall}>SGA PZBP | {now.toUpperCase()}</Text>
-          <Text style={S.pageFolio} render={({ pageNumber }) => `— ${pageNumber} —`} />
-        </Page>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════
-          PÁGINA: PERSONAL
-          ═══════════════════════════════════════════════════════ */}
-      {personal.length > 0 && (
-        <Page size="A4" style={S.page}>
-          <View style={S.contentWrapper}>
-            <SectionHeader category="FUERZA" title="LISTADO DE PERSONAL" />
-            
-            <View style={S.table}>
-              <View style={[S.tableRow, S.tableHeader]}>
-                <Text style={[S.tableCell, { width: '50%' }]}>APELLIDO Y NOMBRE</Text>
-                <Text style={[S.tableCell, { width: '25%', textAlign: 'center' }]}>ROL / CARGO</Text>
-                <Text style={[S.tableCell, { width: '25%', textAlign: 'center' }]}>ESTADO</Text>
-              </View>
-              {personal.map((p: any, i: number) => (
-                <View key={i} style={S.tableRow}>
-                  <Text style={[S.tableCell, { width: '50%', fontFamily: 'Helvetica-Bold' }]}>{p.name?.toUpperCase()}</Text>
-                  <Text style={[S.tableCell, { width: '25%', textAlign: 'center' }]}>{p.role?.toUpperCase()}</Text>
-                  <View style={{ width: '25%', alignItems: 'center' }}>
-                    <StatusBadge status={p.status} />
-                  </View>
-                </View>
-              ))}
-            </View>
-          </View>
-          <Text style={S.pageLogoSmall}>SGA PZBP | {now.toUpperCase()}</Text>
-          <Text style={S.pageFolio} render={({ pageNumber }) => `— ${pageNumber} —`} />
-        </Page>
-      )}
-
+      ))}
     </Document>
   );
 }
