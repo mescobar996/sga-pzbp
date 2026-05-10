@@ -431,21 +431,39 @@ export default function Reportes() {
 
   return (
     <div className="font-['Inter'] max-w-7xl mx-auto px-3 sm:px-4 pb-24 lg:pb-8">
-      <div className="mb-6 overflow-hidden border-2 border-[#1a1a1a] bg-white shadow-[6px_6px_0px_0px_rgba(26,26,26,1)]">
-        <div className="bg-[#1a1a1a] text-white px-5 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#8fb2ff] mb-1">CENTRO DE REPORTES</p>
-            <h1 className="text-2xl sm:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">REPORTE OPERATIVO</h1>
+      <div className="mb-8 overflow-hidden border-4 border-[#1a1a1a] bg-[#f5f0e8] shadow-[10px_10px_0px_0px_rgba(26,26,26,1)]">
+        <div className="grid grid-cols-1 lg:grid-cols-[240px_1fr] bg-white">
+          <div className="relative min-h-[220px] bg-[#0055ff] border-b-4 lg:border-b-0 lg:border-r-4 border-[#1a1a1a] flex items-center justify-center overflow-hidden">
+            <div className="absolute inset-0 opacity-20 bg-[linear-gradient(135deg,#ffffff_0_8px,transparent_8px_22px)]" />
+            <div className="relative bg-white border-4 border-[#1a1a1a] p-5 shadow-[8px_8px_0px_0px_rgba(26,26,26,1)]">
+              <img src="/pwa-192x192.png" alt="ICONO SGA PZBP" className="w-28 h-28 object-contain" />
+            </div>
           </div>
-          <div className="flex items-center gap-3 text-xs font-black uppercase">
-            <BarChart3 className="w-5 h-5 text-[#8fb2ff]" />
-            {showPreview ? `${totalRecords} REGISTROS LISTOS` : 'CONFIGURA Y PREVISUALIZA'}
+
+          <div className="flex flex-col">
+            <div className="bg-[#1a1a1a] text-white px-5 py-4 flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3">
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#8fb2ff] mb-1">CENTRO DE REPORTES · DISEÑO SGA ACTIVO</p>
+                <h1 className="text-3xl sm:text-5xl font-black uppercase font-['Space_Grotesk'] tracking-tighter leading-none">REPORTE OPERATIVO</h1>
+              </div>
+              <div className="flex items-center gap-3 text-xs font-black uppercase border-2 border-white px-3 py-2">
+                <BarChart3 className="w-5 h-5 text-[#8fb2ff]" />
+                {showPreview ? `${totalRecords} REGISTROS LISTOS` : 'CONFIGURA Y PREVISUALIZA'}
+              </div>
+            </div>
+
+            <div className="p-5 grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-bold uppercase bg-[#f5f0e8]">
+              <div className="border-2 border-[#1a1a1a] bg-white p-3 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]"><span className="opacity-50 block text-[10px] font-black mb-1">FUENTE</span>{SOURCE_LABELS[dataSource] || dataSource}</div>
+              <div className="border-2 border-[#1a1a1a] bg-white p-3 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]"><span className="opacity-50 block text-[10px] font-black mb-1">PERÍODO</span>{periodLabel}</div>
+              <div className="border-2 border-[#1a1a1a] bg-white p-3 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]"><span className="opacity-50 block text-[10px] font-black mb-1">ORDEN</span>{SORT_LABELS[sortBy]}</div>
+            </div>
+
+            <div className="px-5 pb-5 bg-[#f5f0e8]">
+              <div className="border-2 border-[#1a1a1a] bg-white p-4 font-black uppercase text-xs leading-relaxed">
+                EL REPORTE USA EL ICONO DEL SISTEMA, EXPORTA EN UPPERCASE Y SOLO INCLUYE LOS MÓDULOS CON INFORMACIÓN REAL.
+              </div>
+            </div>
           </div>
-        </div>
-        <div className="px-5 py-4 bg-[#f5f0e8] grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-bold uppercase">
-          <div><span className="opacity-50 block text-[10px] font-black">FUENTE</span>{SOURCE_LABELS[dataSource] || dataSource}</div>
-          <div><span className="opacity-50 block text-[10px] font-black">PERÍODO</span>{periodLabel}</div>
-          <div><span className="opacity-50 block text-[10px] font-black">ORDEN</span>{SORT_LABELS[sortBy]}</div>
         </div>
       </div>
 
