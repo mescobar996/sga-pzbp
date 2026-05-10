@@ -115,7 +115,7 @@ export default function Reportes() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Reporte_${new Date().toISOString().split('T')[0]}.pdf`;
+    a.download = `Reporte_SGA_PZBP_WEB_${new Date().toISOString().split('T')[0]}.pdf`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success('PDF descargado con éxito', { id: 'report-gen' });
