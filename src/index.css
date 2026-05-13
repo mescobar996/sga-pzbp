@@ -91,3 +91,52 @@ button, a, input, select, textarea {
     padding-right: env(safe-area-inset-right);
   }
 }
+
+/* ☀️ MODO FIELD-READY (Alta Visibilidad) */
+:root.field-ready {
+  --field-bg: #ffffff;
+  --field-text: #000000;
+  --field-accent: #ffff00; /* Amarillo Seguridad */
+}
+
+.field-ready body {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  font-size: 18px !important; /* Aumento base */
+}
+
+.field-ready * {
+  border-width: 3px !important;
+  border-color: #000000 !important;
+}
+
+.field-ready button, 
+.field-ready input, 
+.field-ready select {
+  min-height: 56px !important; /* Touch area XXL */
+  font-weight: 900 !important;
+  font-size: 1.1rem !important;
+  text-transform: uppercase !important;
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+.field-ready .bg-\[\#0055ff\],
+.field-ready .bg-\[\#1a1a1a\],
+.field-ready .bg-\[\#00cc66\] {
+  background-color: #ffff00 !important; /* Todo lo importante a Amarillo */
+  color: #000000 !important;
+}
+
+.field-ready h1 { font-size: 2.5rem !important; }
+.field-ready p { font-weight: 700 !important; }
+
+/* Mejorar contraste de sombras en modo Field-Ready */
+.field-ready [class*="shadow-"] {
+  box-shadow: 6px 6px 0px 0px #000000 !important;
+}
+
+/* Mejorar contraste de mapas */
+.field-ready .leaflet-container {
+  filter: contrast(1.2) saturate(0) !important;
+}

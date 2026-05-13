@@ -2,7 +2,8 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   CheckCircle, Clock, AlertTriangle, Newspaper, ArrowRight, HardHat, 
   ListChecks, Users, MapPin, FileText, TrendingUp, Activity, BarChart3, 
-  Zap, Map as MapIcon, Calendar, User
+  Zap, Map as MapIcon, Calendar, User, Wind, CloudRain, Sun, Thermometer,
+  Eye, History
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -64,6 +65,96 @@ function ProgressRing({ pct, color, size = 90, stroke = 8 }: { pct: number; colo
         className="transition-all duration-1000 ease-out"
       />
     </svg>
+  );
+}
+
+function WeatherWidget() {
+  // Simulación de datos reales para la zona Bajo Paraná (San Nicolás/Ramallo/San Pedro)
+  const [weather] = useState({
+    temp: 24,
+    condition: 'MAYORMENTE DESPEJADO',
+    wind: '12 KM/H NE',
+    visibility: '10 KM',
+    humidity: '65%',
+    uv: 'BAJO'
+  });
+
+  return (
+    <div className="bg-[#1a1a1a] text-white p-4 border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(255,255,0,1)] flex flex-col gap-4">
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-[10px] font-black opacity-50 uppercase tracking-widest mb-1">ZONA BAJO PARANÁ</p>
+          <h4 className="text-xl font-black font-['Space_Grotesk'] leading-none">CONDICIONES MET</h4>
+        </div>
+        <Sun className="w-8 h-8 text-[#ffff00] animate-pulse" />
+      </div>
+      
+      <div className="grid grid-cols-2 gap-4">
+        <div className="flex items-center gap-2">
+          <Thermometer className="w-4 h-4 opacity-40" />
+          <div>
+            <p className="text-[8px] font-bold opacity-40 uppercase">TEMP</p>
+            <p className="text-sm font-black">{weather.temp}°C</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Wind className="w-4 h-4 opacity-40" />
+          <div>
+            <p className="text-[8px] font-bold opacity-40 uppercase">VIENTO</p>
+            <p className="text-sm font-black">{weather.wind}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Eye className="w-4 h-4 opacity-40" />
+          <div>
+            <p className="text-[8px] font-bold opacity-40 uppercase">VISIBILIDAD</p>
+            <p className="text-sm font-black">{weather.visibility}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <CloudRain className="w-4 h-4 opacity-40" />
+          <div>
+            <p className="text-[8px] font-bold opacity-40 uppercase">HUMEDAD</p>
+            <p className="text-sm font-black">{weather.humidity}</p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="pt-2 border-t border-white/10">
+        <p className="text-[9px] font-black text-[#ffff00] uppercase tracking-widest">{weather.condition}</p>
+      </div>
+    </div>
+  );
+}
+
+function RecentActivity({ data }: { data: any[] }) {
+  return (
+    <div className="border-2 border-[#1a1a1a] bg-white p-4 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+      <h3 className="text-xs font-black uppercase tracking-widest flex items-center gap-2 mb-4">
+        <History className="w-4 h-4 text-[#0055ff]" /> ACTIVIDAD RECIENTE
+      </h3>
+      <div className="space-y-4">
+        {data.slice(0, 5).map((item, i) => (
+          <div key={i} className="flex gap-3 relative pb-4 border-l-2 border-[#1a1a1a]/10 ml-2 pl-4 last:pb-0 last:border-l-0">
+            <div className="absolute -left-[9px] top-0 w-4 h-4 bg-white border-2 border-[#1a1a1a] rounded-full flex items-center justify-center">
+              <div className="w-1.5 h-1.5 bg-[#1a1a1a] rounded-full"></div>
+            </div>
+            <div className="flex-1">
+              <div className="flex justify-between items-start mb-0.5">
+                <p className="text-[10px] font-black uppercase truncate max-w-[150px]">{item.title}</p>
+                <span className="text-[8px] font-bold opacity-30 uppercase">{item.time}</span>
+              </div>
+              <p className="text-[9px] font-medium opacity-60 line-clamp-1">{item.detail}</p>
+              <div className="mt-1">
+                <span className={`text-[7px] font-black px-1.5 py-0.5 border border-[#1a1a1a] uppercase ${item.color} text-white`}>
+                  {item.type}
+                </span>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -160,6 +251,39 @@ export default function Dashboard() {
     { name: 'PENDIENTES', value: tasks.filter(t => t.status === 'pendiente').length, fill: '#ff9900' },
   ];
 
+  const recentItems = useMemo(() => {
+    const items: any[] = [];
+    
+    novedades.forEach(n => items.push({
+      title: n.title,
+      detail: n.authorName,
+      time: new Date(n.createdAt).toLocaleDateString(),
+      type: 'NOVEDAD',
+      color: 'bg-[#1a1a1a]',
+      timestamp: new Date(n.createdAt).getTime()
+    }));
+    
+    tasks.slice(0, 10).forEach(t => items.push({
+      title: t.title,
+      detail: t.status.toUpperCase(),
+      time: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : '—',
+      type: 'TAREA',
+      color: 'bg-[#0055ff]',
+      timestamp: t.createdAt ? new Date(t.createdAt).getTime() : 0
+    }));
+
+    visits.slice(0, 10).forEach(v => items.push({
+      title: `${v.origen} → ${v.destino}`,
+      detail: v.responsable,
+      time: v.fecha,
+      type: 'VISITA',
+      color: 'bg-[#00cc66]',
+      timestamp: new Date(v.fecha).getTime()
+    }));
+
+    return items.sort((a, b) => b.timestamp - a.timestamp);
+  }, [novedades, tasks, visits]);
+
   if (loading) {
     return (
       <div className="font-['Inter'] max-w-7xl mx-auto p-4 sm:p-6">
@@ -215,10 +339,13 @@ export default function Dashboard() {
       {/* ─── MAIN GRID ─── */}
       <div className="flex flex-col lg:grid lg:grid-cols-4 gap-6">
         
-        {/* ─── SIDEBAR (Stacked on Mobile, Left on Desktop) ─── */}
-        <div className="lg:col-span-1 flex flex-col gap-4 sm:gap-6 order-1 lg:order-1">
+        {/* ─── SIDEBAR ─── */}
+        <div className="lg:col-span-1 flex flex-col gap-6 order-1 lg:order-1">
+          <WeatherWidget />
           
-          {/* EFFICIENCY WIDGET */}
+          <RecentActivity data={recentItems} />
+
+          {/* QUICK CARDS GRID */}
           <div className="flex items-center justify-between lg:justify-start gap-4 sm:gap-6 bg-[#f5f0e8] border-2 border-[#1a1a1a] p-4 sm:p-5 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
             <div className="relative shrink-0">
               <ProgressRing pct={completionRate} color={compColor} size={64} stroke={6} />

@@ -24,7 +24,9 @@ import {
   Calendar,
   Clock,
   Shield,
+  Sun,
 } from 'lucide-react';
+import { useFieldReady } from '../context/FieldContext';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'motion/react';
 
@@ -59,6 +61,7 @@ export default function Layout({ user }: { user: User }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const _isAdmin = isAdmin();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isFieldReady, toggleFieldReady } = useFieldReady();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -717,6 +720,20 @@ export default function Layout({ user }: { user: User }) {
                 )}
               </AnimatePresence>
             </div>
+
+            {/* Field-Ready Toggle */}
+            <button
+              onClick={toggleFieldReady}
+              className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] transition-all shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] cursor-pointer ${
+                isFieldReady 
+                  ? 'bg-[#ffff00] text-[#000000] shadow-none translate-x-0.5 translate-y-0.5' 
+                  : 'bg-white hover:bg-[#1a1a1a] hover:text-white'
+              }`}
+              aria-label={isFieldReady ? "Desactivar Alta Visibilidad" : "Activar Alta Visibilidad"}
+              title="Modo Field-Ready (Alta Visibilidad)"
+            >
+              <Sun className={`w-5 h-5 ${isFieldReady ? 'fill-current' : ''}`} />
+            </button>
 
             {/* Settings */}
             <button
