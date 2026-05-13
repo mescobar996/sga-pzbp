@@ -1,10 +1,8 @@
 import {
   BarChart3,
   ClipboardList,
-  Database,
-  Download,
   Eye,
-  FileText,
+  FileSpreadsheet,
   Filter,
   HardHat,
   ListChecks,
@@ -14,11 +12,8 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../db/client';
-import { pdf } from '@react-pdf/renderer';
-import ReportPDF from '../components/ReportPDF';
 import * as XLSX from 'xlsx';
 import { motion } from 'motion/react';
-import { FormatSelector } from '../components/FormatSelector';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { getCategories } from '../db/diligenciamientos';
 
