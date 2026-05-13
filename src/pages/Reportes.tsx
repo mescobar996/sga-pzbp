@@ -200,7 +200,6 @@ function truncate(value: unknown, maxLength = 120): string {
 }
 
 export default function Reportes() {
-  const [format, setFormat] = useState<'pdf' | 'excel' | 'json'>('pdf');
   const [dataSource, setDataSource] = useState('todas');
   const [selectedCategory, setSelectedCategory] = useState('todas');
   const [availableCategories, setCategories] = useState<any[]>([]);
@@ -273,9 +272,10 @@ export default function Reportes() {
       }
 
       filteredRows.sort((a, b) => {
-        if (sortBy === 'prioridad') {
-          const priorityOrder: Record<string, number> = { alta: 1, media: 2, baja: 3 };
-          return (priorityOrder[String(a.priority || '').toLowerCase()] || 4) - (priorityOrder[String(b.priority || '').toLowerCase()] || 4);
+        if (sortBy.startsWith('titulo')) {
+          const valA = String(a.title || a.name || '').toLowerCase();
+          const valB = String(b.title || b.name || '').toLowerCase();
+          return sortBy === 'titulo_az' ? valA.localeCompare(valB) : valB.localeCompare(valA);
         }
 
         const timeA = getRecordDate(a, source)?.getTime() || 0;
@@ -303,103 +303,82 @@ export default function Reportes() {
     }
   };
 
-  const generatePDF = async (data: ReportData) => {
-    const now = new Date().toLocaleString('es-ES');
-    const dateStr = new Date().toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-    const blob = await pdf(
-      <ReportPDF
-        data={data}
-        now={now}
-        dateStr={dateStr}
-        filters={{ source: SOURCE_LABELS[dataSource] || dataSource, period: periodLabel, order: SORT_LABELS[sortBy] || sortBy }}
-      />,
-    ).toBlob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Reporte_SGA_PZBP_${new Date().toISOString().split('T')[0]}.pdf`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success('PDF descargado con éxito', { id: 'report-gen' });
-  };
 
   const generateExcel = (data: ReportData) => {
     const workbook = XLSX.utils.book_new();
 
-    const summaryRows = [
-      ['REPORTE SGA PZBP'],
-      ['Generado', new Date().toLocaleString('es-ES')],
-      ['Fuente', SOURCE_LABELS[dataSource] || dataSource],
-      ['Período', periodLabel],
-      ['Orden', SORT_LABELS[sortBy] || sortBy],
-      [],
-      ['Módulo', 'Registros'],
-      ...SOURCE_ORDER.map((source) => [SOURCE_LABELS[source], data[source]?.length || 0]),
-      [],
-      ['Total', totalRecords],
-      ['Completitud tareas', `${taskCompletion}%`],
+    // 1. Estructura de encabezado institucional (AoA - Array of Arrays)
+    const headerRows = [
+      ['SISTEMA DE GESTIÓN OPERATIVA - PNA PZBP'],
+      ['REPORTE INSTITUCIONAL DE ACTIVIDADES'],
+      [''],
+      ['DATOS DEL REPORTE'],
+      ['GENERADO POR', 'SISTEMA AUTOMATIZADO SGA'],
+      ['FECHA/HORA', new Date().toLocaleString('es-ES').toUpperCase()],
+      ['FUENTE DE DATOS', (SOURCE_LABELS[dataSource] || dataSource).toUpperCase()],
+      ['PERÍODO', periodLabel.toUpperCase()],
+      ['ORDENAMIENTO', (SORT_LABELS[sortBy] || sortBy).toUpperCase()],
+      [''],
+      ['DETALLE DE REGISTROS'],
     ];
 
-    const summarySheet = XLSX.utils.aoa_to_sheet(summaryRows);
-    summarySheet['!cols'] = [{ wch: 28 }, { wch: 28 }];
-    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Resumen');
-
+    // 2. Procesar los registros para cada hoja
     Object.entries(data).forEach(([source, records]) => {
+      if (!Array.isArray(records) || records.length === 0) return;
+
       const columns = REPORT_COLUMNS[source] || [];
-      const worksheetRows = records.map((record) => {
-        const row: Record<string, string | number | null | undefined> = {};
-        columns.forEach((column) => {
-          row[column.label] = record[column.key];
+      const headerMapping: Record<string, string> = {};
+      columns.forEach(col => headerMapping[col.key] = col.label.toUpperCase());
+
+      const dataToExport = records.map(record => {
+        const row: Record<string, string> = {};
+        columns.forEach(col => {
+          row[headerMapping[col.key]] = String(record[col.key] || '—').toUpperCase();
         });
         return row;
       });
 
-      const worksheet = XLSX.utils.json_to_sheet(worksheetRows.length ? worksheetRows : [{ Estado: 'Sin datos' }]);
-      worksheet['!cols'] = columns.map((column) => ({ wch: column.priority === 'long' ? 48 : column.priority === 'primary' ? 30 : 16 }));
-      XLSX.utils.book_append_sheet(workbook, worksheet, SOURCE_LABELS[source].slice(0, 31));
+      // Crear la hoja con los datos empezando después del encabezado
+      const worksheet = XLSX.utils.json_to_sheet(dataToExport, { origin: headerRows.length });
+      
+      // Inyectar el encabezado institucional al principio (A1)
+      XLSX.utils.sheet_add_aoa(worksheet, headerRows, { origin: "A1" });
+
+      // Configurar anchos de columna dinámicos basados en la prioridad definida
+      worksheet['!cols'] = columns.map(col => ({
+        wch: col.priority === 'long' ? 50 : col.priority === 'primary' ? 30 : 18
+      }));
+
+      // Congelar el encabezado institucional y de tabla (fila 11)
+      worksheet['!view'] = [{ state: 'frozen', ySplit: 11 }];
+
+      // Añadir pie de firma al final de la tabla
+      const lastRowIdx = headerRows.length + dataToExport.length + 2;
+      const footerRows = [
+        [''],
+        ['__________________________________', '', '__________________________________'],
+        ['FIRMA DEL RESPONSABLE OPERATIVO', '', 'VALIDACIÓN TÉCNICA - SGA'],
+        ['PNA - PREFECTURA NAVAL ARGENTINA', '', 'SGO-PZBP DIGITAL SYSTEM']
+      ];
+      XLSX.utils.sheet_add_aoa(worksheet, footerRows, { origin: `A${lastRowIdx}` });
+
+      XLSX.utils.book_append_sheet(workbook, worksheet, SOURCE_LABELS[source].toUpperCase().slice(0, 31));
     });
 
-    XLSX.writeFile(workbook, `Reporte_SGA_PZBP_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast.success('Excel descargado con éxito', { id: 'report-gen' });
-  };
-
-  const generateJSON = (data: ReportData) => {
-    const payload = {
-      metadata: {
-        generatedAt: new Date().toISOString(),
-        source: SOURCE_LABELS[dataSource] || dataSource,
-        period: { from: dateFrom || null, to: dateTo || null },
-        order: SORT_LABELS[sortBy] || sortBy,
-        totalRecords,
-      },
-      data,
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Reporte_SGA_PZBP_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-    toast.success('JSON descargado con éxito', { id: 'report-gen' });
+    // 3. Descarga con nombre estandarizado
+    const fileName = `REPORTE_SGA_${dataSource.toUpperCase()}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+    toast.success('EXCEL INSTITUCIONAL GENERADO', { id: 'report-gen' });
   };
 
   const handleGenerateReport = async () => {
     setIsGenerating(true);
-    toast.loading('Generando reporte...', { id: 'report-gen' });
     try {
-      const data = showPreview ? dataPreview : await fetchData();
-      if (format === 'pdf') await generatePDF(data);
-      if (format === 'excel') generateExcel(data);
-      if (format === 'json') generateJSON(data);
+      const data = await fetchData();
+      generateExcel(data);
     } catch (error) {
       console.error(error);
-      toast.error('Error al generar el reporte', { id: 'report-gen' });
+      toast.error('Error al generar el reporte');
     } finally {
       setIsGenerating(false);
     }
@@ -505,28 +484,42 @@ export default function Reportes() {
                 }}
                 className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:outline-none font-black uppercase text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
               >
-                <option value="fecha_desc">Más recientes primero</option>
-                <option value="fecha_asc">Más antiguos primero</option>
-                <option value="prioridad">Prioridad operativa</option>
+                <option value="fecha_desc">Fecha (Descendente)</option>
+                <option value="fecha_asc">Fecha (Ascendente)</option>
+                <option value="titulo_az">Título (A-Z)</option>
+                <option value="titulo_za">Título (Z-A)</option>
               </select>
             </div>
 
-            <FormatSelector value={format} onChange={setFormat} />
-
-            <div className="grid grid-cols-1 gap-3 pt-2">
+            <div className="pt-4 space-y-3">
               <button
+                type="button"
                 onClick={loadPreview}
-                disabled={isLoadingPreview}
-                className="w-full py-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-white transition-all flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 text-xs sm:text-sm"
+                disabled={isLoadingPreview || isGenerating}
+                className="w-full py-4 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#f5f0e8] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed text-base"
               >
-                <Eye className="w-4 h-4" /> {isLoadingPreview ? 'Cargando...' : 'Cargar vista previa'}
+                {isLoadingPreview ? (
+                  <div className="w-5 h-5 border-3 border-[#1a1a1a] border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Eye className="w-5 h-5" /> Vista previa
+                  </>
+                )}
               </button>
+
               <button
+                type="button"
                 onClick={handleGenerateReport}
-                disabled={isGenerating}
-                className="w-full py-4 border-2 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                disabled={isGenerating || isLoadingPreview}
+                className="w-full py-4 border-2 border-[#1a1a1a] bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-white hover:text-[#00cc66] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed text-base"
               >
-                <Download className="w-5 h-5" /> {isGenerating ? 'Generando...' : 'Descargar reporte'}
+                {isGenerating ? (
+                  <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <FileSpreadsheet className="w-5 h-5" /> Descargar Excel
+                  </>
+                )}
               </button>
             </div>
           </div>
