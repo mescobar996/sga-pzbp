@@ -336,67 +336,64 @@ export default function Dashboard() {
         </motion.div>
       )}
 
-      {/* ─── MAIN GRID ─── */}
-      <div className="flex flex-col lg:grid lg:grid-cols-4 gap-6">
+      {/* ─── TOP KPI ROW ─── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        {/* EFFICIENCY WIDGET - Integrado como KPI */}
+        <div className="flex items-center gap-3 bg-[#f5f0e8] border-2 border-[#1a1a1a] p-3 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]">
+          <div className="relative shrink-0">
+            <ProgressRing pct={completionRate} color={compColor} size={48} stroke={4} />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="text-[8px] font-black" style={{ color: compColor }}>{completionRate}%</span>
+            </div>
+          </div>
+          <div className="min-w-0">
+            <span className="text-[7px] font-black uppercase tracking-widest opacity-40 block mb-0.5">EFICIENCIA</span>
+            <p className="text-sm font-black font-['Space_Grotesk'] leading-none">{completedTasks}/{tasks.length}</p>
+          </div>
+        </div>
+
+        {[
+          { label: 'TAREAS', value: tasks.length, icon: ListChecks, color: 'bg-[#0055ff]', route: '/tareas' },
+          { label: 'VISITAS', value: visits.length, icon: HardHat, color: 'bg-[#00cc66]', route: '/visitas' },
+          { label: 'NOVEDADES', value: novedades.length, icon: Newspaper, color: 'bg-[#1a1a1a]', route: '/novedades' },
+          { label: 'PERSONAL', value: personal.length, icon: Users, color: 'bg-[#ff9900]', route: '/base-datos' },
+        ].map((card, idx) => (
+          <motion.div 
+            key={idx} 
+            whileTap={{ scale: 0.98 }} 
+            onClick={() => navigate(card.route)} 
+            className="p-3 border-2 border-[#1a1a1a] bg-white shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] flex items-center gap-3 cursor-pointer active:shadow-none transition-all group"
+          >
+            <div className={`p-2 border-2 border-[#1a1a1a] ${card.color} text-white shrink-0 group-hover:scale-110 transition-transform`}>
+              <card.icon className="w-4 h-4" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[7px] sm:text-[8px] font-black uppercase opacity-40 leading-none mb-1 truncate">{card.label}</p>
+              <p className="text-base sm:text-xl font-black font-['Space_Grotesk'] leading-none">{card.value}</p>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* ─── MAIN CONTENT GRID ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         
-        {/* ─── SIDEBAR ─── */}
-        <div className="lg:col-span-1 flex flex-col gap-6 order-1 lg:order-1">
+        {/* ─── SIDEBAR (Left) ─── */}
+        <div className="lg:col-span-1 flex flex-col gap-6 order-2 lg:order-1">
           <WeatherWidget />
           
           <RecentActivity data={recentItems} />
 
-          {/* QUICK CARDS GRID */}
-          <div className="flex items-center justify-between lg:justify-start gap-4 sm:gap-6 bg-[#f5f0e8] border-2 border-[#1a1a1a] p-4 sm:p-5 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
-            <div className="relative shrink-0">
-              <ProgressRing pct={completionRate} color={compColor} size={64} stroke={6} />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[10px] font-black" style={{ color: compColor }}>{completionRate}%</span>
-              </div>
-            </div>
-            <div>
-              <span className="text-[9px] font-black uppercase tracking-widest opacity-50 block mb-1">EFICIENCIA GLOBAL</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black font-['Space_Grotesk']">{completedTasks}</span>
-                <span className="text-[10px] font-bold opacity-30">/ {tasks.length} TAREAS</span>
-              </div>
-            </div>
-          </div>
-
-          {/* QUICK CARDS GRID */}
-          <div className="grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4">
-            {[
-              { label: 'TAREAS', value: tasks.length, icon: ListChecks, color: 'bg-[#0055ff]', route: '/tareas' },
-              { label: 'VISITAS', value: visits.length, icon: HardHat, color: 'bg-[#00cc66]', route: '/visitas' },
-              { label: 'NOVEDADES', value: novedades.length, icon: Newspaper, color: 'bg-[#1a1a1a]', route: '/novedades' },
-              { label: 'PERSONAL', value: personal.length, icon: Users, color: 'bg-[#ff9900]', route: '/base-datos' },
-            ].map((card, idx) => (
-              <motion.div 
-                key={idx} 
-                whileTap={{ scale: 0.98 }} 
-                onClick={() => navigate(card.route)} 
-                className="p-3 sm:p-4 border-2 border-[#1a1a1a] bg-white shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] flex items-center gap-3 sm:gap-4 cursor-pointer active:shadow-none transition-all"
-              >
-                <div className={`p-2 sm:p-3 border-2 border-[#1a1a1a] ${card.color} text-white shrink-0`}>
-                  <card.icon className="w-4 h-4 sm:w-5 sm:h-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[8px] sm:text-[9px] font-black uppercase opacity-40 leading-none mb-1 truncate">{card.label}</p>
-                  <p className="text-xl sm:text-2xl font-black font-['Space_Grotesk'] leading-none">{card.value}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* TASK STATUS BAR (STRETCH FIX) */}
-          <div className="p-4 sm:p-5 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white shadow-[4px_4px_0px_0px_rgba(0,85,255,1)]">
-            <h3 className="text-[9px] sm:text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-white/20 pb-2">
-              <Activity className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> ESTADO DE TAREAS
+          {/* TASK STATUS BAR */}
+          <div className="p-4 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white shadow-[4px_4px_0px_0px_rgba(0,85,255,1)]">
+            <h3 className="text-[9px] font-black uppercase tracking-widest mb-4 flex items-center gap-2 border-b border-white/20 pb-2">
+              <Activity className="w-3 h-3" /> ESTADO DE TAREAS
             </h3>
             <div className="space-y-4">
               {statusData.map((s, i) => (
                 <div key={i}>
-                  <div className="flex justify-between text-[9px] sm:text-[10px] font-black mb-1.5 uppercase"><span>{s.name}</span><span>{s.value}</span></div>
-                  <div className="h-1.5 sm:h-2 bg-white/10 border border-white/20">
+                  <div className="flex justify-between text-[9px] font-black mb-1.5 uppercase"><span>{s.name}</span><span>{s.value}</span></div>
+                  <div className="h-1.5 bg-white/10 border border-white/20">
                     <div className="h-full transition-all duration-1000" style={{ width: tasks.length > 0 ? `${(s.value / tasks.length) * 100}%` : '0%', backgroundColor: s.fill }}></div>
                   </div>
                 </div>
@@ -406,7 +403,7 @@ export default function Dashboard() {
         </div>
 
         {/* ─── CENTER CONTENT (Pulse & Map) ─── */}
-        <div className="lg:col-span-3 flex flex-col gap-6 order-2 lg:order-2">
+        <div className="lg:col-span-3 flex flex-col gap-6 order-1 lg:order-2">
           
           {/* PULSE CHART */}
           <div className="border-2 border-[#1a1a1a] bg-white p-4 sm:p-6 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
