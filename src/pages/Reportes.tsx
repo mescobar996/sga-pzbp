@@ -535,9 +535,9 @@ export default function Reportes() {
                   <p className="text-xs font-bold uppercase opacity-60">completitud</p>
                 </div>
                 <div className="p-5 border-2 border-[#1a1a1a] bg-white shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
-                  <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2">Formato</p>
-                  <p className="text-3xl font-black font-['Space_Grotesk'] uppercase">{format}</p>
-                  <p className="text-xs font-bold uppercase opacity-60">salida</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2">Estado</p>
+                  <p className="text-3xl font-black font-['Space_Grotesk'] uppercase">LISTO</p>
+                  <p className="text-xs font-bold uppercase opacity-60">Para descarga</p>
                 </div>
               </section>
 
@@ -545,7 +545,7 @@ export default function Reportes() {
                 {Object.entries(dataCounts).map(([source, count]) => (
                   <div key={source} className={`p-4 border-2 border-[#1a1a1a] border-l-8 ${SOURCE_COLORS[source] || 'bg-white'} shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]`}>
                     <div className="flex items-center justify-between mb-3">
-                      <div className="p-2 bg-white border-2 border-[#1a1a1a]">{sourceIcons[source] || <Database className="w-4 h-4" />}</div>
+                      <div className="p-2 bg-white border-2 border-[#1a1a1a]">{sourceIcons[source] || <ClipboardList className="w-4 h-4" />}</div>
                       <span className="text-2xl font-black font-['Space_Grotesk']">{count}</span>
                     </div>
                     <p className="text-[10px] font-black uppercase tracking-widest">{SOURCE_LABELS[source]}</p>
@@ -562,7 +562,7 @@ export default function Reportes() {
                   <section key={source} className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] overflow-hidden">
                     <div className="bg-[#1a1a1a] text-white px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                       <h2 className="text-sm sm:text-base font-black uppercase flex items-center gap-2 font-['Space_Grotesk']">
-                        {sourceIcons[source] || <Database className="w-4 h-4" />}
+                        {sourceIcons[source] || <ClipboardList className="w-4 h-4" />}
                         {SOURCE_LABELS[source]}
                       </h2>
                       <span className="text-[10px] font-black uppercase tracking-widest text-[#8fb2ff]">{records.length} registros</span>
@@ -618,7 +618,7 @@ export default function Reportes() {
           ) : (
             <div className="bg-[#f5f0e8] border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-8 sm:p-16 flex flex-col items-center justify-center text-center min-h-[520px]">
               <div className="p-5 border-2 border-[#1a1a1a] bg-white shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] mb-6">
-                <FileText className="w-16 h-16 opacity-30" />
+                <FileSpreadsheet className="w-16 h-16 opacity-30 text-[#00cc66]" />
               </div>
               <h3 className="text-2xl font-black uppercase mb-3 font-['Space_Grotesk']">Vista previa pendiente</h3>
               <p className="text-xs font-bold opacity-60 max-w-md mb-8 uppercase leading-relaxed">
