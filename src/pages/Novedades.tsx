@@ -4,10 +4,6 @@ import {
   Plus,
   Trash2,
   Edit2,
-  Search,
-  FileText,
-  Download,
-  Upload,
   X,
   Paperclip,
   Image as ImageIcon,
@@ -20,10 +16,10 @@ import {
   Calendar,
   User,
   Clock,
+  FileText,
+  Upload
 } from 'lucide-react';
 import { toast } from 'sonner';
-import jsPDF from 'jspdf';
-import autoTable from 'jspdf-autotable';
 import { useOutletContext } from 'react-router-dom';
 import { SkeletonPage } from '../components/Skeleton';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -51,6 +47,7 @@ interface Novedad {
   authorId: string;
   authorName: string;
   attachments?: Attachment[];
+  fecha?: string;
 }
 
 export default function Novedades() {
@@ -94,7 +91,6 @@ export default function Novedades() {
       setLoading(false);
     });
 
-    // Auto-refresh when user returns to tab
     const onFocus = () => loadNovedades();
     window.addEventListener('focus', onFocus);
 
@@ -159,7 +155,6 @@ export default function Novedades() {
       let finalAttachments = currentNovedad.attachments ? [...currentNovedad.attachments] : [];
       const userId = getCurrentUserId();
 
-      // Handle deletions
       if (attachmentsToDelete.length > 0) {
         for (const att of attachmentsToDelete) {
           const path = att.url.split('/object/public/attachments/')[1] || att.url.split('/attachments/')[1] || '';
@@ -174,7 +169,6 @@ export default function Novedades() {
         }
       }
 
-      // Handle new uploads
       if (pendingFiles.length > 0) {
         for (const file of pendingFiles) {
           const uploaded = await uploadNovedadAttachment(file, userId);
@@ -228,144 +222,20 @@ export default function Novedades() {
   };
 
   const handleShareNovedad = async (novedad: Novedad) => {
-    const text = `*Novedad*\n\n*Título:* ${novedad.title}\n*Fecha:* ${novedad.fecha || new Date(novedad.createdAt).toLocaleDateString('es-ES')}\n*Autor:* ${novedad.authorName}\n\n*Contenido:*\n${novedad.content}${novedad.attachments && novedad.attachments.length > 0 ? `\n\n*Adjuntos:* ${novedad.attachments.length} archivo(s)` : ''}`;
+    const text = `*NOVEDAD*\n\n*TÍTULO:* ${novedad.title.toUpperCase()}\n*FECHA:* ${novedad.fecha || new Date(novedad.createdAt).toLocaleDateString('es-ES')}\n*AUTOR:* ${novedad.authorName.toUpperCase()}\n\n*CONTENIDO:*\n${novedad.content}${novedad.attachments && novedad.attachments.length > 0 ? `\n\n*ADJUNTOS:* ${novedad.attachments.length} ARCHIVO(S)` : ''}`;
     try {
       if (navigator.share) {
         await navigator.share({ title: `Novedad: ${novedad.title}`, text });
       } else {
         await navigator.clipboard.writeText(text);
-        toast.success('Información copiada al portapapeles');
+        toast.success('INFORMACIÓN COPIADA AL PORTAPAPELES');
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         await navigator.clipboard.writeText(text);
-        toast.success('Información copiada al portapapeles');
+        toast.success('INFORMACIÓN COPIADA AL PORTAPAPELES');
       }
     }
-  };
-
-  const generatePDF = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-
-    // Filtered data
-    const filtered = novedades.filter(
-      (n) =>
-        n.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        n.content.toLowerCase().includes(searchQuery.toLowerCase()),
-    );
-
-    if (filtered.length === 0) {
-      toast.error('No hay novedades para exportar');
-      return;
-    }
-
-    // Modern header with gradient effect
-    doc.setFillColor(30, 58, 95); // #1e3a5f
-    doc.rect(0, 0, pageWidth, 55, 'F');
-
-    // Accent line
-    doc.setFillColor(59, 130, 246); // #3b82f6
-    doc.rect(0, 55, pageWidth, 3, 'F');
-
-    // Title
-    doc.setTextColor(255, 255, 255);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(26);
-    doc.text('REPORTE DE NOVEDADES', 14, 24);
-
-    // Subtitle
-    doc.setFontSize(11);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(147, 197, 253); // #93c5fd
-    doc.text('Sistema de Gestión de Actividades — Prefectura Naval Argentina', 14, 33);
-
-    // Date
-    const now = new Date();
-    const dateStr = now.toLocaleDateString('es-ES', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
-    const timeStr = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-    doc.setFontSize(10);
-    doc.setTextColor(200, 200, 200);
-    doc.text(`${dateStr} — ${timeStr}`, 14, 42);
-
-    // Stats box
-    doc.setFillColor(255, 255, 255);
-    doc.roundedRect(14, 47, 40, 6, 1, 1, 'F');
-    doc.setFontSize(9);
-    doc.setFont('helvetica', 'bold');
-    doc.setTextColor(30, 58, 95);
-    doc.text(`${filtered.length} registro${filtered.length > 1 ? 's' : ''}`, 18, 51);
-
-    // Prepare table data
-    const tableData = filtered.map((n) => {
-      const date = new Date(n.createdAt);
-      return [
-        date.toLocaleDateString('es-ES'),
-        date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        n.title,
-        n.authorName,
-        n.content.length > 100 ? n.content.substring(0, 100) + '...' : n.content,
-      ];
-    });
-
-    autoTable(doc, {
-      startY: 62,
-      head: [['Fecha', 'Hora', 'Título', 'Autor', 'Contenido']],
-      body: tableData,
-      theme: 'grid',
-      styles: {
-        font: 'helvetica',
-        fontSize: 8,
-        textColor: [17, 24, 39],
-        lineColor: [229, 231, 235],
-        lineWidth: 0.3,
-        cellPadding: 5,
-        valign: 'top',
-      },
-      headStyles: {
-        fillColor: [30, 58, 95],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 8,
-        cellPadding: 6,
-      },
-      alternateRowStyles: {
-        fillColor: [249, 250, 251],
-      },
-      columnStyles: {
-        0: { cellWidth: 22, fontStyle: 'normal' },
-        1: { cellWidth: 18, fontStyle: 'normal' },
-        2: { cellWidth: 40, fontStyle: 'bold' },
-        3: { cellWidth: 28, fontStyle: 'normal' },
-        4: { cellWidth: 'auto', fontStyle: 'normal' },
-      },
-      margin: { left: 10, right: 10 },
-      didDrawPage: () => {
-        // Footer on each page
-        doc.setFontSize(7);
-        doc.setTextColor(156, 163, 175);
-        doc.text('SGA PZBP — Prefectura Naval Argentina', pageWidth / 2, pageHeight - 8, { align: 'center' });
-      },
-    });
-
-    // Final footer
-    const finalY = (doc as any).lastAutoTable?.finalY || 62;
-    if (finalY < pageHeight - 30) {
-      doc.setFillColor(249, 250, 251);
-      doc.rect(0, finalY + 10, pageWidth, pageHeight - finalY - 10, 'F');
-      doc.setFontSize(8);
-      doc.setTextColor(107, 114, 128);
-      doc.text(`Generado el ${dateStr} a las ${timeStr}`, pageWidth / 2, finalY + 20, { align: 'center' });
-    }
-
-    doc.save(`Novedades_${new Date().toISOString().split('T')[0]}.pdf`);
-    toast.success('Reporte PDF generado con éxito');
   };
 
   useEffect(() => {
@@ -532,7 +402,10 @@ export default function Novedades() {
                         return (
                           <div
                             key={idx}
-                            onClick={() => (isImage ? setPreviewImage(att.url) : window.open(att.url, '_blank'))}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              isImage ? setPreviewImage(att.url) : window.open(att.url, '_blank')
+                            }}
                             className="flex flex-col border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors group w-48 overflow-hidden cursor-pointer"
                             title={att.name}
                           >
@@ -568,7 +441,6 @@ export default function Novedades() {
         )}
       </div>
 
-      {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex justify-center items-center gap-4 mt-6">
           <button
@@ -675,7 +547,6 @@ export default function Novedades() {
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    {/* Existing Attachments */}
                     {currentNovedad.attachments
                       ?.filter((a) => !attachmentsToDelete.includes(a))
                       .map((att, idx) => (
@@ -718,7 +589,6 @@ export default function Novedades() {
                         </div>
                       ))}
 
-                    {/* Pending Attachments */}
                     {pendingFiles.map((file, idx) => (
                       <div
                         key={`pending-${idx}`}
@@ -750,7 +620,6 @@ export default function Novedades() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end border-t-2 border-[#1a1a1a] pt-4">
                 <button
                   type="button"

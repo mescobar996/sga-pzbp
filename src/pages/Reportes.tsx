@@ -1,17 +1,13 @@
-import { FileText, Download, Database, Eye, BarChart3, Users, HardHat, ListChecks, Newspaper, ClipboardList, Filter } from 'lucide-react';
+import { FileSpreadsheet, Download, Database, Eye, BarChart3, Users, HardHat, ListChecks, Newspaper, ClipboardList, Filter } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../db/client';
-import { pdf } from '@react-pdf/renderer';
-import ReportPDF from '../components/ReportPDF';
 import * as XLSX from 'xlsx';
 import { motion } from 'motion/react';
-import { FormatSelector } from '../components/FormatSelector';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { getCategories } from '../db/diligenciamientos';
 
 export default function Reportes() {
-  const [format, setFormat] = useState<'pdf' | 'excel' | 'json'>('pdf');
   const [dataSource, setDataSource] = useState('todas');
   const [selectedCategory, setSelectedCategory] = useState('todas');
   const [availableCategories, setCategories] = useState<any[]>([]);
@@ -37,7 +33,6 @@ export default function Reportes() {
       
       if (colName === 'diligenciamientos' && categoryFilter && categoryFilter !== 'todas') {
         if (categoryFilter === 'OTROS') {
-          // Special case for OTHERS (null or 'OTROS')
           query = query.or('category.is.null,category.eq.OTROS');
         } else {
           query = query.eq('category', categoryFilter);
@@ -106,76 +101,56 @@ export default function Reportes() {
     }
   };
 
-  const generatePDF = async (data: Record<string, any[]>) => {
-    const now = new Date().toLocaleString('es-ES');
-    const dateStr = new Date().toLocaleDateString('es-ES', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-    });
-    const blob = await pdf(<ReportPDF data={data} now={now} dateStr={dateStr} />).toBlob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Reporte_SGA_PZBP_WEB_${new Date().toISOString().split('T')[0]}.pdf`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('PDF descargado con éxito', { id: 'report-gen' });
-  };
-
   const generateExcel = (data: Record<string, any[]>) => {
     const workbook = XLSX.utils.book_new();
 
     const sheetConfigs: Record<
       string,
-      { columns: { key: string; header: string; width: number }[]; color: { header: string; altRow: string } }
+      { columns: { key: string; header: string }[] }
     > = {
       visitas: {
         columns: [
-          { key: 'fecha', header: 'Fecha', width: 14 },
-          { key: 'hora', header: 'Hora', width: 10 },
-          { key: 'origen', header: 'Origen', width: 22 },
-          { key: 'destino', header: 'Destino', width: 22 },
-          { key: 'responsable', header: 'Responsable', width: 24 },
-          { key: 'observaciones', header: 'Observaciones', width: 40 },
+          { key: 'fecha', header: 'FECHA' },
+          { key: 'hora', header: 'HORA' },
+          { key: 'origen', header: 'ORIGEN' },
+          { key: 'destino', header: 'DESTINO' },
+          { key: 'responsable', header: 'RESPONSABLE' },
+          { key: 'observaciones', header: 'OBSERVACIONES' },
         ],
-        color: { header: '00cc66', altRow: 'f0fdf4' },
       },
       tareas: {
         columns: [
-          { key: 'title', header: 'Título', width: 30 },
-          { key: 'priority', header: 'Prioridad', width: 12 },
-          { key: 'status', header: 'Estado', width: 14 },
-          { key: 'dueDate', header: 'Vencimiento', width: 14 },
-          { key: 'description', header: 'Descripción', width: 40 },
-          { key: 'recurrence', header: 'Recurrencia', width: 16 },
+          { key: 'title', header: 'TÍTULO' },
+          { key: 'priority', header: 'PRIORIDAD' },
+          { key: 'status', header: 'ESTADO' },
+          { key: 'dueDate', header: 'VENCIMIENTO' },
+          { key: 'description', header: 'DESCRIPCIÓN' },
+          { key: 'recurrence', header: 'RECURRENCIA' },
         ],
-        color: { header: '0055ff', altRow: 'eff6ff' },
       },
       personal: {
         columns: [
-          { key: 'name', header: 'Nombre', width: 30 },
-          { key: 'role', header: 'Rol', width: 24 },
-          { key: 'status', header: 'Estado', width: 14 },
+          { key: 'name', header: 'NOMBRE' },
+          { key: 'role', header: 'ROL' },
+          { key: 'status', header: 'ESTADO' },
         ],
-        color: { header: '8b5cf6', altRow: 'f5f3ff' },
       },
       novedades: {
         columns: [
-          { key: 'createdAt', header: 'Fecha', width: 22 },
-          { key: 'title', header: 'Título', width: 30 },
-          { key: 'authorName', header: 'Autor', width: 20 },
-          { key: 'content', header: 'Contenido', width: 50 },
+          { key: 'createdAt', header: 'FECHA/HORA' },
+          { key: 'title', header: 'TÍTULO' },
+          { key: 'authorName', header: 'AUTOR' },
+          { key: 'content', header: 'CONTENIDO' },
         ],
-        color: { header: 'f59e0b', altRow: 'fffbeb' },
       },
       diligenciamientos: {
         columns: [
-          { key: 'fecha', header: 'Fecha', width: 14 },
-          { key: 'category', header: 'Categoría', width: 24 },
-          { key: 'title', header: 'Título', width: 30 },
-          { key: 'authorName', header: 'Autor', width: 20 },
-          { key: 'content', header: 'Contenido', width: 50 },
+          { key: 'fecha', header: 'FECHA' },
+          { key: 'category', header: 'CATEGORÍA' },
+          { key: 'title', header: 'TÍTULO' },
+          { key: 'authorName', header: 'AUTOR' },
+          { key: 'content', header: 'CONTENIDO' },
         ],
-        color: { header: '0055ff', altRow: 'eff6ff' },
       },
     };
 
@@ -193,235 +168,87 @@ export default function Reportes() {
     const totalNovedades = data.novedades?.length || 0;
     const totalDiligenciamientos = data.diligenciamientos?.length || 0;
     const totalRecords = totalVisitas + totalTareas + totalPersonal + totalNovedades + totalDiligenciamientos;
-    
-    // Category Breakdown for Resumen
-    const categoryCounts: Record<string, number> = {};
-    if (data.diligenciamientos) {
-      data.diligenciamientos.forEach((d: any) => {
-        const cat = d.category || 'OTROS';
-        categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-      });
-    }
-
-    const tareasCompletadas = data.tareas?.filter((t: any) => t.status === 'completado').length || 0;
-    const tasaCompletitud = totalTareas > 0 ? Math.round((tareasCompletadas / totalTareas) * 100) : 0;
-    const tareasVencidas =
-      data.tareas?.filter((t: any) => {
-        if (!t.dueDate || t.status === 'completado') return false;
-        return new Date(t.dueDate) < new Date();
-      }).length || 0;
 
     const resumenData = [
       { A: 'REPORTE SGA PZBP — PREFECTURA NAVAL ARGENTINA' },
       {},
       { A: 'RESUMEN GENERAL' },
-      { A: `Fecha de generación:`, B: new Date().toLocaleString('es-ES') },
-      {
-        A: `Filtro de datos:`,
-        B: dataSource === 'todas' ? 'Todas las fuentes' : sheetLabels[dataSource] || dataSource,
-      },
-      { A: `Período:`, B: `${dateFrom || 'Sin límite'} — ${dateTo || 'Sin límite'}` },
+      { A: 'FECHA DE GENERACIÓN:', B: new Date().toLocaleString('es-AR').toUpperCase() },
+      { A: 'FILTRO DE DATOS:', B: (dataSource === 'todas' ? 'TODAS LAS FUENTES' : (sheetLabels[dataSource] || dataSource)).toUpperCase() },
+      { A: 'PERÍODO:', B: `${(dateFrom || 'SIN LÍMITE').toUpperCase()} — ${(dateTo || 'SIN LÍMITE').toUpperCase()}` },
       {},
-      { A: 'TOTAL DE REGISTROS', B: totalRecords },
+      { A: 'ESTADÍSTICAS POR MÓDULO' },
+      { A: 'VISITAS TÉCNICAS', B: totalVisitas },
+      { A: 'TAREAS OPERATIVAS', B: totalTareas },
+      { A: 'PERSONAL ACTIVO', B: totalPersonal },
+      { A: 'NOVEDADES', B: totalNovedades },
+      { A: 'DILIGENCIAMIENTOS', B: totalDiligenciamientos },
       {},
-      { A: 'Visitas Técnicas', B: totalVisitas },
-      { A: 'Tareas Operativas', B: totalTareas },
-      { A: 'Personal Activo', B: totalPersonal },
-      { A: 'Novedades', B: totalNovedades },
-      { A: 'Diligenciamientos', B: totalDiligenciamientos },
-      {},
-      { A: 'DESGLOSE POR MÓDULOS (DILIGENCIAS)' },
-      ...Object.entries(categoryCounts).map(([cat, count]) => ({ A: cat, B: count })),
-      {},
-      { A: 'INDICADORES' },
-      { A: 'Tasa de completitud', B: `${tasaCompletitud}%` },
-      { A: 'Tareas completadas', B: tareasCompletadas },
-      { A: 'Tareas vencidas', B: tareasVencidas },
+      { A: 'TOTAL REGISTROS:', B: totalRecords },
     ];
 
     const resumenWs = XLSX.utils.json_to_sheet(resumenData, { skipHeader: true });
-    resumenWs['!cols'] = [{ wch: 28 }, { wch: 40 }];
-    resumenWs['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 1 } }];
+    resumenWs['!cols'] = [{ wch: 30 }, { wch: 45 }];
     XLSX.utils.book_append_sheet(workbook, resumenWs, 'RESUMEN');
 
     Object.keys(data).forEach((key) => {
       const records = data[key];
       const config = sheetConfigs[key];
-      if (!config) return;
+      if (!config || records.length === 0) return;
 
       const worksheetData: any[] = [];
+      
+      const headerRow: Record<string, string> = {};
+      config.columns.forEach((col, idx) => {
+        headerRow[String.fromCharCode(65 + idx)] = col.header.toUpperCase();
+      });
+      worksheetData.push(headerRow);
 
-      worksheetData.push({ A: sheetLabels[key] || key.toUpperCase() });
-      worksheetData.push({ A: `Generado: ${new Date().toLocaleString('es-ES')}` });
-      worksheetData.push({ A: `Total de registros: ${records.length}` });
-      worksheetData.push({});
-
-      if (records.length > 0) {
-        const headerRow: Record<string, string> = {};
+      records.forEach((record) => {
+        const row: Record<string, any> = {};
         config.columns.forEach((col, idx) => {
-          headerRow[String.fromCharCode(65 + idx)] = col.header;
+          const cellRef = String.fromCharCode(65 + idx);
+          let val = record[col.key];
+          
+          if (val === null || val === undefined) val = '';
+          
+          if (col.key === 'createdAt' || col.key === 'timestamp' || col.key === 'fecha' || col.key === 'dueDate') {
+            try {
+              const d = new Date(val);
+              if (!isNaN(d.getTime())) val = d.toLocaleString('es-AR');
+            } catch { /* ... */ }
+          }
+          
+          row[cellRef] = String(val).toUpperCase().trim();
         });
-        worksheetData.push(headerRow);
-
-        records.forEach((record) => {
-          const row: Record<string, any> = {};
-          config.columns.forEach((col, idx) => {
-            const cellRef = String.fromCharCode(65 + idx);
-            let val = record[col.key];
-            if (val === null || val === undefined) val = '';
-            if (typeof val === 'object') {
-              if (Array.isArray(val)) {
-                if (col.key === 'createdAt' || col.key === 'timestamp') {
-                  try {
-                    val = new Date(val[0]).toLocaleString('es-ES');
-                  } catch {
-                    val = JSON.stringify(val).slice(0, 40);
-                  }
-                } else {
-                  val = `${val.length} ELEMENTO(S)`;
-                }
-              } else {
-                val = JSON.stringify(val).slice(0, 40);
-              }
-            }
-            if (col.key === 'createdAt' || col.key === 'timestamp' || col.key === 'fecha' || col.key === 'dueDate') {
-              try {
-                const d = new Date(val);
-                if (!isNaN(d.getTime())) val = d.toLocaleString('es-ES');
-              } catch {
-                /* fall through */
-              }
-            }
-            row[cellRef] = String(val).slice(0, 100);
-          });
-          worksheetData.push(row);
-        });
-      } else {
-        worksheetData.push({ A: 'Sin datos para este período' });
-      }
+        worksheetData.push(row);
+      });
 
       const worksheet = XLSX.utils.json_to_sheet(worksheetData, { skipHeader: true });
 
-      const wscols = config.columns.map((col) => ({ wch: col.width }));
-      worksheet['!cols'] = wscols;
+      const colWidths = config.columns.map((col, idx) => {
+        const cellRef = String.fromCharCode(65 + idx);
+        const maxLen = Math.max(
+          col.header.length,
+          ...worksheetData.map(row => String(row[cellRef] || '').length)
+        );
+        return { wch: Math.min(maxLen + 4, 80) };
+      });
 
-      worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: config.columns.length - 1 } }];
-
+      worksheet['!cols'] = colWidths;
       worksheet['!autofilter'] = {
-        ref: `A${5}:${String.fromCharCode(64 + config.columns.length)}${5 + records.length}`,
+        ref: `A1:${String.fromCharCode(64 + config.columns.length)}${worksheetData.length}`,
       };
 
       XLSX.utils.book_append_sheet(workbook, worksheet, sheetLabels[key] || key.toUpperCase());
     });
 
-    if (workbook.SheetNames.length === 1) {
-      const worksheet = XLSX.utils.json_to_sheet([{ message: 'Sin datos para los filtros seleccionados' }]);
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'REPORTE');
-    }
-
-    XLSX.writeFile(workbook, `Reporte_${new Date().toISOString().split('T')[0]}.xlsx`);
-  };
-
-  const generateJSON = (data: Record<string, any[]>) => {
-    const totalVisitas = data.visitas?.length || 0;
-    const totalTareas = data.tareas?.length || 0;
-    const totalPersonal = data.personal?.length || 0;
-    const totalNovedades = data.novedades?.length || 0;
-    const totalRecords = totalVisitas + totalTareas + totalPersonal + totalNovedades;
-    const tareasPendientes = data.tareas?.filter((t: any) => t.status === 'pendiente').length || 0;
-    const tareasEnProceso = data.tareas?.filter((t: any) => t.status === 'en_proceso').length || 0;
-    const tareasCompletadas = data.tareas?.filter((t: any) => t.status === 'completado').length || 0;
-    const tareasAlta = data.tareas?.filter((t: any) => t.priority === 'alta' && t.status !== 'completado').length || 0;
-    const tareasMedia =
-      data.tareas?.filter((t: any) => t.priority === 'media' && t.status !== 'completado').length || 0;
-    const tareasBaja = data.tareas?.filter((t: any) => t.priority === 'baja' && t.status !== 'completado').length || 0;
-    const tasaCompletitud = totalTareas > 0 ? Math.round((tareasCompletadas / totalTareas) * 100) : 0;
-    const tareasVencidas =
-      data.tareas?.filter((t: any) => {
-        if (!t.dueDate || t.status === 'completado') return false;
-        return new Date(t.dueDate) < new Date();
-      }).length || 0;
-
-    const reportMetadata = {
-      version: '2.0.0',
-      titulo: 'REPORTE COMPLETO',
-      sistema: 'Sistema de Gestión de Actividades',
-      organizacion: 'Prefectura Naval Argentina — SGA PZBP',
-      fechaGeneracion: new Date().toISOString(),
-      fechaLegible: new Date().toLocaleString('es-ES', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      }),
-      filtros: {
-        fuenteDeDatos: dataSource,
-        desde: dateFrom || 'Sin límite',
-        hasta: dateTo || 'Sin límite',
-        ordenarPor: sortBy,
-      },
-      resumen: {
-        totalRegistros: totalRecords,
-        visitas: totalVisitas,
-        tareas: totalTareas,
-        personal: totalPersonal,
-        novedades: totalNovedades,
-      },
-      kpis: {
-        tasaCompletitud: `${tasaCompletitud}%`,
-        tareasPendientes,
-        tareasEnProceso,
-        tareasCompletadas,
-        tareasVencidas,
-        prioridadAlta: tareasAlta,
-        prioridadMedia: tareasMedia,
-        prioridadBaja: tareasBaja,
-      },
-    };
-
-    const reportData = {
-      metadata: reportMetadata,
-      datos: Object.fromEntries(
-        Object.entries(data).map(([key, records]) => [
-          key,
-          {
-            total: records.length,
-            registros: records.map((record) => {
-              const cleaned: Record<string, any> = {};
-              Object.entries(record).forEach(([k, v]) => {
-                if (v === null || v === undefined) {
-                  cleaned[k] = null;
-                } else if (typeof v === 'object' && !(v instanceof Date)) {
-                  cleaned[k] = v;
-                } else {
-                  cleaned[k] = v;
-                }
-              });
-              return cleaned;
-            }),
-          },
-        ]),
-      ),
-      generadoPor: 'SGO PZBP - Sistema de Reportes',
-    };
-
-    const jsonString = JSON.stringify(reportData, null, 2);
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `Reporte_${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    XLSX.writeFile(workbook, `REPORTE_SGA_PZBP_${new Date().toISOString().split('T')[0]}.XLSX`);
   };
 
   const handleGenerateReport = async () => {
     setIsGenerating(true);
-    toast.loading('Generando reporte...', { id: 'report-gen' });
+    toast.loading('GENERANDO EXCEL...', { id: 'report-gen' });
 
     try {
       const data = await fetchData();
@@ -432,23 +259,16 @@ export default function Reportes() {
       });
 
       if (!hasData) {
-        toast.error('No hay datos para los filtros seleccionados', { id: 'report-gen' });
+        toast.error('NO HAY DATOS PARA LOS FILTROS SELECCIONADOS', { id: 'report-gen' });
         setIsGenerating(false);
         return;
       }
 
-      if (format === 'pdf') {
-        await generatePDF(data);
-      } else if (format === 'excel') {
-        generateExcel(data);
-      } else if (format === 'json') {
-        generateJSON(data);
-      }
-
-      toast.success(`Reporte generado con éxito en formato ${format.toUpperCase()}`, { id: 'report-gen' });
+      generateExcel(data);
+      toast.success('EXCEL GENERADO CON ÉXITO', { id: 'report-gen' });
     } catch (error) {
       console.error(error);
-      toast.error('Error al generar el reporte', { id: 'report-gen' });
+      toast.error('ERROR AL GENERAR EL REPORTE', { id: 'report-gen' });
     } finally {
       setIsGenerating(false);
     }
@@ -482,35 +302,38 @@ export default function Reportes() {
 
   const formatValue = (val: any, key: string): string => {
     if (val === null || val === undefined) return '';
+    let result = '';
     if (typeof val === 'object') {
       if (Array.isArray(val)) {
         if (val.length === 0) return '';
-        if (key === 'comments') return `${val.length} COMENTARIO${val.length > 1 ? 'S' : ''}`;
-        if (key === 'subtasks') {
+        if (key === 'comments') result = `${val.length} COMENTARIO${val.length > 1 ? 'S' : ''}`;
+        else if (key === 'subtasks') {
           const done = val.filter((s: any) => s.completed).length;
-          return `${done}/${val.length}`;
+          result = `${done}/${val.length}`;
         }
-        if (key === 'attachments' || key === 'tags') return `${val.length}`;
-        return `${val.length} ELEMENTO(S)`;
-      }
-      if (key === 'createdAt' || key === 'timestamp') {
+        else if (key === 'attachments' || key === 'tags') result = `${val.length}`;
+        else result = `${val.length} ELEMENTO(S)`;
+      } else if (key === 'createdAt' || key === 'timestamp') {
         try {
-          return new Date(val).toLocaleString('es-ES');
+          result = new Date(val).toLocaleString('es-ES');
         } catch {
-          return String(val).slice(0, 30);
+          result = String(val);
         }
+      } else {
+        result = JSON.stringify(val);
       }
-      return JSON.stringify(val).slice(0, 40).toUpperCase();
-    }
-    if (key === 'createdAt' || key === 'timestamp') {
+    } else if (key === 'createdAt' || key === 'timestamp' || key === 'fecha' || key === 'dueDate') {
       try {
         const d = new Date(val);
-        if (!isNaN(d.getTime())) return d.toLocaleString('es-ES');
+        if (!isNaN(d.getTime())) result = d.toLocaleString('es-ES');
+        else result = String(val);
       } catch {
-        /* fall through */
+        result = String(val);
       }
+    } else {
+      result = String(val);
     }
-    return String(val).toUpperCase();
+    return result.toUpperCase();
   };
 
   const getColumnConfig = (key: string): { field: string; label: string; width: string }[] => {
@@ -522,7 +345,6 @@ export default function Reportes() {
         { field: 'destino', label: 'DESTINO', width: 'min-w-[100px]' },
         { field: 'responsable', label: 'RESPONSABLE', width: 'min-w-[120px]' },
         { field: 'observaciones', label: 'OBSERVACIONES', width: 'min-w-[180px]' },
-        { field: 'comments', label: 'COMENTARIOS', width: 'w-24' },
       ],
       tareas: [
         { field: 'title', label: 'TÍTULO', width: 'min-w-[150px]' },
@@ -530,11 +352,6 @@ export default function Reportes() {
         { field: 'status', label: 'ESTADO', width: 'w-24' },
         { field: 'dueDate', label: 'VENCIMIENTO', width: 'w-24' },
         { field: 'description', label: 'DESCRIPCIÓN', width: 'min-w-[180px]' },
-        { field: 'tags', label: 'ETIQUETAS', width: 'w-28' },
-        { field: 'subtasks', label: 'SUBTAREAS', width: 'w-24' },
-        { field: 'comments', label: 'COMENTARIOS', width: 'w-24' },
-        { field: 'attachments', label: 'ADJUNTOS', width: 'w-20' },
-        { field: 'recurrence', label: 'RECURRENCIA', width: 'w-24' },
       ],
       personal: [
         { field: 'name', label: 'NOMBRE', width: 'min-w-[150px]' },
@@ -546,14 +363,12 @@ export default function Reportes() {
         { field: 'title', label: 'TÍTULO', width: 'min-w-[150px]' },
         { field: 'authorName', label: 'AUTOR', width: 'w-36' },
         { field: 'content', label: 'CONTENIDO', width: 'min-w-[220px]' },
-        { field: 'attachments', label: 'ADJUNTOS', width: 'w-20' },
       ],
       diligenciamientos: [
         { field: 'fecha', label: 'FECHA', width: 'w-32' },
         { field: 'title', label: 'TÍTULO', width: 'min-w-[150px]' },
         { field: 'authorName', label: 'AUTOR', width: 'w-36' },
         { field: 'content', label: 'DETALLE', width: 'min-w-[220px]' },
-        { field: 'attachments', label: 'ADJUNTOS', width: 'w-20' },
       ],
     };
     return configs[key] || [];
@@ -577,12 +392,12 @@ export default function Reportes() {
     <div className="font-['Inter'] max-w-6xl mx-auto px-3 sm:px-4 pb-24 lg:pb-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
         <h1 className="text-xl sm:text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">
-          Generación de Reportes
+          CENTRO DE REPORTES EXCEL
         </h1>
         {totalRecords > 0 && showPreview && (
           <div className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]">
-            <BarChart3 className="w-5 h-5 text-[#0055ff]" />
-            <span className="text-sm font-black uppercase">{totalRecords} REGISTROS</span>
+            <BarChart3 className="w-5 h-5 text-[#00cc66]" />
+            <span className="text-sm font-black uppercase">{totalRecords} REGISTROS CARGADOS</span>
           </div>
         )}
       </div>
@@ -591,25 +406,25 @@ export default function Reportes() {
         {/* Configuration Panel */}
         <div className="lg:col-span-1 bg-[#f5f0e8] border-2 border-[#1a1a1a] p-6 shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] h-fit">
           <h2 className="text-lg font-black uppercase mb-6 font-['Space_Grotesk'] border-b-2 border-[#1a1a1a] pb-2">
-            Configuración
+            FILTROS DE EXPORTACIÓN
           </h2>
 
           <div className="space-y-5">
             <div>
               <label className="block text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                <Database className="w-3.5 h-3.5" /> Fuente de Datos
+                <Database className="w-3.5 h-3.5" /> ORIGEN DE DATOS
               </label>
               <select
                 value={dataSource}
                 onChange={(e) => setDataSource(e.target.value)}
                 className="w-full p-3 border-2 border-[#1a1a1a] bg-white focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
               >
-                <option value="todas">Todas las fuentes</option>
-                <option value="visitas">Visitas Técnicas</option>
-                <option value="tareas">Tareas Operativas</option>
-                <option value="personal">Personal Activo</option>
-                <option value="novedades">Novedades</option>
-                <option value="diligenciamientos">Diligenciamientos</option>
+                <option value="todas">TODAS LAS FUENTES</option>
+                <option value="visitas">VISITAS TÉCNICAS</option>
+                <option value="tareas">TAREAS OPERATIVAS</option>
+                <option value="personal">PERSONAL ACTIVO</option>
+                <option value="novedades">NOVEDADES</option>
+                <option value="diligenciamientos">DILIGENCIAMIENTOS</option>
               </select>
             </div>
 
@@ -620,14 +435,14 @@ export default function Reportes() {
                 className="overflow-hidden"
               >
                 <label className="block text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Filter className="w-3.5 h-3.5 text-[#0055ff]" /> Filtrar por Módulo
+                  <Filter className="w-3.5 h-3.5 text-[#0055ff]" /> FILTRAR POR MÓDULO
                 </label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="w-full p-3 border-2 border-[#1a1a1a] bg-white focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
                 >
-                  <option value="todas">Todos los módulos</option>
+                  <option value="todas">TODOS LOS MÓDULOS</option>
                   {availableCategories.map(cat => (
                     <option key={cat.id} value={cat.name}>{cat.name}</option>
                   ))}
@@ -644,29 +459,24 @@ export default function Reportes() {
             />
 
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest mb-2">Ordenar por</label>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-2">ORDENAR POR</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
                 className="w-full p-3 border-2 border-[#1a1a1a] bg-white focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
               >
-                <option value="fecha_desc">Fecha (Más reciente)</option>
-                <option value="fecha_asc">Fecha (Más antiguo)</option>
-                <option value="prioridad">Prioridad (Alta a Baja)</option>
+                <option value="fecha_desc">FECHA (MÁS RECIENTE)</option>
+                <option value="fecha_asc">FECHA (MÁS ANTIGUO)</option>
+                <option value="prioridad">PRIORIDAD (ALTA A BAJA)</option>
               </select>
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest mb-2">Formato</label>
-              <FormatSelector value={format} onChange={setFormat} />
             </div>
 
             <button
               onClick={handleGenerateReport}
               disabled={isGenerating}
-              className="w-full py-4 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-white hover:text-[#1a1a1a] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              className="w-full py-4 border-2 border-[#1a1a1a] bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-white hover:text-[#00cc66] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed text-base"
             >
-              <Download className="w-5 h-5" /> {isGenerating ? 'Generando...' : 'Descargar Reporte'}
+              <FileSpreadsheet className="w-6 h-6" /> {isGenerating ? 'PROCESANDO...' : 'DESCARGAR EXCEL'}
             </button>
 
             <button
@@ -674,7 +484,7 @@ export default function Reportes() {
               disabled={isLoadingPreview}
               className="w-full py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#f5f0e8] transition-all flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 text-xs sm:text-sm"
             >
-              <Eye className="w-4 h-4" /> {isLoadingPreview ? 'CARGANDO...' : 'CARGAR VISTA PREVIA'}
+              <Eye className="w-4 h-4" /> {isLoadingPreview ? 'CARGANDO...' : 'VER VISTA PREVIA'}
             </button>
           </div>
         </div>
@@ -688,7 +498,7 @@ export default function Reportes() {
               className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-6"
             >
               <h2 className="text-lg font-black uppercase mb-6 font-['Space_Grotesk'] border-b-2 border-[#1a1a1a] pb-2">
-                Vista Previa de Datos
+                VISTA PREVIA DE DATOS (MAYÚSCULAS)
               </h2>
 
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -698,7 +508,7 @@ export default function Reportes() {
                       {sourceIcons[key] || <Database className="w-4 h-4" />}
                     </div>
                     <div>
-                      <p className="text-[10px] font-black uppercase opacity-60 leading-tight mb-1">{key}</p>
+                      <p className="text-[10px] font-black uppercase opacity-60 leading-tight mb-1">{key.toUpperCase()}</p>
                       <p className="text-2xl font-black font-['Space_Grotesk']">{count}</p>
                     </div>
                   </div>
@@ -743,17 +553,13 @@ export default function Reportes() {
                                 {records.slice(0, 10).map((record, idx) => (
                                   <tr
                                     key={idx}
-                                    className={`border-t-2 border-[#1a1a1a] ${idx % 2 === 0 ? 'bg-[#f5f0e8]' : 'bg-white'} hover:bg-[#0055ff]/10 transition-colors`}
+                                    className={`border-t-2 border-[#1a1a1a] ${idx % 2 === 0 ? 'bg-[#f5f0e8]' : 'bg-white'} hover:bg-[#00cc66]/10 transition-colors`}
                                   >
                                     <td className="p-3 text-[10px] font-black border-r border-[#1a1a1a] text-center">{idx + 1}</td>
                                     {columns.map((col) => {
                                       const rawVal = record[col.field];
                                       const displayVal = formatValue(rawVal, col.field);
                                       const isBadge = col.field === 'priority' || col.field === 'status';
-                                      const isCount =
-                                        col.field === 'comments' ||
-                                        col.field === 'subtasks' ||
-                                        col.field === 'attachments';
 
                                       return (
                                         <td key={col.field} className="p-3 uppercase border-r border-[#1a1a1a] last:border-r-0">
@@ -761,11 +567,7 @@ export default function Reportes() {
                                             <span
                                               className={`inline-block px-2 py-0.5 text-[9px] font-black uppercase tracking-tighter border-2 border-[#1a1a1a] shadow-[1px_1px_0px_0px_rgba(26,26,26,1)] ${col.field === 'priority' ? getPriorityBadge(rawVal) : getStatusBadge(rawVal)}`}
                                             >
-                                              {rawVal.replace('_', ' ')}
-                                            </span>
-                                          ) : isCount && Array.isArray(rawVal) && rawVal.length > 0 ? (
-                                            <span className="inline-block px-2 py-0.5 text-[10px] font-black tracking-wider border-2 border-[#1a1a1a] bg-white shadow-[1px_1px_0px_0px_rgba(26,26,26,1)] uppercase">
-                                              {col.field === 'subtasks' ? displayVal : `${rawVal.length}`}
+                                              {rawVal.toUpperCase().replace('_', ' ')}
                                             </span>
                                           ) : (
                                             <span
@@ -794,7 +596,7 @@ export default function Reportes() {
                                         key={header}
                                         className="p-3 text-[10px] font-black uppercase tracking-widest border-r border-white/20 last:border-r-0 min-w-[100px]"
                                       >
-                                        {header}
+                                        {header.toUpperCase()}
                                       </th>
                                     ))}
                                 </tr>
@@ -824,13 +626,13 @@ export default function Reportes() {
                           )}
                           {records.length > 10 && (
                             <div className="p-3 text-center text-[10px] font-black uppercase tracking-widest opacity-60 border-t-2 border-[#1a1a1a] bg-[#f5f0e8]">
-                              Mostrando 10 de {records.length} registros
+                              MOSTRANDO 10 DE {records.length} REGISTROS
                             </div>
                           )}
                         </div>
                       ) : (
                         <div className="p-10 text-center border-4 border-dashed border-[#1a1a1a]/20 bg-[#f5f0e8]/50">
-                           <p className="text-xs font-black uppercase opacity-40">Sin datos disponibles</p>
+                           <p className="text-xs font-black uppercase opacity-40">SIN DATOS DISPONIBLES</p>
                         </div>
                       )}
                     </div>
@@ -843,13 +645,13 @@ export default function Reportes() {
               <BarChart3 className="w-20 h-20 mb-6 opacity-20" />
               <h3 className="text-2xl font-black uppercase mb-3 font-['Space_Grotesk']">SIN VISTA PREVIA</h3>
               <p className="text-xs font-bold opacity-60 max-w-sm mb-8 uppercase leading-relaxed">
-                CONFIGURA LOS FILTROS Y HAZ CLIC EN "CARGAR VISTA PREVIA" PARA ANALIZAR LOS DATOS ANTES DE GENERAR EL REPORTE FINAL.
+                CONFIGURA LOS FILTROS Y HAZ CLIC EN "VER VISTA PREVIA" PARA ANALIZAR LOS DATOS ANTES DE GENERAR EL REPORTE FINAL.
               </p>
               <button
                 onClick={loadPreview}
-                className="px-8 py-4 bg-[#0055ff] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm hover:bg-[#1a1a1a] transition-all shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                className="px-8 py-4 bg-[#00cc66] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm hover:bg-[#1a1a1a] transition-all shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
               >
-                Cargar Vista Previa
+                CARGAR VISTA PREVIA
               </button>
             </div>
           )}
