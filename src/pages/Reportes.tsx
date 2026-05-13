@@ -12,7 +12,7 @@ import {
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '../db/client';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { motion } from 'motion/react';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { getCategories } from '../db/diligenciamientos';
@@ -299,71 +299,168 @@ export default function Reportes() {
   };
 
 
-  const generateExcel = (data: ReportData) => {
-    const workbook = XLSX.utils.book_new();
+  const generateExcel = async (data: ReportData) => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'SGA-PZBP';
+    workbook.lastModifiedBy = 'SGA-PZBP';
+    workbook.created = new Date();
 
-    // 1. Estructura de encabezado institucional (AoA - Array of Arrays)
-    const headerRows = [
-      ['SISTEMA DE GESTIÓN OPERATIVA - PNA PZBP'],
-      ['REPORTE INSTITUCIONAL DE ACTIVIDADES'],
-      [''],
-      ['DATOS DEL REPORTE'],
-      ['GENERADO POR', 'SISTEMA AUTOMATIZADO SGA'],
-      ['FECHA/HORA', new Date().toLocaleString('es-ES').toUpperCase()],
-      ['FUENTE DE DATOS', (SOURCE_LABELS[dataSource] || dataSource).toUpperCase()],
-      ['PERÍODO', periodLabel.toUpperCase()],
-      ['ORDENAMIENTO', (SORT_LABELS[sortBy] || sortBy).toUpperCase()],
-      [''],
-      ['DETALLE DE REGISTROS'],
-    ];
+    // Función para obtener el logo (convertir a base64)
+    const getLogoBase64 = async () => {
+      try {
+        const response = await fetch('/logo-pna.png');
+        const blob = await response.blob();
+        return new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(blob);
+        });
+      } catch (e) {
+        return null;
+      }
+    };
+
+    const logoBase64 = await getLogoBase64();
 
     // 2. Procesar los registros para cada hoja
-    Object.entries(data).forEach(([source, records]) => {
-      if (!Array.isArray(records) || records.length === 0) return;
+    for (const [source, records] of Object.entries(data)) {
+      if (!Array.isArray(records) || records.length === 0) continue;
 
-      const columns = REPORT_COLUMNS[source] || [];
-      const headerMapping: Record<string, string> = {};
-      columns.forEach(col => headerMapping[col.key] = col.label.toUpperCase());
-
-      const dataToExport = records.map(record => {
-        const row: Record<string, string> = {};
-        columns.forEach(col => {
-          row[headerMapping[col.key]] = String(record[col.key] || '—').toUpperCase();
-        });
-        return row;
-      });
-
-      // Crear la hoja con los datos empezando después del encabezado
-      const worksheet = XLSX.utils.json_to_sheet(dataToExport, { origin: headerRows.length });
+      const sheet = workbook.addWorksheet(SOURCE_LABELS[source].toUpperCase().slice(0, 31));
       
-      // Inyectar el encabezado institucional al principio (A1)
-      XLSX.utils.sheet_add_aoa(worksheet, headerRows, { origin: "A1" });
+      // Añadir Logo si existe
+      if (logoBase64) {
+        const logoId = workbook.addImage({
+          base64: logoBase64,
+          extension: 'png',
+        });
+        sheet.addImage(logoId, {
+          tl: { col: 0, row: 0 },
+          ext: { width: 60, height: 60 }
+        });
+      }
 
-      // Configurar anchos de columna dinámicos basados en la prioridad definida
-      worksheet['!cols'] = columns.map(col => ({
-        wch: col.priority === 'long' ? 50 : col.priority === 'primary' ? 30 : 18
+      // 3. Encabezado Institucional (Espacio para el logo y títulos)
+      sheet.mergeCells('B1:H1');
+      const titleCell = sheet.getCell('B1');
+      titleCell.value = 'PREFECTURA NAVAL ARGENTINA - ZONA BAJO PARANÁ';
+      titleCell.font = { name: 'Arial Black', size: 14, color: { argb: 'FF1A1A1A' } };
+      titleCell.alignment = { vertical: 'middle', horizontal: 'left' };
+
+      sheet.mergeCells('B2:H2');
+      const subtitleCell = sheet.getCell('B2');
+      subtitleCell.value = `REPORTE OPERATIVO: ${SOURCE_LABELS[source].toUpperCase()}`;
+      subtitleCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF555555' } };
+
+      sheet.getCell('B3').value = 'GENERADO:';
+      sheet.getCell('C3').value = new Date().toLocaleString('es-ES').toUpperCase();
+      sheet.getCell('B4').value = 'PERÍODO:';
+      sheet.getCell('C4').value = periodLabel.toUpperCase();
+
+      // Dejar espacio para el header (fila 7 empieza la tabla)
+      const startRow = 7;
+      const columns = REPORT_COLUMNS[source] || [];
+      
+      // Definir columnas
+      sheet.columns = columns.map(col => ({
+        header: col.label.toUpperCase(),
+        key: col.key,
+        width: col.priority === 'long' ? 50 : col.priority === 'primary' ? 30 : 18
       }));
 
-      // Congelar el encabezado institucional y de tabla (fila 11)
-      worksheet['!view'] = [{ state: 'frozen', ySplit: 11 }];
+      // Mover los headers a la fila de inicio
+      const headerRow = sheet.getRow(startRow);
+      headerRow.values = columns.map(col => col.label.toUpperCase());
+      
+      // Estilo de los encabezados de tabla
+      headerRow.eachCell((cell) => {
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF1A1A1A' }
+        };
+        cell.font = {
+          color: { argb: 'FFFFFFFF' },
+          bold: true,
+          size: 10
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
 
-      // Añadir pie de firma al final de la tabla
-      const lastRowIdx = headerRows.length + dataToExport.length + 2;
-      const footerRows = [
-        [''],
-        ['__________________________________', '', '__________________________________'],
-        ['FIRMA DEL RESPONSABLE OPERATIVO', '', 'VALIDACIÓN TÉCNICA - SGA'],
-        ['PNA - PREFECTURA NAVAL ARGENTINA', '', 'SGO-PZBP DIGITAL SYSTEM']
+      // Añadir Datos
+      records.forEach((record, idx) => {
+        const rowData = columns.map(col => String(record[col.key] || '—').toUpperCase());
+        const row = sheet.addRow(rowData);
+        
+        // Estilo Zebra y bordes
+        const isEven = idx % 2 === 0;
+        row.eachCell((cell, colNumber) => {
+          if (isEven) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFF5F0E8' }
+            };
+          }
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+            left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+            bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+            right: { style: 'thin', color: { argb: 'FFCCCCCC' } }
+          };
+          cell.font = { size: 9 };
+          cell.alignment = { vertical: 'middle' };
+
+          // Color dinámico para estados
+          const val = String(cell.value).toLowerCase();
+          if (['completado', 'activo', 'operativo', 'baja'].includes(val)) {
+            cell.font = { color: { argb: 'FF008000' }, bold: true, size: 9 };
+          } else if (['pendiente', 'inactivo', 'alta'].includes(val)) {
+            cell.font = { color: { argb: 'FFFF0000' }, bold: true, size: 9 };
+          }
+        });
+      });
+
+      // Pie de firma
+      const footerStart = startRow + records.length + 3;
+      sheet.mergeCells(`A${footerStart}:C${footerStart}`);
+      sheet.getCell(`A${footerStart}`).value = '__________________________________';
+      sheet.getCell(`A${footerStart + 1}`).value = 'FIRMA DEL RESPONSABLE';
+      
+      sheet.mergeCells(`E${footerStart}:G${footerStart}`);
+      sheet.getCell(`E${footerStart}`).value = '__________________________________';
+      sheet.getCell(`E${footerStart + 1}`).value = 'VALIDACIÓN SGA';
+
+      // Congelar paneles
+      sheet.views = [
+        { state: 'frozen', xSplit: 0, ySplit: startRow, topLeftCell: 'A8', activePane: 'bottomLeft' }
       ];
-      XLSX.utils.sheet_add_aoa(worksheet, footerRows, { origin: `A${lastRowIdx}` });
 
-      XLSX.utils.book_append_sheet(workbook, worksheet, SOURCE_LABELS[source].toUpperCase().slice(0, 31));
-    });
+      // Auto filtros
+      sheet.autoFilter = {
+        from: { row: startRow, column: 1 },
+        to: { row: startRow, column: columns.length }
+      };
+    }
 
-    // 3. Descarga con nombre estandarizado
-    const fileName = `REPORTE_SGA_${dataSource.toUpperCase()}_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
-    toast.success('EXCEL INSTITUCIONAL GENERADO', { id: 'report-gen' });
+    // 4. Descarga
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = window.URL.createObjectURL(blob);
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    const fileName = `REPORTE_SGA_PREMIUM_${dataSource.toUpperCase()}_${new Date().toISOString().split('T')[0]}.xlsx`;
+    anchor.download = fileName;
+    anchor.click();
+    window.URL.revokeObjectURL(url);
+    
+    toast.success('EXCEL PREMIUM GENERADO CON ÉXITO', { id: 'report-gen' });
   };
 
   const handleGenerateReport = async () => {
