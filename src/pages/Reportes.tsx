@@ -5,12 +5,9 @@ import { supabase } from '../db/client';
 import * as XLSX from 'xlsx';
 import { motion } from 'motion/react';
 import { DateRangePicker } from '../components/DateRangePicker';
-import { getCategories } from '../db/diligenciamientos';
 
 export default function Reportes() {
   const [dataSource, setDataSource] = useState('todas');
-  const [selectedCategory, setSelectedCategory] = useState('todas');
-  const [availableCategories, setCategories] = useState<any[]>([]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [sortBy, setSortBy] = useState('fecha_desc');
@@ -19,26 +16,12 @@ export default function Reportes() {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
-  useEffect(() => {
-    getCategories().then(data => {
-      setCategories(data);
-    });
-  }, []);
-
   const fetchData = async () => {
     const data: Record<string, any[]> = {};
 
-    const fetchCollection = async (colName: string, categoryFilter?: string) => {
+    const fetchCollection = async (colName: string) => {
       let query = supabase.from(colName).select('*');
       
-      if (colName === 'diligenciamientos' && categoryFilter && categoryFilter !== 'todas') {
-        if (categoryFilter === 'OTROS') {
-          query = query.or('category.is.null,category.eq.OTROS');
-        } else {
-          query = query.eq('category', categoryFilter);
-        }
-      }
-
       const { data: docs, error } = await query;
       if (error) throw error;
       let result = docs || [];
@@ -82,7 +65,7 @@ export default function Reportes() {
     if (dataSource === 'todas' || dataSource === 'personal') data.personal = await fetchCollection('personal');
     if (dataSource === 'todas' || dataSource === 'novedades') data.novedades = await fetchCollection('novedades');
     if (dataSource === 'todas' || dataSource === 'diligenciamientos') {
-      data.diligenciamientos = await fetchCollection('diligenciamientos', selectedCategory);
+      data.diligenciamientos = await fetchCollection('diligenciamientos');
     }
 
     return data;
@@ -146,7 +129,6 @@ export default function Reportes() {
       diligenciamientos: {
         columns: [
           { key: 'fecha', header: 'FECHA' },
-          { key: 'category', header: 'CATEGORÍA' },
           { key: 'title', header: 'TÍTULO' },
           { key: 'authorName', header: 'AUTOR' },
           { key: 'content', header: 'CONTENIDO' },
@@ -428,28 +410,6 @@ export default function Reportes() {
               </select>
             </div>
 
-            {dataSource === 'diligenciamientos' && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                className="overflow-hidden"
-              >
-                <label className="block text-[10px] font-black uppercase tracking-widest mb-2 flex items-center gap-2">
-                  <Filter className="w-3.5 h-3.5 text-[#0055ff]" /> FILTRAR POR MÓDULO
-                </label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full p-3 border-2 border-[#1a1a1a] bg-white focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
-                >
-                  <option value="todas">TODOS LOS MÓDULOS</option>
-                  {availableCategories.map(cat => (
-                    <option key={cat.id} value={cat.name}>{cat.name}</option>
-                  ))}
-                  <option value="OTROS">OTROS (SIN CATEGORÍA)</option>
-                </select>
-              </motion.div>
-            )}
 
             <DateRangePicker
               dateFrom={dateFrom}
