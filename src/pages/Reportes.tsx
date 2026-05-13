@@ -373,8 +373,8 @@ export default function Reportes() {
   return (
     <div className="font-['Inter'] max-w-6xl mx-auto px-3 sm:px-4 pb-24 lg:pb-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
-        <h1 className="text-xl sm:text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">
-          CENTRO DE REPORTES EXCEL
+        <h1 className="text-xl sm:text-3xl lg:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter text-[#1a1a1a]">
+          SISTEMA DE REPORTES INSTITUCIONAL
         </h1>
         {totalRecords > 0 && showPreview && (
           <div className="flex items-center gap-2 bg-[#1a1a1a] text-white px-4 py-2 border-2 border-[#1a1a1a] shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]">
