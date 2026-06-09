@@ -19,6 +19,7 @@ import {
   CheckSquare,
   List,
   Share2,
+  Save,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
@@ -27,11 +28,15 @@ import { taskSchema } from '../utils/validation';
 import { TaskKanbanCard } from '../components/TaskKanbanCard';
 import { FilterBar } from '../components/FilterBar';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { FormField } from '../components/FormField';
+import { DragDropUpload } from '../components/DragDropUpload';
 import type { TaskHistory, Task } from '../types';
 import { getTasks, addTask, updateTask, deleteTask, onTasksChange, logTaskHistory } from '../db/tasks';
 import { onTaskHistoryChange } from '../db/taskHistory';
 import { addNotification } from '../db/notifications';
 import { supabase, getCurrentUserId } from '../db/client';
+
+const DRAFT_KEY = 'tareas_form_draft';
 
 function handleError(error: unknown) {
   console.error('Error:', error);
@@ -133,6 +138,7 @@ export default function Tareas() {
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [isFormatsDropdownOpen, setIsFormatsDropdownOpen] = useState(false);
   const [confirmModal, setConfirmModal] = useState<{isOpen: boolean; id: string | null}>({ isOpen: false, id: null });
+  const [hasDraft, setHasDraft] = useState(false);
 
   useEffect(() => {
     const safetyTimeout = setTimeout(() => {
@@ -212,22 +218,49 @@ export default function Tareas() {
   };
 
   const openNewTaskModal = (initialDate?: string) => {
-    setCurrentTask({
-      title: '',
-      description: '',
-      priority: 'media',
-      status: 'pendiente',
-      dueDate: initialDate || '',
-      attachments: [],
-      tags: [],
-      subtasks: [],
-      recurrence: 'none',
-    });
-    setCurrentTagsInput('');
+    // Check for a saved draft
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const draft = JSON.parse(saved);
+        setCurrentTask(draft.task || {});
+        setCurrentTagsInput(draft.tagsInput || '');
+        setHasDraft(true);
+      } else {
+        setCurrentTask({
+          title: '',
+          description: '',
+          priority: 'media',
+          status: 'pendiente',
+          dueDate: initialDate || '',
+          attachments: [],
+          tags: [],
+          subtasks: [],
+          recurrence: 'none',
+        });
+        setCurrentTagsInput('');
+        setHasDraft(false);
+      }
+    } catch {
+      setCurrentTask({
+        title: '',
+        description: '',
+        priority: 'media',
+        status: 'pendiente',
+        dueDate: initialDate || '',
+        attachments: [],
+        tags: [],
+        subtasks: [],
+        recurrence: 'none',
+      });
+      setCurrentTagsInput('');
+      setHasDraft(false);
+    }
     setNewSubtaskTitle('');
     setPendingFiles([]);
     setAttachmentsToDelete([]);
     setFormErrors({});
+    setActiveTab('description');
     setIsEditing(false);
     setIsModalOpen(true);
   };
@@ -245,8 +278,36 @@ export default function Tareas() {
     setPendingFiles([]);
     setAttachmentsToDelete([]);
     setFormErrors({});
+    setHasDraft(false);
+    setActiveTab('description');
     setIsEditing(true);
     setIsModalOpen(true);
+  };
+
+  const saveDraft = () => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify({ task: currentTask, tagsInput: currentTagsInput }));
+      toast.success('Borrador guardado', { duration: 1500 });
+    } catch {
+      // ignore storage errors
+    }
+  };
+
+  const discardDraft = () => {
+    localStorage.removeItem(DRAFT_KEY);
+    setCurrentTask({
+      title: '',
+      description: '',
+      priority: 'media',
+      status: 'pendiente',
+      dueDate: '',
+      attachments: [],
+      tags: [],
+      subtasks: [],
+      recurrence: 'none',
+    });
+    setCurrentTagsInput('');
+    setHasDraft(false);
   };
 
   const handleCloseTaskModal = () => {
@@ -375,6 +436,8 @@ export default function Tareas() {
 
       setIsModalOpen(false);
       setIsUploading(false);
+      localStorage.removeItem(DRAFT_KEY);
+      setHasDraft(false);
       toast.success(isEditing ? 'Tarea actualizada' : 'Tarea creada');
     } catch (error) {
       setIsUploading(false);
@@ -1383,182 +1446,158 @@ export default function Tareas() {
             </div>
 
             <form onSubmit={handleSaveTask} className="p-4 sm:p-6 flex flex-col gap-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Título</label>
+
+              {/* Draft Recovery Banner */}
+              {hasDraft && !isEditing && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center justify-between gap-3 p-3 border-2 border-[#ff9900] bg-amber-50 shadow-[2px_2px_0px_0px_rgba(255,153,0,0.5)]"
+                >
+                  <div className="flex items-center gap-2">
+                    <Save className="w-4 h-4 text-[#ff9900] shrink-0" />
+                    <span className="text-xs font-black uppercase tracking-wider text-[#ff9900]">
+                      Borrador recuperado
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={discardDraft}
+                    className="text-[10px] font-black uppercase tracking-wider text-[#e63b2e] hover:underline"
+                  >
+                    Descartar
+                  </button>
+                </motion.div>
+              )}
+
+              {/* Título */}
+              <FormField label="Título" required error={formErrors.title}>
                 <input
                   type="text"
                   value={currentTask.title || ''}
                   onChange={(e) => {
                     setCurrentTask({ ...currentTask, title: e.target.value });
                     if (formErrors.title)
-                      setFormErrors((prev) => {
-                        const next = { ...prev };
-                        delete next.title;
-                        return next;
-                      });
+                      setFormErrors((prev) => { const next = { ...prev }; delete next.title; return next; });
                   }}
-                  className={`w-full p-3 border-2 bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-lg transition-colors ${formErrors.title ? 'border-[#e63b2e] bg-red-50' : 'border-[#1a1a1a]'}`}
+                  className={`w-full p-3 border-2 bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase text-lg transition-colors ${
+                    formErrors.title ? 'border-[#e63b2e] bg-red-50' : 'border-[#1a1a1a]'
+                  }`}
                   placeholder="TÍTULO DE LA TAREA..."
-                  required
                   autoFocus
                 />
-                {formErrors.title && (
-                  <p className="text-[#e63b2e] text-xs font-bold mt-1 flex items-center gap-1">
-                    <AlertCircle className="w-3 h-3" /> {formErrors.title}
-                  </p>
-                )}
-              </div>
+              </FormField>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Estado</label>
+              {/* Estado / Prioridad / Vencimiento / Recurrencia */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField label="Estado" required>
                   <select
                     value={currentTask.status || 'pendiente'}
                     onChange={(e) => setCurrentTask({ ...currentTask, status: e.target.value as any })}
-                    className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
+                    className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
                   >
                     <option value="pendiente">Pendiente</option>
                     <option value="en_proceso">En Proceso</option>
                     <option value="completado">Completado</option>
                   </select>
-                </div>
+                </FormField>
 
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">Prioridad</label>
+                <FormField label="Prioridad" required>
                   <select
                     value={currentTask.priority || 'media'}
                     onChange={(e) => setCurrentTask({ ...currentTask, priority: e.target.value as any })}
-                    className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
+                    className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
                   >
-                    <option value="alta">Alta</option>
-                    <option value="media">Media</option>
-                    <option value="baja">Baja</option>
+                    <option value="alta">Alta 🔴</option>
+                    <option value="media">Media 🟡</option>
+                    <option value="baja">Baja 🟢</option>
                   </select>
-                </div>
+                </FormField>
 
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">
-                    Vencimiento
-                  </label>
+                <FormField label="Fecha de Vencimiento">
                   <input
                     type="date"
                     value={currentTask.dueDate || ''}
                     onChange={(e) => setCurrentTask({ ...currentTask, dueDate: e.target.value })}
-                    className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-base sm:text-sm"
+                    className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
                   />
-                </div>
+                </FormField>
 
-                <div>
-                  <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">
-                    Recurrencia
-                  </label>
+                <FormField label="Recurrencia">
                   <select
                     value={currentTask.recurrence || 'none'}
                     onChange={(e) => setCurrentTask({ ...currentTask, recurrence: e.target.value as any })}
-                    className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
+                    className="w-full p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors cursor-pointer text-sm"
                   >
                     <option value="none">Ninguna</option>
                     <option value="diaria">Diaria</option>
                     <option value="semanal">Semanal</option>
                     <option value="mensual">Mensual</option>
                   </select>
-                </div>
+                </FormField>
 
                 <div className="md:col-span-2">
-                  <label className="block text-xs font-bold uppercase tracking-widest opacity-70 mb-1">
-                    Etiquetas (separadas por comas)
-                  </label>
-                  <input
-                    type="text"
-                    value={currentTagsInput}
-                    onChange={(e) => setCurrentTagsInput(e.target.value)}
-                    className="w-full p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-sm"
-                    placeholder="EJ: URGENTE, DISEÑO, BUG"
-                  />
-                  {formErrors.tags && (
-                    <p className="text-[#e63b2e] text-xs font-bold mt-1 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" /> {formErrors.tags}
-                    </p>
-                  )}
+                  <FormField label="Etiquetas" helpText="Separadas por comas" error={formErrors.tags}>
+                    <input
+                      type="text"
+                      value={currentTagsInput}
+                      onChange={(e) => setCurrentTagsInput(e.target.value)}
+                      className={`w-full p-2.5 border-2 bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-sm ${
+                        formErrors.tags ? 'border-[#e63b2e] bg-red-50' : 'border-[#1a1a1a]'
+                      }`}
+                      placeholder="EJ: URGENTE, DISEÑO, BUG"
+                    />
+                  </FormField>
                 </div>
               </div>
 
               {/* Tabs Navigation */}
-              <div className="flex border-b-2 border-[#1a1a1a] mb-4 overflow-x-auto hide-scrollbar">
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('description')}
-                  className={`px-4 py-3 font-black uppercase text-xs md:text-sm whitespace-nowrap transition-colors flex-1 text-center ${
-                    activeTab === 'description' ? 'bg-[#1a1a1a] text-white' : 'bg-gray-100 text-[#1a1a1a] hover:bg-gray-200'
-                  }`}
-                >
-                  Descripción
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('subtasks')}
-                  className={`px-4 py-3 font-black uppercase text-xs md:text-sm whitespace-nowrap transition-colors flex-1 text-center flex items-center justify-center gap-2 ${
-                    activeTab === 'subtasks' ? 'bg-[#1a1a1a] text-white' : 'bg-gray-100 text-[#1a1a1a] hover:bg-gray-200'
-                  }`}
-                >
-                  Subtareas
-                  {currentTask.subtasks && currentTask.subtasks.length > 0 && (
-                    <span className="bg-[#0055ff] text-white text-[10px] px-1.5 py-0.5 rounded-full">
-                      {currentTask.subtasks.length}
-                    </span>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('attachments')}
-                  className={`px-4 py-3 font-black uppercase text-xs md:text-sm whitespace-nowrap transition-colors flex-1 text-center flex items-center justify-center gap-2 ${
-                    activeTab === 'attachments' ? 'bg-[#1a1a1a] text-white' : 'bg-gray-100 text-[#1a1a1a] hover:bg-gray-200'
-                  }`}
-                >
-                  Adjuntos
-                  {currentTask.attachments && currentTask.attachments.length > 0 && (
-                    <span className="bg-[#e63b2e] text-white text-[10px] px-1.5 py-0.5 rounded-full">
-                      {currentTask.attachments.length}
-                    </span>
-                  )}
-                </button>
-                {isEditing && (
+              <div className="flex border-b-2 border-[#1a1a1a] overflow-x-auto hide-scrollbar">
+                {([
+                  { id: 'description', label: 'Descripción', badge: null },
+                  { id: 'subtasks', label: 'Subtareas', badge: currentTask.subtasks?.length || 0 },
+                  { id: 'attachments', label: 'Adjuntos', badge: (currentTask.attachments?.length || 0) + pendingFiles.length },
+                  ...(isEditing ? [{ id: 'history', label: 'Historial', badge: null }] : []),
+                ] as { id: string; label: string; badge: number | null }[]).map((tab) => (
                   <button
+                    key={tab.id}
                     type="button"
-                    onClick={() => setActiveTab('history')}
-                    className={`px-4 py-3 font-black uppercase text-xs md:text-sm whitespace-nowrap transition-colors flex-1 text-center flex items-center justify-center gap-2 ${
-                      activeTab === 'history' ? 'bg-[#1a1a1a] text-white' : 'bg-gray-100 text-[#1a1a1a] hover:bg-gray-200'
+                    onClick={() => setActiveTab(tab.id as any)}
+                    className={`px-4 py-3 font-black uppercase text-xs md:text-sm whitespace-nowrap transition-colors flex-1 text-center flex items-center justify-center gap-2 border-b-4 ${
+                      activeTab === tab.id
+                        ? 'bg-[#1a1a1a] text-white border-[#0055ff]'
+                        : 'bg-gray-100 text-[#1a1a1a] hover:bg-gray-200 border-transparent'
                     }`}
                   >
-                    Historial
+                    {tab.label}
+                    {tab.badge !== null && tab.badge > 0 && (
+                      <span className={`text-white text-[10px] px-1.5 py-0.5 rounded-full ${
+                        tab.id === 'attachments' ? 'bg-[#e63b2e]' : 'bg-[#0055ff]'
+                      }`}>
+                        {tab.badge}
+                      </span>
+                    )}
                   </button>
-                )}
+                ))}
               </div>
 
               {/* Tab Contents */}
               <div className="min-h-[200px]">
                 {activeTab === 'description' && (
-                  <div className="animate-in fade-in duration-200">
+                  <FormField label="Descripción" error={formErrors.description}>
                     <textarea
                       value={currentTask.description || ''}
                       onChange={(e) => {
                         setCurrentTask({ ...currentTask, description: e.target.value });
                         if (formErrors.description)
-                          setFormErrors((prev) => {
-                            const next = { ...prev };
-                            delete next.description;
-                            return next;
-                          });
+                          setFormErrors((prev) => { const next = { ...prev }; delete next.description; return next; });
                       }}
-                      className={`w-full h-64 p-3 border-2 bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium resize-none transition-colors text-sm ${formErrors.description ? 'border-[#e63b2e] bg-red-50' : 'border-[#1a1a1a]'}`}
+                      className={`w-full h-56 p-3 border-2 bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-medium resize-none transition-colors text-sm ${
+                        formErrors.description ? 'border-[#e63b2e] bg-red-50' : 'border-[#1a1a1a]'
+                      }`}
                       placeholder="Escribe la descripción de la tarea aquí..."
                     />
-                    {formErrors.description && (
-                      <p className="text-[#e63b2e] text-xs font-bold mt-1 flex items-center gap-1">
-                        <AlertCircle className="w-3 h-3" /> {formErrors.description}
-                      </p>
-                    )}
-                  </div>
+                  </FormField>
                 )}
 
                 {activeTab === 'subtasks' && (
@@ -1584,7 +1623,7 @@ export default function Tareas() {
                           }
                         }}
                         className="flex-1 p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-sm"
-                        placeholder="NUEVA SUBTAREA..."
+                        placeholder="NUEVA SUBTAREA... (Enter para añadir)"
                       />
                       <button
                         type="button"
@@ -1600,17 +1639,17 @@ export default function Tareas() {
                             setNewSubtaskTitle('');
                           }
                         }}
-                        className="px-4 py-2 bg-[#1a1a1a] text-white font-bold uppercase text-sm hover:bg-[#333] transition-colors flex items-center gap-2"
+                        className="px-4 py-2 bg-[#1a1a1a] text-white font-bold uppercase text-sm hover:bg-[#333] transition-colors flex items-center gap-2 border-2 border-[#1a1a1a] shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
                       >
-                        <Plus className="w-4 h-4" /> Añadir
+                        <Plus className="w-4 h-4" />
                       </button>
                     </div>
 
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 max-h-[240px] overflow-y-auto custom-scrollbar pr-1">
                       {currentTask.subtasks?.map((subtask) => (
                         <div
                           key={subtask.id}
-                          className="flex items-center justify-between p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8] group"
+                          className="flex items-center justify-between p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] group shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
                         >
                           <div className="flex items-center gap-3 flex-1 overflow-hidden">
                             <button
@@ -1623,12 +1662,16 @@ export default function Tareas() {
                                   ),
                                 }));
                               }}
-                              className={`w-5 h-5 border-2 border-[#1a1a1a] flex items-center justify-center flex-shrink-0 transition-colors ${subtask.completed ? 'bg-[#00cc66] text-white' : 'bg-white'}`}
+                              className={`w-5 h-5 border-2 border-[#1a1a1a] flex items-center justify-center flex-shrink-0 transition-colors ${
+                                subtask.completed ? 'bg-[#00cc66] text-white' : 'bg-white hover:bg-[#f5f0e8]'
+                              }`}
                             >
                               {subtask.completed && <CheckCircle className="w-3 h-3" />}
                             </button>
                             <span
-                              className={`font-bold uppercase text-sm truncate ${subtask.completed ? 'line-through opacity-50' : ''}`}
+                              className={`font-bold uppercase text-sm truncate ${
+                                subtask.completed ? 'line-through opacity-50' : ''
+                              }`}
                             >
                               {subtask.title}
                             </span>
@@ -1649,112 +1692,96 @@ export default function Tareas() {
                         </div>
                       ))}
                       {(!currentTask.subtasks || currentTask.subtasks.length === 0) && (
-                        <p className="text-xs font-bold uppercase tracking-widest opacity-50 text-center py-2">
-                          No hay subtareas
-                        </p>
+                        <div className="text-center p-6 border-2 border-dashed border-gray-300 text-gray-400">
+                          <CheckSquare className="w-6 h-6 mx-auto mb-2 opacity-30" />
+                          <p className="text-xs font-bold uppercase tracking-widest opacity-50">
+                            Sin subtareas — usá el campo de arriba para añadir
+                          </p>
+                        </div>
                       )}
                     </div>
                   </div>
                 )}
 
                 {activeTab === 'attachments' && (
-                  <div className="border-2 border-[#1a1a1a] p-3 bg-white animate-in fade-in duration-200">
-                    <div className="border-2 border-dashed border-[#1a1a1a] bg-[#f5f0e8] p-4 text-center group cursor-pointer hover:bg-[#e6f0ff] hover:border-[#0055ff] hover:border-solid transition-colors relative">
-                      <input
-                        type="file"
-                        multiple
-                        onChange={(e) => {
-                          if (e.target.files) {
-                            setPendingFiles([...pendingFiles, ...Array.from(e.target.files)]);
-                          }
-                          e.target.value = '';
-                        }}
-                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                      />
-                      <Upload className="w-8 h-8 mx-auto mb-2 text-[#1a1a1a] group-hover:text-[#0055ff] transition-colors" />
-                      <p className="font-bold uppercase text-xs tracking-widest text-[#1a1a1a] group-hover:text-[#0055ff]">
-                        Arrojar archivos aquí o click
-                      </p>
-                    </div>
-
-                    {(pendingFiles.length > 0 || (currentTask.attachments && currentTask.attachments.length > 0)) && (
-                      <div className="mt-4 space-y-2 max-h-[300px] overflow-y-auto pr-1 custom-scrollbar">
-                        {pendingFiles.map((file, index) => (
-                          <div key={`pending-${index}`} className="flex items-center justify-between p-2 border-2 border-[#0055ff] bg-[#f0f7ff]">
-                            <div className="flex items-center gap-2 overflow-hidden">
-                              <Paperclip className="w-4 h-4 shrink-0 text-[#0055ff]" />
-                              <span className="font-bold text-xs truncate text-[#0055ff]">{file.name}</span>
-                            </div>
-                            <button type="button" onClick={() => setPendingFiles(pendingFiles.filter((_, i) => i !== index))} className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors border border-transparent">
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                        {currentTask.attachments?.map((attachment: any, index) => (
-                          <div key={`existing-${index}`} className={`flex items-center justify-between p-2 border-2 ${attachmentsToDelete.includes(attachment) ? 'border-[#e63b2e] bg-red-50' : 'border-[#1a1a1a] bg-gray-50'}`}>
-                            <div className="flex items-center gap-2 overflow-hidden">
-                              <Paperclip className="w-4 h-4 shrink-0 opacity-50" />
-                              <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="font-bold text-xs truncate hover:text-[#0055ff] hover:underline">
-                                {attachment.name}
-                              </a>
-                            </div>
-                            <button type="button" onClick={() => {
-                              if (attachmentsToDelete.includes(attachment)) setAttachmentsToDelete(attachmentsToDelete.filter(a => a !== attachment));
-                              else setAttachmentsToDelete([...attachmentsToDelete, attachment]);
-                            }} className={`p-1 transition-colors border border-transparent ${attachmentsToDelete.includes(attachment) ? 'bg-[#e63b2e] text-white hover:bg-black' : 'hover:bg-[#1a1a1a] hover:text-white'}`}>
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <DragDropUpload
+                    existingAttachments={(
+                      (currentTask.attachments || []) as Attachment[]
+                    ).filter((a) => !attachmentsToDelete.includes(a))}
+                    pendingFiles={pendingFiles}
+                    onAddFiles={(files) => setPendingFiles((prev) => [...prev, ...files])}
+                    onRemovePending={(idx) => setPendingFiles((prev) => prev.filter((_, i) => i !== idx))}
+                    onDeleteExisting={(att) => setAttachmentsToDelete((prev) => [...prev, att])}
+                    isUploading={isUploading}
+                  />
                 )}
 
                 {activeTab === 'history' && (
                   <div className="border-2 border-[#1a1a1a] p-3 bg-[#f5f0e8] animate-in fade-in duration-200">
                     <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
-                      {historyEvents.filter(e => e.taskId === currentTask.id).length > 0 ? historyEvents.filter(e => e.taskId === currentTask.id).map(event => (
-                         <div key={event.id} className="p-3 bg-white border-2 border-[#1a1a1a] text-xs font-bold shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]">
-                           <div className="flex justify-between items-center mb-1">
-                             <span className="uppercase opacity-60 text-[10px]">{new Date(event.timestamp).toLocaleString()}</span>
-                             <span className={`px-2 py-0.5 text-white ${event.action === 'completado' ? 'bg-[#00cc66]' : event.action === 'eliminado' ? 'bg-[#e63b2e]' : 'bg-[#0055ff]'}`}>{event.action}</span>
-                           </div>
-                           <p className="mt-2 text-sm">{event.userEmail.split('@')[0]} interactuó con la tarea.</p>
-                         </div>
-                      )) : (
-                        <div className="text-center p-4 font-black uppercase text-xs opacity-50">Sin historial</div>
-                      )}
+                      {historyEvents.filter(e => e.taskId === currentTask.id).length > 0
+                        ? historyEvents
+                            .filter(e => e.taskId === currentTask.id)
+                            .map(event => (
+                              <div key={event.id} className="p-3 bg-white border-2 border-[#1a1a1a] text-xs font-bold shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="uppercase opacity-60 text-[10px]">{new Date(event.timestamp).toLocaleString()}</span>
+                                  <span className={`px-2 py-0.5 text-white ${
+                                    event.action === 'completado' ? 'bg-[#00cc66]'
+                                    : event.action === 'eliminado' ? 'bg-[#e63b2e]'
+                                    : 'bg-[#0055ff]'
+                                  }`}>{event.action}</span>
+                                </div>
+                                <p className="mt-2 text-sm">{event.userEmail.split('@')[0]} interactuó con la tarea.</p>
+                              </div>
+                            ))
+                        : (
+                          <div className="text-center p-6 font-black uppercase text-xs opacity-50">Sin historial</div>
+                        )
+                      }
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-end border-t-2 border-[#1a1a1a] pt-4">
-                <button
-                  type="button"
-                  onClick={() => handleCloseTaskModal()}
-                  className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#e63b2e] hover:text-white transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm"
-                >
-                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUploading}
-                  className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#00cc66] transition-colors flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
-                >
-                  {isUploading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                      Guardando...
-                    </>
-                  ) : isEditing ? (
-                    'Actualizar'
-                  ) : (
-                    'Añadir Tarea'
-                  )}
-                </button>
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-between border-t-2 border-[#1a1a1a] pt-4">
+                {/* Save Draft - only for new tasks */}
+                {!isEditing && (
+                  <button
+                    type="button"
+                    onClick={saveDraft}
+                    className="w-full sm:w-auto px-4 py-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#ff9900] hover:text-white hover:border-[#ff9900] transition-colors flex items-center justify-center gap-2 text-xs shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none"
+                  >
+                    <Save className="w-3.5 h-3.5" /> Guardar Borrador
+                  </button>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-3 sm:ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => handleCloseTaskModal()}
+                    className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#e63b2e] hover:text-white transition-colors flex items-center justify-center gap-2 text-xs sm:text-sm"
+                  >
+                    <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isUploading}
+                    className="w-full sm:w-auto px-4 sm:px-6 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-[#1a1a1a] hover:text-[#00cc66] transition-colors flex items-center justify-center gap-2 shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                  >
+                    {isUploading ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                        Guardando...
+                      </>
+                    ) : isEditing ? (
+                      'Actualizar Tarea'
+                    ) : (
+                      'Crear Tarea'
+                    )}
+                  </button>
+                </div>
               </div>
             </form>
           </motion.div>

@@ -27,9 +27,11 @@ import autoTable from 'jspdf-autotable';
 import { useOutletContext } from 'react-router-dom';
 import { SkeletonPage } from '../components/Skeleton';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { FilterBar } from '../components/FilterBar';
+import { FormField } from '../components/FormField';
+import { DragDropUpload } from '../components/DragDropUpload';
 import { getNovedades, addNovedad, updateNovedad, deleteNovedad, uploadNovedadAttachment, onNovedadesChange } from '../db/novedades';
 import { addNotification } from '../db/notifications';
-import { FilterBar } from '../components/FilterBar';
 import { getCurrentUserId, supabase, withTimeout } from '../db/client';
 
 function handleError(error: unknown) {
@@ -77,6 +79,53 @@ export default function Novedades() {
   const [attachmentsToDelete, setAttachmentsToDelete] = useState<Attachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [hasDraft, setHasDraft] = useState(false);
+
+  useEffect(() => {
+    if (isModalOpen && !isEditing) {
+      const draft = localStorage.getItem('draft_novedad');
+      if (draft) {
+        setHasDraft(true);
+      }
+    } else {
+      setHasDraft(false);
+    }
+  }, [isModalOpen, isEditing]);
+
+  const handleLoadDraft = () => {
+    try {
+      const draft = localStorage.getItem('draft_novedad');
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        setCurrentNovedad((prev) => ({
+          ...prev,
+          ...parsed,
+        }));
+        toast.success('Borrador recuperado');
+      }
+    } catch (e) {
+      console.error('Error parsing draft:', e);
+    }
+    setHasDraft(false);
+  };
+
+  const handleDiscardDraft = () => {
+    localStorage.removeItem('draft_novedad');
+    setHasDraft(false);
+  };
+
+  const handleFieldChange = (fields: Partial<Novedad>) => {
+    const updated = { ...currentNovedad, ...fields };
+    setCurrentNovedad(updated);
+    if (!isEditing) {
+      localStorage.setItem('draft_novedad', JSON.stringify({
+        title: updated.title,
+        content: updated.content,
+        fecha: updated.fecha,
+      }));
+    }
+  };
 
   const getFileIcon = (type: string, className: string) => {
     if (type.startsWith('image/')) return <ImageIcon className={className} />;
@@ -124,6 +173,7 @@ export default function Novedades() {
     });
     setPendingFiles([]);
     setAttachmentsToDelete([]);
+    setFormErrors({});
     setIsEditing(false);
     setIsModalOpen(true);
   };
@@ -135,6 +185,7 @@ export default function Novedades() {
     });
     setPendingFiles([]);
     setAttachmentsToDelete([]);
+    setFormErrors({});
     setIsEditing(true);
     setIsModalOpen(true);
   };
@@ -152,7 +203,19 @@ export default function Novedades() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentNovedad.title?.trim() || !currentNovedad.content?.trim()) return;
+    
+    // VALIDATIONS
+    const errors: Record<string, string> = {};
+    if (!currentNovedad.title?.trim()) errors.title = 'El título es obligatorio';
+    if (!currentNovedad.content?.trim()) errors.content = 'El contenido es obligatorio';
+    if (!currentNovedad.fecha) errors.fecha = 'La fecha es obligatoria';
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      toast.error('Por favor, completa los campos requeridos');
+      return;
+    }
+    setFormErrors({});
 
     setIsUploading(true);
     try {
@@ -206,6 +269,7 @@ export default function Novedades() {
 
         toast.success('Novedad creada');
       }
+      localStorage.removeItem('draft_novedad');
       setIsModalOpen(false);
     } catch (error) {
       handleError(error);
@@ -615,139 +679,75 @@ export default function Novedades() {
             </div>
 
             <form onSubmit={handleSave} className="p-4 sm:p-6">
+              {/* Draft Recovery Alert */}
+              {hasDraft && (
+                <div className="mb-4 p-3 border-2 border-[#1a1a1a] bg-amber-100 flex items-center justify-between shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#1a1a1a]">
+                    ¿Querés recuperar tu borrador anterior?
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={handleLoadDraft}
+                      className="px-2.5 py-1 text-[10px] border-2 border-[#1a1a1a] bg-white font-bold hover:bg-[#1a1a1a] hover:text-white uppercase transition-all shadow-[1px_1px_0px_0px_rgba(26,26,26,1)] active:translate-x-px active:translate-y-px active:shadow-none"
+                    >
+                      Recuperar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleDiscardDraft}
+                      className="px-2 py-1 text-[10px] border border-transparent text-[#e63b2e] font-bold hover:underline uppercase"
+                    >
+                      Descartar
+                    </button>
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 gap-4 mb-6">
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-widest">Título</label>
+                <FormField label="Título" error={formErrors.title} required>
                   <input
                     type="text"
                     value={currentNovedad.title || ''}
-                    onChange={(e) => setCurrentNovedad({ ...currentNovedad, title: e.target.value })}
+                    onChange={(e) => handleFieldChange({ title: e.target.value })}
                     className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
                     placeholder="TÍTULO DE LA NOVEDAD..."
                     required
                     autoFocus
                   />
-                </div>
+                </FormField>
 
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-widest">Fecha</label>
+                <FormField label="Fecha" error={formErrors.fecha} required>
                   <input
                     type="date"
                     value={currentNovedad.fecha || ''}
-                    onChange={(e) => setCurrentNovedad({ ...currentNovedad, fecha: e.target.value })}
+                    onChange={(e) => handleFieldChange({ fecha: e.target.value })}
                     className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-base sm:text-sm"
                     required
                   />
-                </div>
+                </FormField>
 
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-widest">Contenido</label>
+                <FormField label="Contenido" error={formErrors.content} required>
                   <textarea
                     rows={4}
                     value={currentNovedad.content || ''}
-                    onChange={(e) => setCurrentNovedad({ ...currentNovedad, content: e.target.value })}
+                    onChange={(e) => handleFieldChange({ content: e.target.value })}
                     className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors resize-none text-xs sm:text-sm"
                     placeholder="Escribe los detalles de la novedad aquí..."
                     required
                   />
-                </div>
+                </FormField>
 
-                {/* Attachments Section */}
-                <div className="border-2 border-[#1a1a1a] p-3 sm:p-4 bg-white">
-                  <div className="flex justify-between items-center mb-3">
-                    <label className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                      <Paperclip className="w-4 h-4" /> Archivos Adjuntos
-                    </label>
-                    <label className="cursor-pointer px-3 py-1.5 bg-[#1a1a1a] text-white font-bold uppercase text-[10px] tracking-widest hover:bg-[#333] transition-colors flex items-center gap-2">
-                      <Upload className="w-3.5 h-3.5" /> Subir Archivos
-                      <input
-                        type="file"
-                        className="hidden"
-                        multiple
-                        onChange={(e) => {
-                          if (e.target.files) {
-                            setPendingFiles([...pendingFiles, ...Array.from(e.target.files)]);
-                          }
-                          e.target.value = '';
-                        }}
-                      />
-                    </label>
-                  </div>
-
-                  <div className="flex flex-col gap-2">
-                    {/* Existing Attachments */}
-                    {currentNovedad.attachments
-                      ?.filter((a) => !attachmentsToDelete.includes(a))
-                      .map((att, idx) => (
-                        <div
-                          key={`att-${idx}`}
-                          className="flex items-center justify-between p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8]"
-                        >
-                          <div className="flex items-center gap-3 truncate max-w-[80%]">
-                            {att.type.startsWith('image/') ? (
-                              <div
-                                className="w-8 h-8 flex-shrink-0 border border-[#1a1a1a] overflow-hidden bg-white cursor-pointer"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setPreviewImage(att.url);
-                                }}
-                              >
-                                <img src={att.url} alt={att.name} className="w-full h-full object-cover" />
-                              </div>
-                            ) : (
-                              getFileIcon(att.type, 'w-5 h-5 flex-shrink-0')
-                            )}
-                            <a
-                              href={att.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="truncate text-xs font-medium hover:underline"
-                            >
-                              {att.name}
-                            </a>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setAttachmentsToDelete([...attachmentsToDelete, att])}
-                            className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#e63b2e] hover:text-white transition-colors ml-2"
-                            title="Eliminar archivo"
-                          >
-                            <X className="w-5 h-5" />
-                          </button>
-                        </div>
-                      ))}
-
-                    {/* Pending Attachments */}
-                    {pendingFiles.map((file, idx) => (
-                      <div
-                        key={`pending-${idx}`}
-                        className="flex items-center justify-between p-2 border-2 border-dashed border-[#1a1a1a] bg-gray-50"
-                      >
-                        <div className="flex items-center gap-2 truncate max-w-[80%] opacity-70">
-                          <Paperclip className="w-4 h-4 flex-shrink-0" />
-                          <span className="truncate text-sm font-medium">{file.name} <span className="opacity-50">(Pendiente)</span></span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setPendingFiles(pendingFiles.filter((_, i) => i !== idx))}
-                          className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-
-                    {(!currentNovedad.attachments ||
-                      currentNovedad.attachments.length === 0 ||
-                      currentNovedad.attachments.length === attachmentsToDelete.length) &&
-                      pendingFiles.length === 0 && (
-                        <p className="text-xs font-black uppercase tracking-widest opacity-50 text-center py-4">
-                          No hay archivos adjuntos
-                        </p>
-                      )}
-                  </div>
-                </div>
+                <FormField label="Archivos Adjuntos">
+                  <DragDropUpload
+                    existingAttachments={(currentNovedad.attachments || []).map(a => ({ name: a.name, url: a.url, type: a.type }))}
+                    pendingFiles={pendingFiles}
+                    onAddFiles={(files) => setPendingFiles([...pendingFiles, ...files])}
+                    onRemovePending={(idx) => setPendingFiles(pendingFiles.filter((_, i) => i !== idx))}
+                    onDeleteExisting={(att) => setAttachmentsToDelete([...attachmentsToDelete, att])}
+                    isUploading={isUploading}
+                  />
+                </FormField>
               </div>
 
               {/* Action Buttons */}

@@ -26,6 +26,9 @@ import { visitaSchema } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import { ConfirmModal } from '../components/ConfirmModal';
 import VisitasMap from '../components/VisitasMap';
+import { FormField } from '../components/FormField';
+import { SearchableSelect } from '../components/SearchableSelect';
+import { DragDropUpload } from '../components/DragDropUpload';
 import { getVisitas, addVisita, updateVisita, deleteVisita, uploadVisitaAttachment, onVisitasChange } from '../db/visitas';
 import { getLocations, onLocationsChange } from '../db/locations';
 import { getPersonal, onPersonalChange } from '../db/personal';
@@ -91,6 +94,63 @@ export default function Visitas() {
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+  const [hasDraft, setHasDraft] = useState(false);
+
+  useEffect(() => {
+    if (isModalOpen && !isEditingVisita) {
+      const draft = localStorage.getItem('draft_visita');
+      if (draft) {
+        setHasDraft(true);
+      }
+    } else {
+      setHasDraft(false);
+    }
+  }, [isModalOpen, isEditingVisita]);
+
+  const handleLoadDraft = () => {
+    try {
+      const draft = localStorage.getItem('draft_visita');
+      if (draft) {
+        const parsed = JSON.parse(draft);
+        setFormData((prev) => ({
+          ...prev,
+          ...parsed.formData,
+        }));
+        setSelectedResponsables(parsed.selectedResponsables || []);
+        toast.success('Borrador recuperado');
+      }
+    } catch (e) {
+      console.error('Error parsing draft:', e);
+    }
+    setHasDraft(false);
+  };
+
+  const handleDiscardDraft = () => {
+    localStorage.removeItem('draft_visita');
+    setHasDraft(false);
+  };
+
+  const handleFieldChange = (fields: Partial<typeof formData>) => {
+    const updatedForm = { ...formData, ...fields };
+    setFormData(updatedForm);
+    if (!isEditingVisita) {
+      localStorage.setItem('draft_visita', JSON.stringify({
+        formData: updatedForm,
+        selectedResponsables,
+      }));
+    }
+  };
+
+  const handleResponsablesChange = (updatedResps: string[]) => {
+    setSelectedResponsables(updatedResps);
+    if (!isEditingVisita) {
+      localStorage.setItem('draft_visita', JSON.stringify({
+        formData,
+        selectedResponsables: updatedResps,
+      }));
+    }
+  };
 
   // Quick upload handler
   const handleQuickUpload = async (visitaId: string, currentAttachments: Attachment[] = [], file: File) => {
@@ -189,6 +249,7 @@ export default function Visitas() {
     setSelectedResponsables([]);
     setPendingFiles([]);
     setAttachmentsToDelete([]);
+    setFormErrors({});
     setIsEditingVisita(false);
     setEditingVisitaId(null);
     setIsModalOpen(true);
@@ -205,6 +266,7 @@ export default function Visitas() {
     });
     setSelectedResponsables(visita.responsable ? visita.responsable.split(' Y ') : []);
     setSelectedVisita(visita);
+    setFormErrors({});
     setIsEditingVisita(true);
     setEditingVisitaId(visita.id);
     setPendingFiles([]);
@@ -218,6 +280,7 @@ export default function Visitas() {
     setSelectedResponsables([]);
     setPendingFiles([]);
     setAttachmentsToDelete([]);
+    setFormErrors({});
     setIsEditingVisita(false);
     setEditingVisitaId(null);
     setSelectedVisita(null);
@@ -228,6 +291,7 @@ export default function Visitas() {
 
     if (selectedResponsables.length === 0) {
       toast.error('Debe seleccionar al menos un responsable.');
+      setFormErrors((prev) => ({ ...prev, responsable: 'Debe seleccionar al menos un responsable.' }));
       return;
     }
 
@@ -242,9 +306,18 @@ export default function Visitas() {
 
     const result = visitaSchema.safeParse(visitaData);
     if (!result.success) {
-      result.error.issues.forEach((err) => toast.error(err.message));
+      const errors: Record<string, string> = {};
+      for (const issue of result.error.issues) {
+        const field = issue.path[0] as string;
+        if (!errors[field]) {
+          errors[field] = issue.message;
+        }
+      }
+      setFormErrors(errors);
+      toast.error('Por favor corrige los errores del formulario');
       return;
     }
+    setFormErrors({});
 
     const finalFormData = {
       ...result.data,
@@ -300,6 +373,7 @@ export default function Visitas() {
 
         toast.success('Visita registrada exitosamente');
       }
+      localStorage.removeItem('draft_visita');
       closeModal();
     } catch (error) {
       setIsSubmitting(false);
@@ -622,218 +696,164 @@ export default function Visitas() {
                   </button>
                 </div>
 
-                {/* Form */}
                 <form onSubmit={handleSubmit} className="p-4 sm:p-6">
+                  {/* Draft Recovery Alert */}
+                  {hasDraft && (
+                    <div className="mb-4 p-3 border-2 border-[#1a1a1a] bg-amber-100 flex items-center justify-between shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]">
+                      <span className="text-xs font-bold uppercase tracking-wider text-[#1a1a1a]">
+                        ¿Querés recuperar tu borrador anterior?
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={handleLoadDraft}
+                          className="px-2.5 py-1 text-[10px] border-2 border-[#1a1a1a] bg-white font-bold hover:bg-[#1a1a1a] hover:text-white uppercase transition-all shadow-[1px_1px_0px_0px_rgba(26,26,26,1)] active:translate-x-px active:translate-y-px active:shadow-none"
+                        >
+                          Recuperar
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleDiscardDraft}
+                          className="px-2 py-1 text-[10px] border border-transparent text-[#e63b2e] font-bold hover:underline uppercase"
+                        >
+                          Descartar
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <div className="space-y-2">
-                      <label className="block text-xs font-black uppercase tracking-widest">Origen</label>
-                      <input
-                        type="text"
-                        list="origenes-list"
-                        required
-                        value={formData.origen}
-                        onChange={(e) => setFormData({ ...formData, origen: e.target.value.toUpperCase() })}
-                        className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
-                        placeholder="Ej. Sede Central"
-                      />
-                      <datalist id="origenes-list">
-                        {locations
+                    <FormField label="Origen" error={formErrors.origen} required>
+                      <SearchableSelect
+                        options={locations
                           .filter((l) => l.type === 'Origen' || l.type === 'Origen/Destino')
-                          .map((l) => (
-                            <option key={l.id} value={l.name.toUpperCase()} />
-                          ))}
-                      </datalist>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs font-black uppercase tracking-widest">Destino</label>
-                      <input
-                        type="text"
-                        list="destinos-list"
-                        required
-                        value={formData.destino}
-                        onChange={(e) => setFormData({ ...formData, destino: e.target.value.toUpperCase() })}
-                        className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
-                        placeholder="Ej. Zona Portuaria"
+                          .map((l) => l.name.toUpperCase())}
+                        value={formData.origen}
+                        onChange={(val) => handleFieldChange({ origen: val })}
+                        placeholder="SELECCIONAR ORIGEN..."
                       />
-                      <datalist id="destinos-list">
-                        {locations
+                    </FormField>
+
+                    <FormField label="Destino" error={formErrors.destino} required>
+                      <SearchableSelect
+                        options={locations
                           .filter((l) => l.type === 'Destino' || l.type === 'Origen/Destino')
-                          .map((l) => (
-                            <option key={l.id} value={l.name.toUpperCase()} />
-                          ))}
-                      </datalist>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs font-black uppercase tracking-widest">Fecha</label>
+                          .map((l) => l.name.toUpperCase())}
+                        value={formData.destino}
+                        onChange={(val) => handleFieldChange({ destino: val })}
+                        placeholder="SELECCIONAR DESTINO..."
+                      />
+                    </FormField>
+
+                    <FormField label="Fecha" error={formErrors.fecha} required>
                       <input
                         type="date"
                         required
                         value={formData.fecha}
-                        onChange={(e) => setFormData({ ...formData, fecha: e.target.value })}
+                        onChange={(e) => handleFieldChange({ fecha: e.target.value })}
                         className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-base sm:text-sm"
                       />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs font-black uppercase tracking-widest">Hora</label>
+                    </FormField>
+
+                    <FormField label="Hora" error={formErrors.hora} required>
                       <input
                         type="time"
                         required
                         value={formData.hora}
-                        onChange={(e) => setFormData({ ...formData, hora: e.target.value })}
+                        onChange={(e) => handleFieldChange({ hora: e.target.value })}
                         className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-base sm:text-sm"
                       />
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="block text-xs font-black uppercase tracking-widest">Responsables</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          list="personal-list"
-                          autoComplete="name"
-                          value={formData.responsable}
-                          onChange={(e) => {
-                            const val = e.target.value.toUpperCase();
-                            if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(val)) {
-                              setFormData({ ...formData, responsable: val });
-                            }
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              e.preventDefault();
-                              if (formData.responsable && !selectedResponsables.includes(formData.responsable)) {
-                                setSelectedResponsables([...selectedResponsables, formData.responsable]);
-                                setFormData({ ...formData, responsable: '' });
-                              }
-                            }
-                          }}
-                          className="flex-1 p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
-                          placeholder="Nombre del responsable (Enter para agregar)"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (formData.responsable && !selectedResponsables.includes(formData.responsable)) {
-                              setSelectedResponsables([...selectedResponsables, formData.responsable]);
-                              setFormData({ ...formData, responsable: '' });
-                            }
-                          }}
-                          className="px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-[#0055ff] transition-colors text-xs sm:text-sm"
-                        >
-                          Agregar
-                        </button>
-                      </div>
-                      <datalist id="personal-list">
-                        {personal.map((p) => (
-                          <option key={p.id} value={p.name.toUpperCase()} />
-                        ))}
-                      </datalist>
-                      {selectedResponsables.length > 0 && (
-                        <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
-                          {selectedResponsables.map((resp) => (
-                            <span
-                              key={resp}
-                              className="inline-flex items-center gap-1 bg-[#0055ff] text-white px-2 sm:px-3 py-1 font-bold text-xs sm:text-sm uppercase border-2 border-[#1a1a1a]"
-                            >
-                              {resp}
-                              <button
-                                type="button"
-                                onClick={() => setSelectedResponsables(selectedResponsables.filter((r) => r !== resp))}
-                                className="hover:text-[#1a1a1a] ml-1"
-                              >
-                                <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                              </button>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <label className="block text-xs font-black uppercase tracking-widest">Observaciones</label>
-                      <textarea
-                        rows={3}
-                        value={formData.observaciones}
-                        onChange={(e) => setFormData({ ...formData, observaciones: e.target.value.toUpperCase() })}
-                        className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors resize-none text-xs sm:text-sm"
-                        placeholder="Detalles adicionales..."
-                      />
-                    </div>
+                    </FormField>
 
-                    {/* Attachments in modal */}
-                    <div className="md:col-span-2 border-2 border-[#1a1a1a] p-3 sm:p-4 bg-white">
-                      <div className="flex justify-between items-center mb-3">
-                        <label className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
-                          <Paperclip className="w-4 h-4" /> Archivos Adjuntos
-                        </label>
-                        <label className="cursor-pointer px-3 py-1.5 bg-[#1a1a1a] text-white font-bold uppercase text-[10px] tracking-widest hover:bg-[#333] transition-colors flex items-center gap-2">
-                          <Upload className="w-3.5 h-3.5" /> Subir Archivos
+                    <div className="md:col-span-2">
+                      <FormField label="Responsables" error={formErrors.responsable} required>
+                        <div className="flex gap-2">
                           <input
-                            ref={fileInputRef}
-                            type="file"
-                            className="hidden"
-                            multiple
+                            type="text"
+                            list="personal-list"
+                            autoComplete="name"
+                            value={formData.responsable}
                             onChange={(e) => {
-                              if (e.target.files) {
-                                setPendingFiles([...pendingFiles, ...Array.from(e.target.files)]);
+                              const val = e.target.value.toUpperCase();
+                              if (/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]*$/.test(val)) {
+                                handleFieldChange({ responsable: val });
                               }
-                              e.target.value = '';
                             }}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                if (formData.responsable && !selectedResponsables.includes(formData.responsable)) {
+                                  handleResponsablesChange([...selectedResponsables, formData.responsable]);
+                                  handleFieldChange({ responsable: '' });
+                                }
+                              }
+                            }}
+                            className="flex-1 p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs sm:text-sm"
+                            placeholder="Nombre del responsable (Enter para agregar)"
                           />
-                        </label>
-                      </div>
-
-                      <div className="flex flex-col gap-2">
-                        {isEditingVisita && editingVisitaId && selectedVisita?.attachments
-                          ?.filter((a: any) => !attachmentsToDelete.find((d) => d.url === a.url))
-                          .map((att: Attachment, idx: number) => (
-                            <div
-                              key={`att-${idx}`}
-                              className="flex items-center justify-between p-2 border-2 border-[#1a1a1a] bg-[#f5f0e8]"
-                            >
-                              <a
-                                href={att.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 hover:underline truncate max-w-[80%]"
-                              >
-                                <Paperclip className="w-3.5 h-3.5 flex-shrink-0" />
-                                <span className="truncate text-xs font-medium">{att.name}</span>
-                              </a>
-                              <button
-                                type="button"
-                                onClick={() => setAttachmentsToDelete([...attachmentsToDelete, att])}
-                                className="min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-[#e63b2e] hover:text-white transition-colors ml-2"
-                              >
-                                <X className="w-5 h-5" />
-                              </button>
-                            </div>
-                          ))}
-
-                        {pendingFiles.map((file, idx) => (
-                          <div
-                            key={`pending-${idx}`}
-                            className="flex items-center justify-between p-2 border-2 border-dashed border-[#1a1a1a] bg-gray-50"
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (formData.responsable && !selectedResponsables.includes(formData.responsable)) {
+                                handleResponsablesChange([...selectedResponsables, formData.responsable]);
+                                handleFieldChange({ responsable: '' });
+                              }
+                            }}
+                            className="px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-[#0055ff] transition-colors text-xs sm:text-sm"
                           >
-                            <div className="flex items-center gap-2 truncate max-w-[80%] opacity-70">
-                              <Paperclip className="w-4 h-4 flex-shrink-0" />
-                              <span className="truncate text-sm font-medium">{file.name} <span className="opacity-50">(Pendiente)</span></span>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={() => setPendingFiles(pendingFiles.filter((_, i) => i !== idx))}
-                              className="p-1 hover:bg-[#e63b2e] hover:text-white transition-colors"
-                            >
-                              <X className="w-4 h-4" />
-                            </button>
+                            Agregar
+                          </button>
+                        </div>
+                        <datalist id="personal-list">
+                          {personal.map((p) => (
+                            <option key={p.id} value={p.name.toUpperCase()} />
+                          ))}
+                        </datalist>
+                        {selectedResponsables.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5 sm:gap-2 mt-2">
+                            {selectedResponsables.map((resp) => (
+                              <span
+                                key={resp}
+                                className="inline-flex items-center gap-1 bg-[#0055ff] text-white px-2 sm:px-3 py-1 font-bold text-xs sm:text-sm uppercase border-2 border-[#1a1a1a]"
+                              >
+                                {resp}
+                                <button
+                                  type="button"
+                                  onClick={() => handleResponsablesChange(selectedResponsables.filter((r) => r !== resp))}
+                                  className="hover:text-[#1a1a1a] ml-1"
+                                >
+                                  <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                </button>
+                              </span>
+                            ))}
                           </div>
-                        ))}
+                        )}
+                      </FormField>
+                    </div>
 
-                        {(!isEditingVisita || !selectedVisita?.attachments || selectedVisita.attachments.length === 0) &&
-                          pendingFiles.length === 0 && (
-                            <p className="text-xs font-bold uppercase tracking-widest opacity-50 text-center py-4">
-                              No hay archivos adjuntos
-                            </p>
-                          )}
-                      </div>
+                    <div className="md:col-span-2">
+                      <FormField label="Observaciones" error={formErrors.observaciones}>
+                        <textarea
+                          rows={3}
+                          value={formData.observaciones}
+                          onChange={(e) => handleFieldChange({ observaciones: e.target.value.toUpperCase() })}
+                          className="w-full p-2.5 sm:p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors resize-none text-xs sm:text-sm"
+                          placeholder="Detalles adicionales..."
+                        />
+                      </FormField>
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <FormField label="Archivos Adjuntos">
+                        <DragDropUpload
+                          existingAttachments={(selectedVisita?.attachments || []).map(a => ({ name: a.name, url: a.url, type: a.type }))}
+                          pendingFiles={pendingFiles}
+                          onAddFiles={(files) => setPendingFiles([...pendingFiles, ...files])}
+                          onRemovePending={(idx) => setPendingFiles(pendingFiles.filter((_, i) => i !== idx))}
+                          onDeleteExisting={(att) => setAttachmentsToDelete([...attachmentsToDelete, att])}
+                          isUploading={isUploading || isSubmitting}
+                        />
+                      </FormField>
                     </div>
                   </div>
 
