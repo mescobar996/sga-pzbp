@@ -96,10 +96,26 @@ function mapDiligenciamiento(row: Record<string, any>): Diligenciamiento {
   };
 }
 
-export async function getDiligenciamientos(): Promise<Diligenciamiento[]> {
-  const { data, error } = await supabase.from('diligenciamientos').select('*').order('created_at', { ascending: false }).limit(200);
+export async function getDiligenciamientos(filters?: { 
+  category?: string; 
+  fechaInicio?: string; 
+  fechaFin?: string; 
+}): Promise<Diligenciamiento[]> {
+  let query = supabase.from('diligenciamientos').select('*').order('created_at', { ascending: false });
+
+  if (filters?.category) {
+    query = query.eq('category', filters.category);
+  }
+  if (filters?.fechaInicio) {
+    query = query.gte('fecha', filters.fechaInicio);
+  }
+  if (filters?.fechaFin) {
+    query = query.lte('fecha', filters.fechaFin);
+  }
+
+  const { data, error } = await query.limit(200);
   if (error) throw error;
-  return data.map(mapDiligenciamiento);
+  return (data || []).map(mapDiligenciamiento);
 }
 
 export async function addDiligenciamiento(diligenciamiento: {
