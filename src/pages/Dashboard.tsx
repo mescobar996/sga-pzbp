@@ -18,6 +18,7 @@ import { RecentActivity } from '../components/dashboard/RecentActivity';
 import { TaskStatusBar } from '../components/dashboard/TaskStatusBar';
 import { PulseChart } from '../components/dashboard/PulseChart';
 import { OperationalMap } from '../components/dashboard/OperationalMap';
+import { GlobalHistory } from '../components/dashboard/GlobalHistory';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -122,6 +123,7 @@ export default function Dashboard() {
         <div className="xl:col-span-9 flex flex-col gap-8">
           <PulseChart data={pulseData} />
           <OperationalMap data={mapData} />
+          <GlobalHistory />
         </div>
       </div>
     </div>
