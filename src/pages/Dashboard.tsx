@@ -30,6 +30,7 @@ export default function Dashboard() {
   const [locations, setLocations] = useState<LocationType[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<{ category?: string; fechaInicio?: string; fechaFin?: string }>({});
+  const [isHistoryFocusMode, setIsHistoryFocusMode] = useState(false);
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -119,13 +120,22 @@ export default function Dashboard() {
         <div className="xl:col-span-3 flex flex-col gap-8">
           <RecentActivity data={recentItems} />
           <TaskStatusBar data={statusData} total={tasks.length} />
+          <button 
+            onClick={() => setIsHistoryFocusMode(true)}
+            className="w-full p-4 bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-[#0055ff] transition-colors"
+          >
+            Ver Historial Completo
+          </button>
         </div>
         <div className="xl:col-span-9 flex flex-col gap-8">
           <PulseChart data={pulseData} />
           <OperationalMap data={mapData} />
-          <GlobalHistory />
         </div>
       </div>
+
+      {isHistoryFocusMode && (
+        <GlobalHistory isFocusMode={true} onClose={() => setIsHistoryFocusMode(false)} />
+      )}
     </div>
   );
 }
