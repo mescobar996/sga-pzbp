@@ -116,17 +116,21 @@ export default function Dashboard() {
         <DiligenciamientoFilter onFilterChange={setFilters} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Columna Izquierda: Actividad y Estadísticas */}
-        <div className="flex flex-col gap-8">
-          <RecentActivity data={recentItems} />
-          <TaskStatusBar data={statusData} total={tasks.length} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Columna Izquierda: Actividad y Estadísticas - Altura sincronizada */}
+        <div className="flex flex-col gap-6 h-full">
+          <div className="flex-1 min-h-[400px]">
+            <RecentActivity data={recentItems} />
+          </div>
+          <div className="h-auto">
+            <TaskStatusBar data={statusData} total={tasks.length} />
+          </div>
         </div>
 
-        {/* Columna Central/Derecha: Gráfico e Historial Fijo */}
-        <div className="lg:col-span-2 flex flex-col gap-8">
+        {/* Columna Central/Derecha: Gráfico e Historial */}
+        <div className="lg:col-span-2 flex flex-col gap-6">
           <PulseChart data={pulseData} />
-          <div className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-6">
+          <div className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-6 h-full">
             <GlobalHistory isFocusMode={false} />
           </div>
         </div>
