@@ -898,22 +898,34 @@ export default function BaseDatos() {
             />
 
             <DataTable<Location>
-              data={locations}
-              columns={[
-                { key: 'name', label: 'Ubicación' },
-                { key: 'type', label: 'Tipo' },
-                {
-                  key: 'status',
-                  label: 'Estado',
-                  render: (l) => (
-                    <span
-                      className={`px-2 py-0.5 text-[10px] font-black uppercase border-2 border-[#1a1a1a] ${l.status === 'Operativo' ? 'bg-[#00cc66] text-white' : l.status === 'Mantenimiento' ? 'bg-[#0055ff] text-white' : 'bg-[#e63b2e] text-white'}`}
-                    >
-                      {l.status}
-                    </span>
-                  ),
-                },
-              ]}
+            data={locations}
+            columns={[
+              { key: 'name', label: 'Ubicación' },
+              { key: 'type', label: 'Tipo' },
+              {
+                key: 'status',
+                label: 'Estado',
+                render: (l) => (
+                  <span
+                    className={`px-2 py-0.5 text-[10px] font-black uppercase border-2 border-[#1a1a1a] ${l.status === 'Operativo' ? 'bg-[#00cc66] text-white' : l.status === 'Mantenimiento' ? 'bg-[#0055ff] text-white' : 'bg-[#e63b2e] text-white'}`}
+                  >
+                    {l.status}
+                  </span>
+                ),
+              },
+              {
+                key: 'id',
+                label: 'Acciones',
+                render: (l) => (
+                  <button
+                    onClick={() => navigate(`/historial/${l.id}`)}
+                    className="px-2 py-1 bg-[#1a1a1a] text-white text-[10px] font-black uppercase hover:bg-[#0055ff] transition-colors"
+                  >
+                    Historial
+                  </button>
+                ),
+              },
+            ]}
               filterValue={locationFilter}
               filterField="status"
               filterOptions={['Todos', 'Operativo', 'Mantenimiento', 'Inactivo']}
