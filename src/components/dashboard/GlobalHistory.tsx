@@ -35,7 +35,7 @@ export function GlobalHistory() {
       </h2>
       <div className="mb-6">
         <SearchableSelect
-          options={locations.map(l => ({ value: l.name, label: l.name }))}
+          options={locations.map(l => ({ value: l.id, label: l.name }))}
           value={selectedLocation}
           onChange={setSelectedLocation}
           placeholder="SELECCIONAR DESTINO..."

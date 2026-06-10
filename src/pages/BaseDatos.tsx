@@ -33,7 +33,7 @@ import {
 } from '../db/diligenciamientos';
 import { supabase, getCurrentUserId } from '../db/client';
 import * as XLSX from 'xlsx';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { personalSchema, locationSchema } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import { DataTable } from '../components/DataTable';
