@@ -66,6 +66,7 @@ export interface Personal {
 export interface Location {
   id: string;
   name: string;
+  code?: string; // Nuevo campo
   type: 'Origen' | 'Destino' | 'Origen/Destino';
   status: 'Operativo' | 'Mantenimiento' | 'Inactivo';
   latitude?: number;
@@ -93,6 +94,7 @@ export interface Visita {
   id: string;
   origen: string;
   destino: string;
+  locationId?: string;
   fecha: string;
   hora: string;
   responsable: string;
@@ -114,6 +116,7 @@ export interface Novedad {
   id: string;
   title: string;
   content: string;
+  locationId?: string;
   fecha?: string;
   createdAt: string;
   authorId: string;
@@ -132,6 +135,7 @@ export interface Diligenciamiento {
   id: string;
   title: string;
   content: string;
+  locationId?: string;
   category?: string;
   fecha?: string;
   createdAt: string;

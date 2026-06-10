@@ -5,6 +5,7 @@ function mapLocation(row: Record<string, any>): Location {
   return {
     id: row.id,
     name: row.name,
+    code: row.code, // Mapeo del nuevo campo
     type: row.type || 'Origen',
     status: row.status || 'Operativo',
     latitude: row.latitude,

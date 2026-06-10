@@ -455,10 +455,7 @@ export default function Layout({ user }: { user: User }) {
 
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Panel de Control' },
-    { to: '/visitas', icon: HardHat, label: 'Visitas Técnicas' },
-    { to: '/tareas', icon: ListChecks, label: 'Lista de Tareas' },
-    { to: '/diligenciamientos', icon: ClipboardList, label: 'Diligenciamientos' },
-    { to: '/novedades', icon: FileText, label: 'Novedades' },
+    { to: '/zona-trabajo', icon: ClipboardList, label: 'Zona de Trabajo' }, // Consolidado
     { to: '/reportes', icon: BarChart3, label: 'Reportes' },
     { to: '/base-datos', icon: Database, label: 'Base de Datos' },
   ];

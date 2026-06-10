@@ -18,6 +18,7 @@ const BaseDatos = lazy(() => import('./pages/BaseDatos'));
 const Novedades = lazy(() => import('./pages/Novedades'));
 const Diligenciamientos = lazy(() => import('./pages/Diligenciamientos'));
 const Configuracion = lazy(() => import('./pages/Configuracion'));
+const Historial = lazy(() => import('./pages/Historial'));
 const DebugDB = lazy(() => import('./pages/DebugDB'));
 const Login = lazy(() => import('./pages/Login'));
 const Notificaciones = lazy(() => import('./pages/Notificaciones'));
@@ -66,38 +67,13 @@ function AnimatedRoutes({ user }: { user: User | null }) {
               </PageTransition>
             }
           />
-          <Route
-            path="visitas"
-            element={
-              <PageTransition>
-                <Visitas />
-              </PageTransition>
-            }
-          />
-          <Route
-            path="tareas"
-            element={
-              <PageTransition>
-                <Tareas />
-              </PageTransition>
-            }
-          />
-          <Route
-            path="diligenciamientos"
-            element={
-              <PageTransition>
-                <Diligenciamientos />
-              </PageTransition>
-            }
-          />
-          <Route
-            path="novedades"
-            element={
-              <PageTransition>
-                <Novedades />
-              </PageTransition>
-            }
-          />
+          {/* ... */}
+          <Route path="zona-trabajo" element={<PageTransition><ZonaTrabajo /></PageTransition>}>
+            <Route path="visitas" element={<Visitas />} />
+            <Route path="tareas" element={<Tareas />} />
+            <Route path="diligenciamientos" element={<Diligenciamientos />} />
+            <Route path="novedades" element={<Novedades />} />
+          </Route>
           <Route
             path="reportes"
             element={
@@ -111,6 +87,14 @@ function AnimatedRoutes({ user }: { user: User | null }) {
             element={
               <PageTransition>
                 <BaseDatos />
+              </PageTransition>
+            }
+          />
+          <Route
+            path="historial/:locationId"
+            element={
+              <PageTransition>
+                <Historial />
               </PageTransition>
             }
           />
