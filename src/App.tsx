@@ -18,6 +18,7 @@ const BaseDatos = lazy(() => import('./pages/BaseDatos'));
 const Novedades = lazy(() => import('./pages/Novedades'));
 const Diligenciamientos = lazy(() => import('./pages/Diligenciamientos'));
 const Configuracion = lazy(() => import('./pages/Configuracion'));
+const ZonaTrabajo = lazy(() => import('./pages/ZonaTrabajo'));
 const Historial = lazy(() => import('./pages/Historial'));
 const DebugDB = lazy(() => import('./pages/DebugDB'));
 const Login = lazy(() => import('./pages/Login'));
