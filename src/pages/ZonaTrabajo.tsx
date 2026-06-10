@@ -10,10 +10,10 @@ export default function ZonaTrabajo() {
     { name: 'Novedades', path: '/zona-trabajo/novedades', icon: Newspaper },
     { name: 'Diligencias', path: '/zona-trabajo/diligenciamientos', icon: FileText },
   ];
-
+// ... rest of the file
   return (
     <div className="font-['Inter']">
-      <h1 className="text-3xl font-black uppercase mb-6 font-['Space_Grotesk'] tracking-tighter">ZONA DE TRABAJO</h1>
+      <h1 className="text-3xl font-black uppercase mb-6 font-['Space_Grotesk'] tracking-tighter">ZONA DE TRABAJO - ACTUALIZADA</h1>
       
       {/* Pestañas de Navegación */}
       <div className="flex gap-2 mb-8 border-b-2 border-[#1a1a1a] pb-2">
