@@ -1,9 +1,8 @@
 import React from 'react';
-import { Outlet, NavLink, useOutletContext } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import { HardHat, ListChecks, FileText, Newspaper } from 'lucide-react';
 
 export default function ZonaTrabajo() {
-  const context = useOutletContext();
   const tabs = [
     { name: 'Visitas', path: '/zona-trabajo/visitas', icon: HardHat },
     { name: 'Tareas', path: '/zona-trabajo/tareas', icon: ListChecks },
@@ -35,7 +34,7 @@ export default function ZonaTrabajo() {
 
       {/* Contenido Dinámico */}
       <div className="bg-white border-2 border-[#1a1a1a] p-6 min-h-[400px]">
-        <Outlet context={context} />
+        <Outlet />
       </div>
     </div>
   );

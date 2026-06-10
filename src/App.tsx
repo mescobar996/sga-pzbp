@@ -70,6 +70,7 @@ function AnimatedRoutes({ user }: { user: User | null }) {
           />
           {/* ... */}
           <Route path="zona-trabajo" element={<PageTransition><ZonaTrabajo /></PageTransition>}>
+            <Route index element={<Navigate to="visitas" replace />} />
             <Route path="visitas" element={<Visitas />} />
             <Route path="tareas" element={<Tareas />} />
             <Route path="diligenciamientos" element={<Diligenciamientos />} />
@@ -91,6 +92,13 @@ function AnimatedRoutes({ user }: { user: User | null }) {
               </PageTransition>
             }
           />
+          <Route path="zona-trabajo" element={<PageTransition><ZonaTrabajo /></PageTransition>}>
+            <Route index element={<Navigate to="visitas" replace />} />
+            <Route path="visitas" element={<Visitas />} />
+            <Route path="tareas" element={<Tareas />} />
+            <Route path="diligenciamientos" element={<Diligenciamientos />} />
+            <Route path="novedades" element={<Novedades />} />
+          </Route>
           <Route
             path="historial/:locationId"
             element={
