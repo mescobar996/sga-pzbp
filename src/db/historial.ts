@@ -4,23 +4,20 @@ import { getVisitas } from './visitas';
 import { getNovedades } from './novedades';
 import { getDiligenciamientos } from './diligenciamientos';
 
-export async function getConsolidatedHistory(locationId: string) {
-  // 1. Obtener datos. 
-  // Las funciones get* ya obtienen una lista general, filtraremos en memoria.
-  const [tasks, visitas, novedades, diligenciamientos] = await Promise.all([
-    getTasks(),
+export async function getConsolidatedHistory(locationName: string) {
+  // 1. Obtener datos (sin incluir tareas).
+  const [visitas, novedades, diligenciamientos] = await Promise.all([
     getVisitas(),
     getNovedades(),
-    getDiligenciamientos() // getDiligenciamientos acepta filtros, pero los llamamos sin para obtener todos y filtrar
+    getDiligenciamientos()
   ]);
 
-  // 2. Normalizar y consolidar en una sola estructura.
-  // IMPORTANTE: Asegurar que los filtros coinciden con el esquema de datos (locationId o tags).
+  // 2. Normalizar y consolidar Visitas, Novedades y Diligencias.
+  // Filtramos por el nombre de la ubicación (cuatrigrama) que recibimos.
   const history = [
-    ...tasks.filter(t => t.tags?.includes(locationId)).map(t => ({ ...t, type: 'TAREA', createdAt: t.createdAt })),
-    ...visitas.filter(v => v.locationId === locationId).map(v => ({ ...v, type: 'VISITA', createdAt: v.createdAt })),
-    ...novedades.filter(n => n.locationId === locationId).map(n => ({ ...n, type: 'NOVEDAD', createdAt: n.createdAt })),
-    ...diligenciamientos.filter(d => d.locationId === locationId).map(d => ({ ...d, type: 'DILIGENCIA', createdAt: d.createdAt })),
+    ...visitas.filter(v => v.destino === locationName || v.origen === locationName).map(v => ({ ...v, type: 'VISITA', createdAt: v.createdAt })),
+    ...novedades.filter(n => n.locationId === locationName).map(n => ({ ...n, type: 'NOVEDAD', createdAt: n.createdAt })),
+    ...diligenciamientos.filter(d => d.locationId === locationName).map(d => ({ ...d, type: 'DILIGENCIA', createdAt: d.createdAt })),
   ];
 
   // 3. Ordenar cronológicamente (más reciente primero)

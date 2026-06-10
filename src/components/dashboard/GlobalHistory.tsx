@@ -52,7 +52,7 @@ export function GlobalHistory({ isFocusMode, onClose }: GlobalHistoryProps) {
 
       <div className="mb-6">
         <SearchableSelect
-          options={locations.map(l => ({ value: l.id, label: l.name }))}
+          options={locations.map(l => ({ value: l.name, label: l.name }))}
           value={selectedLocation}
           onChange={setSelectedLocation}
           placeholder="SELECCIONAR DESTINO..."
@@ -66,17 +66,24 @@ export function GlobalHistory({ isFocusMode, onClose }: GlobalHistoryProps) {
       ) : (
         <div className={`space-y-4 ${isFocusMode ? '' : 'max-h-[500px] overflow-y-auto pr-2'}`}>
           {history.map((item, i) => (
-            <div key={i} className="border border-[#1a1a1a] p-4 flex gap-4 items-start hover:bg-slate-50 transition-colors bg-white">
-              <div className="p-2 bg-gray-100 border border-[#1a1a1a] shrink-0 mt-0.5">
-                {item.type === 'VISITA' && <HardHat className="w-4 h-4" />}
-                {item.type === 'TAREA' && <CheckCircle className="w-4 h-4" />}
-                {item.type === 'NOVEDAD' && <Newspaper className="w-4 h-4" />}
-                {item.type === 'DILIGENCIA' && <FileText className="w-4 h-4" />}
+            <div key={i} className="border-2 border-[#1a1a1a] p-6 flex gap-6 items-start hover:bg-slate-50 transition-colors bg-white shadow-[4px_4px_0px_0px_rgba(26,26,26,0.1)]">
+              <div className="p-3 bg-[#1a1a1a] text-white shrink-0">
+                {item.type === 'VISITA' && <HardHat className="w-5 h-5" />}
+                {item.type === 'NOVEDAD' && <Newspaper className="w-5 h-5" />}
+                {item.type === 'DILIGENCIA' && <FileText className="w-5 h-5" />}
               </div>
               <div className="flex-1">
-                <p className="font-black text-sm uppercase mb-1">{item.title || item.type}</p>
-                <p className="text-xs text-gray-700 mb-2 leading-relaxed">{item.content || item.observaciones || 'Sin detalles adicionales.'}</p>
-                <p className="text-[10px] font-bold opacity-50 uppercase">{new Date(item.createdAt).toLocaleString()}</p>
+                <div className="flex justify-between items-center mb-3">
+                  <p className="font-black text-lg uppercase tracking-tight">{item.title || item.type}</p>
+                  <span className="text-xs font-bold bg-gray-200 px-2 py-1 uppercase">{item.type}</span>
+                </div>
+                <div className="text-sm text-gray-800 mb-4 leading-relaxed bg-gray-50 p-4 border-l-4 border-[#0055ff]">
+                  {item.content || item.observaciones || 'Sin detalles adicionales disponibles.'}
+                </div>
+                <div className="flex justify-between items-center text-[11px] font-bold opacity-60 uppercase">
+                  <span>{item.authorName || 'SISTEMA'}</span>
+                  <span>{new Date(item.createdAt).toLocaleString()}</span>
+                </div>
               </div>
             </div>
           ))}
