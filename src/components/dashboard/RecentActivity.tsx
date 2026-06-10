@@ -19,12 +19,12 @@ export function RecentActivity({ data }: { data: ActivityItem[] }) {
         {data.slice(0, 6).map((item, i) => (
           <div key={i} className="group">
             <div className="flex justify-between items-start mb-1">
-              <p className="text-[11px] font-black uppercase truncate max-w-[80%]">{item.title}</p>
-              <span className="text-[9px] font-bold opacity-40">{item.time}</span>
+              <p className="text-sm font-black uppercase truncate max-w-[80%]">{item.title}</p>
+              <span className="text-[10px] font-bold opacity-40">{item.time}</span>
             </div>
-            <p className="text-[10px] font-medium opacity-60 line-clamp-1">{item.detail}</p>
+            <p className="text-xs font-medium opacity-60 line-clamp-1">{item.detail}</p>
             <div className="mt-2">
-              <span className={`text-[8px] font-black px-2 py-0.5 border border-[#1a1a1a] uppercase ${item.color} text-white`}>
+              <span className={`text-[10px] font-black px-2 py-0.5 border border-[#1a1a1a] uppercase ${item.color} text-white`}>
                 {item.type}
               </span>
             </div>

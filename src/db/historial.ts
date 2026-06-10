@@ -5,16 +5,17 @@ import { getNovedades } from './novedades';
 import { getDiligenciamientos } from './diligenciamientos';
 
 export async function getConsolidatedHistory(locationId: string) {
-  // 1. Obtener datos filtrados por locationId (o nombre si aún no están todos migrados)
-  // Nota: Esto asume que las funciones de get ya fueron ajustadas para aceptar filtros opcionales
+  // 1. Obtener datos. 
+  // Las funciones get* ya obtienen una lista general, filtraremos en memoria.
   const [tasks, visitas, novedades, diligenciamientos] = await Promise.all([
-    getTasks(), // Ajustar si es necesario filtrar tareas por ubicación
-    getVisitas(), // Ajustar si es necesario filtrar por ubicación
-    getNovedades(), // Ajustar si es necesario filtrar por ubicación
-    getDiligenciamientos({ category: undefined }) // Ajustar para aceptar locationId
+    getTasks(),
+    getVisitas(),
+    getNovedades(),
+    getDiligenciamientos() // getDiligenciamientos acepta filtros, pero los llamamos sin para obtener todos y filtrar
   ]);
 
-  // 2. Normalizar y consolidar en una sola estructura
+  // 2. Normalizar y consolidar en una sola estructura.
+  // IMPORTANTE: Asegurar que los filtros coinciden con el esquema de datos (locationId o tags).
   const history = [
     ...tasks.filter(t => t.tags?.includes(locationId)).map(t => ({ ...t, type: 'TAREA', createdAt: t.createdAt })),
     ...visitas.filter(v => v.locationId === locationId).map(v => ({ ...v, type: 'VISITA', createdAt: v.createdAt })),
