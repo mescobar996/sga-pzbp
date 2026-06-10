@@ -116,26 +116,21 @@ export default function Dashboard() {
         <DiligenciamientoFilter onFilterChange={setFilters} />
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-8">
-        <div className="xl:col-span-3 flex flex-col gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Columna Izquierda: Actividad y Estadísticas */}
+        <div className="flex flex-col gap-8">
           <RecentActivity data={recentItems} />
           <TaskStatusBar data={statusData} total={tasks.length} />
-          <button 
-            onClick={() => setIsHistoryFocusMode(true)}
-            className="w-full p-4 bg-[#1a1a1a] text-white font-black uppercase tracking-widest hover:bg-[#0055ff] transition-colors"
-          >
-            Ver Historial Completo
-          </button>
         </div>
-        <div className="xl:col-span-9 flex flex-col gap-8">
+
+        {/* Columna Central/Derecha: Gráfico e Historial Fijo */}
+        <div className="lg:col-span-2 flex flex-col gap-8">
           <PulseChart data={pulseData} />
-          <OperationalMap data={mapData} />
+          <div className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-6">
+            <GlobalHistory isFocusMode={false} />
+          </div>
         </div>
       </div>
-
-      {isHistoryFocusMode && (
-        <GlobalHistory isFocusMode={true} onClose={() => setIsHistoryFocusMode(false)} />
-      )}
     </div>
   );
 }
