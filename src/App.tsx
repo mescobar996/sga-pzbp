@@ -100,6 +100,14 @@ function AnimatedRoutes({ user }: { user: User | null }) {
             <Route path="novedades" element={<Novedades />} />
           </Route>
           <Route
+            path="historial"
+            element={
+              <PageTransition>
+                <Historial />
+              </PageTransition>
+            }
+          />
+          <Route
             path="historial/:locationId"
             element={
               <PageTransition>
