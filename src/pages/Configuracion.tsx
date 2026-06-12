@@ -22,6 +22,7 @@ import {
   Bell,
   Download,
   Trash2,
+  LogOut,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as XLSX from 'xlsx';
