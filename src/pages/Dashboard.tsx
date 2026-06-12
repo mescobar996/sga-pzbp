@@ -17,8 +17,7 @@ import DiligenciamientoFilter from '../components/dashboard/DiligenciamientoFilt
 import { RecentActivity } from '../components/dashboard/RecentActivity';
 import { TaskStatusBar } from '../components/dashboard/TaskStatusBar';
 import { PulseChart } from '../components/dashboard/PulseChart';
-import { OperationalMap } from '../components/dashboard/OperationalMap';
-import { GlobalHistory } from '../components/dashboard/GlobalHistory';
+import { DashboardHistory } from '../components/dashboard/DashboardHistory';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -30,7 +29,7 @@ export default function Dashboard() {
   const [locations, setLocations] = useState<LocationType[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<{ category?: string; fechaInicio?: string; fechaFin?: string }>({});
-  const [isHistoryFocusMode, setIsHistoryFocusMode] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState('PZBP'); // Default
 
   const loadAll = useCallback(async () => {
     setLoading(true);
@@ -82,14 +81,6 @@ export default function Dashboard() {
     }));
   }, [visits, tasks, novedades]);
 
-  const mapData = useMemo(() => {
-    const locationMap = new Map(locations.map(l => [l.name.toUpperCase(), l]));
-    return visits.map(v => ({
-      ...v,
-      coords: locationMap.get(v.destino.toUpperCase()) || locationMap.get(v.origen.toUpperCase())
-    })).filter(v => v.coords?.latitude && v.coords?.longitude);
-  }, [visits, locations]);
-
   const recentItems = useMemo(() => {
     const items: any[] = [];
     novedades.forEach(n => items.push({ title: n.title, detail: n.authorName, time: new Date(n.createdAt).toLocaleDateString(), type: 'NOVEDAD', color: 'bg-[#1a1a1a]' }));
@@ -117,21 +108,25 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Columna Izquierda: Actividad y Estadísticas - Altura sincronizada */}
         <div className="flex flex-col gap-6 h-full">
-          <div className="flex-1 min-h-[400px]">
-            <RecentActivity data={recentItems} />
-          </div>
-          <div className="h-auto">
-            <TaskStatusBar data={statusData} total={tasks.length} />
-          </div>
+          <RecentActivity data={recentItems} />
+          <TaskStatusBar data={statusData} total={tasks.length} />
         </div>
 
-        {/* Columna Central/Derecha: Gráfico e Historial */}
         <div className="lg:col-span-2 flex flex-col gap-6">
           <PulseChart data={pulseData} />
           <div className="bg-white border-4 border-[#1a1a1a] shadow-[8px_8px_0px_0px_rgba(26,26,26,1)] p-6 h-full">
-            <GlobalHistory isFocusMode={false} />
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-black uppercase">Historial por Destino: {selectedLocation}</h2>
+              <select 
+                value={selectedLocation} 
+                onChange={(e) => setSelectedLocation(e.target.value)}
+                className="bg-slate-100 border-2 border-[#1a1a1a] font-bold text-xs p-1 uppercase"
+              >
+                {locations.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
+              </select>
+            </div>
+            <DashboardHistory locationCode={selectedLocation} />
           </div>
         </div>
       </div>
