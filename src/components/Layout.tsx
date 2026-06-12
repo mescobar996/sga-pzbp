@@ -855,16 +855,6 @@ export default function Layout({ user }: { user: User }) {
             <div className="p-4 border-t-4 border-[#1a1a1a]">
               <button
                 onClick={() => {
-                  navigate('/tareas');
-                  setMobileMenuOpen(false);
-                }}
-                className="w-full bg-[#0055ff] text-white border-2 border-[#1a1a1a] py-3 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] font-black flex items-center justify-center gap-2 hover:bg-[#1a1a1a] hover:text-white transition-colors min-h-[44px]"
-              >
-                <PlusSquare className="w-5 h-5" />
-                NUEVA TAREA
-              </button>
-              <button
-                onClick={() => {
                   navigate('/configuracion');
                   setMobileMenuOpen(false);
                 }}
