@@ -12,6 +12,7 @@ interface TimelineItem {
 
 interface TimelineProps {
   items: TimelineItem[];
+  locationName: string;
 }
 
 const getIcon = (type: string) => {
@@ -24,11 +25,11 @@ const getIcon = (type: string) => {
   }
 };
 
-export const Timeline: React.FC<TimelineProps> = ({ items }) => {
+export const Timeline: React.FC<TimelineProps> = ({ items, locationName }) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   if (!items || items.length === 0) {
-    return <p className="text-center p-4 text-xs italic text-slate-400">Sin historial registrado.</p>;
+    return <p className="text-center p-4 text-xs italic text-slate-400">Sin historial registrado para esta ubicación.</p>;
   }
 
   return (
@@ -38,6 +39,11 @@ export const Timeline: React.FC<TimelineProps> = ({ items }) => {
         const dateFormatted = dateObj && !isNaN(dateObj.getTime()) 
           ? dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
           : 'Fecha no disponible';
+
+        // Evitar redundancia visual
+        const displayTitle = item.title.toLowerCase() === locationName.toLowerCase() 
+          ? 'Registro general' 
+          : item.title;
 
         return (
           <div key={item.id} className="relative pl-6">
@@ -50,7 +56,7 @@ export const Timeline: React.FC<TimelineProps> = ({ items }) => {
                 className="w-full text-left p-3 flex justify-between items-center"
               >
                 <div className="min-w-0 flex-1 mr-2">
-                  <h3 className="font-bold text-slate-800 text-sm truncate">{item.title}</h3>
+                  <h3 className="font-bold text-slate-800 text-sm truncate">{displayTitle}</h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-[10px] font-bold uppercase text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
                       {item.type}
