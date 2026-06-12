@@ -16,6 +16,12 @@ body {
   transition:
     background-color 0.3s,
     color 0.3s;
+  text-transform: uppercase !important;
+}
+
+/* Force uppercase on all elements, including inputs and chart labels */
+* {
+  text-transform: uppercase !important;
 }
 
 .dark body {
