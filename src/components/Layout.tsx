@@ -61,7 +61,6 @@ export default function Layout({ user }: { user: User }) {
   const [unreadCount, setUnreadCount] = useState(0);
   const _isAdmin = isAdmin();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { isFieldReady, toggleFieldReady } = useFieldReady();
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [searchOpen, setSearchOpen] = useState(false);
