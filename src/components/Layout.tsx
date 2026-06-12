@@ -793,7 +793,6 @@ export default function Layout({ user }: { user: User }) {
             onClick={() => navigate('/tareas')}
             className={`w-full bg-[#0055ff] text-white border-2 border-[#1a1a1a] py-3 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] font-black flex items-center ${isCollapsed ? 'justify-center' : 'justify-center gap-2'} hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer`}
           >
-            <PlusSquare className="w-5 h-5" />
             <span className={`whitespace-nowrap font-black ${isCollapsed ? 'hidden' : 'block'}`}>NUEVA TAREA</span>
           </button>
           <button
