@@ -25,6 +25,7 @@ import {
   Clock,
   Shield,
   Sun,
+  ChevronLeft,
 } from 'lucide-react';
 import { useFieldReady } from '../context/FieldContext';
 import { toast } from 'sonner';
