@@ -790,12 +790,6 @@ export default function Layout({ user }: { user: User }) {
         </div>
         <div className="p-4 border-t-4 border-[#1a1a1a]">
           <button
-            onClick={() => navigate('/tareas')}
-            className={`w-full bg-[#0055ff] text-white border-2 border-[#1a1a1a] py-3 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] font-black flex items-center ${isCollapsed ? 'justify-center' : 'justify-center gap-2'} hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer`}
-          >
-            <span className={`whitespace-nowrap font-black ${isCollapsed ? 'hidden' : 'block'}`}>NUEVA TAREA</span>
-          </button>
-          <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 text-[#e63b2e] mt-4 p-3 min-h-[44px] hover:underline font-bold text-sm cursor-pointer"
           >
