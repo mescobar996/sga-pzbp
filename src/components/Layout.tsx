@@ -27,7 +27,6 @@ import {
   Sun,
   ChevronLeft,
 } from 'lucide-react';
-import { useFieldReady } from '../context/FieldContext';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'motion/react';
 
