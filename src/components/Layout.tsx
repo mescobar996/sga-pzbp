@@ -73,7 +73,6 @@ export default function Layout({ user }: { user: User }) {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     setMobileMenuOpen(false);
