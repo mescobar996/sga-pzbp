@@ -72,6 +72,8 @@ export default function Layout({ user }: { user: User }) {
   const searchRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     setMobileMenuOpen(false);
@@ -773,9 +775,15 @@ export default function Layout({ user }: { user: User }) {
       </header>
 
       {/* SideNavBar - Desktop */}
-      <nav className="hidden lg:flex fixed left-0 top-20 h-[calc(100dvh-80px)] w-64 flex-col z-40 bg-[#f5f0e8] border-r-4 border-[#1a1a1a] font-['Space_Grotesk'] font-bold uppercase">
-        <div className="p-6 border-b-2 border-[#1a1a1a]">
-          <span className="text-xl font-black block">SGA PZBP - MS</span>
+      <nav className={`hidden lg:flex fixed left-0 top-20 h-[calc(100dvh-80px)] ${isCollapsed ? 'w-20' : 'w-64'} flex-col z-40 bg-[#f5f0e8] border-r-4 border-[#1a1a1a] font-['Space_Grotesk'] font-bold uppercase transition-all duration-300 ease-in-out`}>
+        <div className="p-6 border-b-2 border-[#1a1a1a] flex items-center justify-between">
+          <span className={`text-xl font-black block truncate ${isCollapsed ? 'hidden' : ''}`}>SGA PZBP - MS</span>
+          <button 
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-1 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors"
+          >
+            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
         </div>
         <div className="flex-1 overflow-y-auto py-4">
           {allNavItems.map((item) => (
@@ -960,7 +968,7 @@ export default function Layout({ user }: { user: User }) {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="lg:ml-64 mt-16 lg:mt-20 p-4 lg:p-8 min-h-screen transition-all duration-200">
+      <main className={`transition-all duration-300 ease-in-out ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'} mt-16 lg:mt-20 p-4 lg:p-8 min-h-screen`}>
         {/* Feature #17: Breadcrumbs */}
         {location.pathname !== '/' && (
           <nav className="mb-4 flex items-center gap-1.5 text-[10px] sm:text-xs font-bold uppercase tracking-wider">
