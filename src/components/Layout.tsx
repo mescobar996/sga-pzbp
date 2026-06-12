@@ -12,7 +12,6 @@ import {
   ListChecks,
   BarChart3,
   Database,
-  PlusSquare,
   FileText,
   ClipboardList,
   Menu,
