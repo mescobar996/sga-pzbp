@@ -913,18 +913,6 @@ export default function BaseDatos() {
                   </span>
                 ),
               },
-              {
-                key: 'id',
-                label: 'Acciones',
-                render: (l) => (
-                  <button
-                    onClick={() => navigate(`/historial/${l.id}`)}
-                    className="px-2 py-1 bg-[#1a1a1a] text-white text-[10px] font-black uppercase hover:bg-[#0055ff] transition-colors"
-                  >
-                    Historial
-                  </button>
-                ),
-              },
             ]}
               filterValue={locationFilter}
               filterField="status"
