@@ -455,7 +455,8 @@ export default function Layout({ user }: { user: User }) {
 
   const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Panel de Control' },
-    { to: '/zona-trabajo', icon: ClipboardList, label: 'Zona de Trabajo' }, // Consolidado
+    { to: '/zona-trabajo', icon: ClipboardList, label: 'Zona de Trabajo' },
+    { to: '/historial', icon: Clock, label: 'Historial' },
     { to: '/reportes', icon: BarChart3, label: 'Reportes' },
     { to: '/base-datos', icon: Database, label: 'Base de Datos' },
   ];
