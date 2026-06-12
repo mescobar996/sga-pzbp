@@ -40,10 +40,11 @@ export const Timeline: React.FC<TimelineProps> = ({ items, locationName }) => {
           ? dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
           : 'Fecha no disponible';
 
-        // Evitar redundancia visual
-        const displayTitle = item.title.toLowerCase() === locationName.toLowerCase() 
-          ? 'Registro general' 
-          : item.title;
+        // Evitar redundancia visual de forma segura
+        const isRedundantTitle = locationName && item.title && 
+                                 item.title.toLowerCase() === locationName.toLowerCase();
+        
+        const displayTitle = isRedundantTitle ? 'Registro general' : item.title;
 
         return (
           <div key={item.id} className="relative pl-6">
