@@ -785,13 +785,13 @@ export default function Layout({ user }: { user: User }) {
             {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto py-4">
+        <div className="flex-1 overflow-y-auto py-4 overflow-x-hidden">
           {allNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               className={({ isActive }) =>
-                `flex items-center gap-4 p-4 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0055ff] focus-visible:ring-offset-2 ${
+                `flex items-center ${isCollapsed ? 'justify-center' : 'justify-start'} gap-4 p-4 transition-all duration-150 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0055ff] focus-visible:ring-offset-2 ${
                   isActive
                     ? 'bg-[#0055ff] text-white border-2 border-[#1a1a1a] m-2 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)]'
                     : 'text-[#1a1a1a] border-b-2 border-[#1a1a1a]/10 hover:bg-[#0055ff] hover:text-white'
@@ -799,24 +799,24 @@ export default function Layout({ user }: { user: User }) {
               }
             >
               <item.icon className="w-6 h-6 shrink-0" />
-              <span>{item.label}</span>
+              <span className={`whitespace-nowrap font-bold uppercase ${isCollapsed ? 'hidden' : 'block'}`}>{item.label}</span>
             </NavLink>
           ))}
         </div>
         <div className="p-4 border-t-4 border-[#1a1a1a]">
           <button
             onClick={() => navigate('/tareas')}
-            className="w-full bg-[#0055ff] text-white border-2 border-[#1a1a1a] py-3 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] font-black flex items-center justify-center gap-2 hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer"
+            className={`w-full bg-[#0055ff] text-white border-2 border-[#1a1a1a] py-3 shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] font-black flex items-center ${isCollapsed ? 'justify-center' : 'justify-center gap-2'} hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer`}
           >
             <PlusSquare className="w-5 h-5" />
-            NUEVA TAREA
+            <span className={`whitespace-nowrap font-black ${isCollapsed ? 'hidden' : 'block'}`}>NUEVA TAREA</span>
           </button>
           <button
             onClick={handleLogout}
             className="w-full flex items-center justify-center gap-2 text-[#e63b2e] mt-4 p-3 min-h-[44px] hover:underline font-bold text-sm cursor-pointer"
           >
             <LogOut className="w-5 h-5" />
-            <span>Cerrar Sesión</span>
+            <span className={`whitespace-nowrap font-bold ${isCollapsed ? 'hidden' : 'block'}`}>Cerrar Sesión</span>
           </button>
         </div>
       </nav>
