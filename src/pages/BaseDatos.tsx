@@ -11,7 +11,6 @@ import {
   X,
   FileJson,
   FileSpreadsheet,
-  Crosshair,
   Layout,
   Monitor,
   Globe,
@@ -38,7 +37,6 @@ import { personalSchema, locationSchema } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import { DataTable } from '../components/DataTable';
 import type { Personal, Location, DiligenciamientoCategory } from '../types';
-import LocationMapPicker from '../components/LocationMapPicker';
 
 function handleError(error: unknown) {
   console.error('Error:', error);
@@ -97,7 +95,6 @@ export default function BaseDatos() {
   const [editingPersonal, setEditingPersonal] = useState<Personal | null>(null);
   const [editingLocation, setEditingLocation] = useState<Location | null>(null);
   const [editingCategory, setEditingCategory] = useState<DiligenciamientoCategory | null>(null);
-  const [isMapPickerOpen, setIsMapPickerOpen] = useState(false);
 
   // Form states
   const [personalForm, setPersonalForm] = useState({ name: '', role: '', status: 'Activo' });
@@ -1223,24 +1220,6 @@ export default function BaseDatos() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold uppercase tracking-widest opacity-70 mb-2">
-                      Ubicación en Mapa
-                    </label>
-                    <div className="flex gap-2 items-center">
-                      <button
-                        type="button"
-                        onClick={() => setIsMapPickerOpen(true)}
-                        className="flex-1 py-3 border-4 border-[#1a1a1a] bg-[#0055ff] text-white font-black uppercase text-sm tracking-widest hover:bg-[#1a1a1a] hover:text-[#0055ff] transition-colors shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] flex items-center justify-center gap-2"
-                      >
-                        <Crosshair className="w-4 h-4" />{' '}
-                        {locationForm.latitude && locationForm.longitude ? 'Cambiar ubicación' : 'Seleccionar en mapa'}
-                      </button>
-                    </div>
-                    {locationForm.latitude && locationForm.longitude && (
-                      <p className="text-xs font-bold opacity-60 mt-1 font-mono">
-                        📍 {locationForm.latitude.toFixed(4)}, {locationForm.longitude.toFixed(4)}
-                      </p>
-                    )}
                   </div>
                   <button
                     type="submit"
@@ -1475,19 +1454,6 @@ export default function BaseDatos() {
             </div>
           )}
 
-          {/* Location Map Picker */}
-          {isMapPickerOpen && (
-            <LocationMapPicker
-              isOpen={isMapPickerOpen}
-              onClose={() => setIsMapPickerOpen(false)}
-              onSelect={(lat, lng) => {
-                setLocationForm({ ...locationForm, latitude: lat, longitude: lng });
-                setIsMapPickerOpen(false);
-              }}
-              initialLat={locationForm.latitude}
-              initialLng={locationForm.longitude}
-            />
-          )}
         </>
       )}
     </div>

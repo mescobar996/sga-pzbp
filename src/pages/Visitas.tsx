@@ -25,7 +25,6 @@ import { supabase } from '../db/client';
 import { visitaSchema } from '../utils/validation';
 import { SkeletonPage } from '../components/Skeleton';
 import { ConfirmModal } from '../components/ConfirmModal';
-import VisitasMap from '../components/VisitasMap';
 import { FormField } from '../components/FormField';
 import { SearchableSelect } from '../components/SearchableSelect';
 import { DragDropUpload } from '../components/DragDropUpload';
@@ -82,7 +81,6 @@ export default function Visitas() {
   const [editingVisitaId, setEditingVisitaId] = useState<string | null>(null);
   const [selectedResponsables, setSelectedResponsables] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
   const [confirmModal, setConfirmModal] = useState<{isOpen: boolean; id: string | null}>({ isOpen: false, id: null });
 
   // Modal state
@@ -489,139 +487,133 @@ export default function Visitas() {
             </button>
           </div>
 
-          {/* List / Map */}
-          {viewMode === 'list' ? (
-            <>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                {paginatedVisitas.map((visita) => (
-                  <div
-                    key={visita.id}
-                    onClick={() => openEditModal(visita)}
-                    className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 cursor-pointer hover:bg-[#f5f0e8] transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none flex flex-col justify-between group"
-                  >
-                    <div>
-                      <div className="flex justify-between items-start mb-1.5 sm:mb-2">
-                        <h3 className="font-black uppercase text-sm sm:text-lg truncate pr-2">
-                          {visita.origen} &rarr; {visita.destino}
-                        </h3>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          {visita.attachments && visita.attachments.length > 0 && (
-                            <span className="text-[10px] font-bold flex items-center gap-0.5 bg-orange-100 text-orange-700 px-1.5 py-0.5 border border-orange-300" title={`${visita.attachments.length} adjunto(s)`}>
-                              <Paperclip className="w-2.5 h-2.5" /> {visita.attachments.length}
-                            </span>
-                          )}
-                          <span className="text-[10px] sm:text-xs font-bold bg-[#1a1a1a] text-white px-1.5 sm:px-2 py-0.5 sm:py-1 uppercase">
-                            {visita.fecha}
+          {/* List */}
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              {paginatedVisitas.map((visita) => (
+                <div
+                  key={visita.id}
+                  onClick={() => openEditModal(visita)}
+                  className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 cursor-pointer hover:bg-[#f5f0e8] transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none flex flex-col justify-between group"
+                >
+                  <div>
+                    <div className="flex justify-between items-start mb-1.5 sm:mb-2">
+                      <h3 className="font-black uppercase text-sm sm:text-lg truncate pr-2">
+                        {visita.origen} &rarr; {visita.destino}
+                      </h3>
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        {visita.attachments && visita.attachments.length > 0 && (
+                          <span className="text-[10px] font-bold flex items-center gap-0.5 bg-orange-100 text-orange-700 px-1.5 py-0.5 border border-orange-300" title={`${visita.attachments.length} adjunto(s)`}>
+                            <Paperclip className="w-2.5 h-2.5" /> {visita.attachments.length}
                           </span>
-                        </div>
-                      </div>
-                      <p className="text-[10px] sm:text-sm font-bold opacity-70 uppercase truncate">
-                        Resp: {visita.responsable}
-                      </p>
-                    </div>
-                    <div className="mt-3 sm:mt-4 flex justify-between items-center">
-                      <div className="flex gap-1.5 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <label
-                          className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#f5f0e8] transition-colors cursor-pointer"
-                          title="Subir archivo rápido"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Upload className="w-5 h-5 sm:w-4 sm:h-4" />
-                          <input
-                            type="file"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                handleQuickUpload(visita.id, visita.attachments as any, file);
-                              }
-                              e.target.value = '';
-                            }}
-                          />
-                        </label>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleShareVisita(visita);
-                          }}
-                          className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#00cc66] hover:text-white transition-colors"
-                          title="Compartir"
-                        >
-                          <Share2 className="w-5 h-5 sm:w-4 sm:h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            openEditModal(visita);
-                          }}
-                          className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
-                          title="Editar"
-                        >
-                          <Edit2 className="w-5 h-5 sm:w-4 sm:h-4" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const duplicatedVisita = { ...visita, origen: `${visita.origen} (COPIA)`, id: undefined };
-                            openEditModal(duplicatedVisita as any);
-                            setIsEditingVisita(false); // force create new
-                          }}
-                          className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
-                          title="Duplicar"
-                        >
-                          <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" d="M8 7h12v14H8z"></path><path strokeLinecap="square" strokeLinejoin="miter" d="M16 7V3H4v14h4"></path></svg>
-                        </button>
-                        {isAdmin && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              triggerDelete(visita.id);
-                            }}
-                            className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
-                          </button>
                         )}
+                        <span className="text-[10px] sm:text-xs font-bold bg-[#1a1a1a] text-white px-1.5 sm:px-2 py-0.5 sm:py-1 uppercase">
+                          {visita.fecha}
+                        </span>
                       </div>
+                    </div>
+                    <p className="text-[10px] sm:text-sm font-bold opacity-70 uppercase truncate">
+                      Resp: {visita.responsable}
+                    </p>
+                  </div>
+                  <div className="mt-3 sm:mt-4 flex justify-between items-center">
+                    <div className="flex gap-1.5 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <label
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#f5f0e8] transition-colors cursor-pointer"
+                        title="Subir archivo rápido"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Upload className="w-5 h-5 sm:w-4 sm:h-4" />
+                        <input
+                          type="file"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) {
+                              handleQuickUpload(visita.id, visita.attachments as any, file);
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShareVisita(visita);
+                        }}
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#00cc66] hover:text-white transition-colors"
+                        title="Compartir"
+                      >
+                        <Share2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditModal(visita);
+                        }}
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                        title="Editar"
+                      >
+                        <Edit2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const duplicatedVisita = { ...visita, origen: `${visita.origen} (COPIA)`, id: undefined };
+                          openEditModal(duplicatedVisita as any);
+                          setIsEditingVisita(false); // force create new
+                        }}
+                        className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                        title="Duplicar"
+                      >
+                        <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" d="M8 7h12v14H8z"></path><path strokeLinecap="square" strokeLinejoin="miter" d="M16 7V3H4v14h4"></path></svg>
+                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            triggerDelete(visita.id);
+                          }}
+                          className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                        </button>
+                      )}
                     </div>
                   </div>
-                ))}
-                {paginatedVisitas.length === 0 && (
-                  <p className="text-xs sm:text-sm font-bold uppercase opacity-50 sm:col-span-2 text-center py-8">
-                    No hay visitas que coincidan con los filtros.
-                  </p>
-                )}
-              </div>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-3 sm:gap-4 mt-6 sm:mt-8">
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                    disabled={currentPage === 1}
-                    className="p-1.5 sm:p-2 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
-                  </button>
-                  <span className="font-black uppercase tracking-widest text-xs sm:text-sm">
-                    Página {currentPage} de {totalPages}
-                  </span>
-                  <button
-                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={currentPage === totalPages}
-                    className="p-1.5 sm:p-2 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" />
-                  </button>
                 </div>
+              ))}
+              {paginatedVisitas.length === 0 && (
+                <p className="text-xs sm:text-sm font-bold uppercase opacity-50 sm:col-span-2 text-center py-8">
+                  No hay visitas que coincidan con los filtros.
+                </p>
               )}
-            </>
-          ) : (
-            <div className="mt-4 mb-8">
-              <VisitasMap visitas={filteredVisitas} locations={locations} />
             </div>
-          )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex justify-center items-center gap-3 sm:gap-4 mt-6 sm:mt-8">
+                <button
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={currentPage === 1}
+                  className="p-1.5 sm:p-2 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
+                </button>
+                <span className="font-black uppercase tracking-widest text-xs sm:text-sm">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <button
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={currentPage === totalPages}
+                  className="p-1.5 sm:p-2 border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" />
+                </button>
+              </div>
+            )}
+          </>
 
           {/* Create/Edit Modal */}
           <AnimatePresence>
