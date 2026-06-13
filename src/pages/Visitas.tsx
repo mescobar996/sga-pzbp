@@ -436,14 +436,13 @@ export default function Visitas() {
           v.origen.toLowerCase().includes(searchQuery.toLowerCase()) ||
           v.destino.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (v.observaciones && v.observaciones.toLowerCase().includes(searchQuery.toLowerCase()));
-        const matchesResponsable =
-          responsableFilter === 'TODOS' || (v.responsable && v.responsable.split(' Y ').includes(responsableFilter));
+        
         const matchesStartDate = !startDate || v.fecha >= startDate;
         const matchesEndDate = !endDate || v.fecha <= endDate;
 
-        return matchesSearch && matchesResponsable && matchesStartDate && matchesEndDate;
+        return matchesSearch && matchesStartDate && matchesEndDate;
       }),
-    [visitas, responsableFilter, searchQuery, startDate, endDate],
+    [visitas, searchQuery, startDate, endDate],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredVisitas.length / itemsPerPage));
@@ -451,7 +450,7 @@ export default function Visitas() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, responsableFilter, startDate, endDate]);
+  }, [searchQuery, startDate, endDate]);
 
 
   return (
@@ -474,18 +473,6 @@ export default function Visitas() {
               </button>
             </div>
           </div>
-
-          <UniversalFilter
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            selectedCategory={responsableFilter}
-            onCategoryChange={setResponsableFilter}
-            categories={['TODOS', ...Array.from(new Set(visitas.flatMap((v) => (v.responsable ? v.responsable.split(' Y ') : []))))]}
-            startDate={startDate}
-            onStartDateChange={setStartDate}
-            endDate={endDate}
-            onEndDateChange={setEndDate}
-          />
 
           <div className="flex border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] mb-6 w-full sm:w-64">
             <button
