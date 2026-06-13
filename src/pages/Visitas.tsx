@@ -201,6 +201,8 @@ export default function Visitas() {
   // Filters and Pagination
   const [searchQuery, setSearchQuery] = useState('');
   const [responsableFilter, setResponsableFilter] = useState('TODOS');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
@@ -437,10 +439,12 @@ export default function Visitas() {
           (v.observaciones && v.observaciones.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesResponsable =
           responsableFilter === 'TODOS' || (v.responsable && v.responsable.split(' Y ').includes(responsableFilter));
+        const matchesStartDate = !startDate || v.fecha >= startDate;
+        const matchesEndDate = !endDate || v.fecha <= endDate;
 
-        return matchesSearch && matchesResponsable;
+        return matchesSearch && matchesResponsable && matchesStartDate && matchesEndDate;
       }),
-    [visitas, responsableFilter, searchQuery],
+    [visitas, responsableFilter, searchQuery, startDate, endDate],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredVisitas.length / itemsPerPage));
@@ -448,7 +452,7 @@ export default function Visitas() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, responsableFilter]);
+  }, [searchQuery, responsableFilter, startDate, endDate]);
 
 
   return (
@@ -478,6 +482,10 @@ export default function Visitas() {
             selectedCategory={responsableFilter}
             onCategoryChange={setResponsableFilter}
             categories={['TODOS', ...Array.from(new Set(visitas.flatMap((v) => (v.responsable ? v.responsable.split(' Y ') : []))))]}
+            startDate={startDate}
+            onStartDateChange={setStartDate}
+            endDate={endDate}
+            onEndDateChange={setEndDate}
           />
 
           <div className="flex border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] mb-6 w-full sm:w-64">

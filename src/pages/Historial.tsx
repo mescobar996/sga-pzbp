@@ -15,6 +15,8 @@ export default function Historial() {
   const [selectedLocation, setSelectedLocation] = useState(locationId || '');
   const [activeFilter, setActiveFilter] = useState('TODOS');
   const [searchQuery, setSearchQuery] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     getLocations().then(data => {
@@ -39,9 +41,14 @@ export default function Historial() {
       const matchesFilter = activeFilter === 'TODOS' || item.type === activeFilter;
       const matchesSearch = item.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                             item.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchesFilter && matchesSearch;
+      
+      const itemDate = item.date || item.fecha; // Normalizando la fecha del item
+      const matchesStartDate = !startDate || itemDate >= startDate;
+      const matchesEndDate = !endDate || itemDate <= endDate;
+      
+      return matchesFilter && matchesSearch && matchesStartDate && matchesEndDate;
     });
-  }, [history, activeFilter, searchQuery]);
+  }, [history, activeFilter, searchQuery, startDate, endDate]);
 
   const categories = ['TODOS', 'VISITA', 'TAREA', 'NOVEDAD', 'DILIGENCIA'];
 
@@ -59,6 +66,10 @@ export default function Historial() {
         selectedLocation={selectedLocation}
         onLocationChange={setSelectedLocation}
         locations={locations}
+        startDate={startDate}
+        onStartDateChange={setStartDate}
+        endDate={endDate}
+        onEndDateChange={setEndDate}
       />
       <Timeline items={filteredItems} locationName={selectedLocation} />
     </div>
