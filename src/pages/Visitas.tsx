@@ -472,20 +472,17 @@ export default function Visitas() {
             </div>
           </div>
 
-          <div className="flex border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] mb-6 w-full sm:w-64">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`flex-1 px-4 py-2.5 text-xs font-black uppercase tracking-widest transition-colors ${viewMode === 'list' ? 'bg-[#1a1a1a] text-white' : 'bg-white text-[#1a1a1a] hover:bg-[#f5f0e8]'}`}
-            >
-              Lista
-            </button>
-            <button
-              onClick={() => setViewMode('map')}
-              className={`flex-1 px-4 py-2.5 text-xs font-black uppercase tracking-widest border-l-2 border-[#1a1a1a] transition-colors ${viewMode === 'map' ? 'bg-[#1a1a1a] text-white' : 'bg-white text-[#1a1a1a] hover:bg-[#f5f0e8]'}`}
-            >
-              Mapa
-            </button>
-          </div>
+          <UniversalFilter
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedCategory="TODOS"
+            onCategoryChange={() => {}}
+            categories={['TODOS']}
+            startDate={startDate}
+            onStartDateChange={setStartDate}
+            endDate={endDate}
+            onEndDateChange={setEndDate}
+          />
 
           {/* List */}
           <>
