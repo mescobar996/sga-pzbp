@@ -200,7 +200,6 @@ export default function Visitas() {
 
   // Filters and Pagination
   const [searchQuery, setSearchQuery] = useState('');
-  const [responsableFilter, setResponsableFilter] = useState('TODOS');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [currentPage, setCurrentPage] = useState(1);

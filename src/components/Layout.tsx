@@ -453,7 +453,7 @@ export default function Layout({ user }: { user: User }) {
   };
 
   const navItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Panel de Control' },
+    { to: '/', icon: LayoutDashboard, label: 'ESTADÍSTICAS' },
     { to: '/zona-trabajo', icon: ClipboardList, label: 'Zona de Trabajo' },
     { to: '/historial', icon: Clock, label: 'Historial' },
     { to: '/reportes', icon: BarChart3, label: 'Reportes' },

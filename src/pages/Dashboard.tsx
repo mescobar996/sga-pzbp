@@ -85,7 +85,7 @@ export default function Dashboard() {
   return (
     <div className="font-['Inter'] max-w-[1600px] mx-auto px-6 pb-24 pt-6 bg-[#f5f0e8] min-h-screen">
       <h1 className="text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter mb-8 border-b-4 border-[#1a1a1a] pb-6">
-        ANALÍTICA OPERATIVA
+        ESTADÍSTICAS
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
