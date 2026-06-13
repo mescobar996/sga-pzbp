@@ -35,7 +35,7 @@ import { getPersonal, onPersonalChange } from '../db/personal';
 import { addNotification } from '../db/notifications';
 import { getCurrentUserId } from '../db/client';
 import { motion, AnimatePresence } from 'motion/react';
-import { FilterBar } from '../components/FilterBar';
+import { UniversalFilter } from '../components/UniversalFilter';
 
 interface Attachment {
   name: string;
@@ -200,10 +200,7 @@ export default function Visitas() {
 
   // Filters and Pagination
   const [searchQuery, setSearchQuery] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
-  const [responsableFilter, setResponsableFilter] = useState('todos');
-  const [sortBy, setSortBy] = useState('fecha_desc');
+  const [responsableFilter, setResponsableFilter] = useState('TODOS');
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
@@ -439,19 +436,11 @@ export default function Visitas() {
           v.destino.toLowerCase().includes(searchQuery.toLowerCase()) ||
           (v.observaciones && v.observaciones.toLowerCase().includes(searchQuery.toLowerCase()));
         const matchesResponsable =
-          responsableFilter === 'todos' || (v.responsable && v.responsable.split(' Y ').includes(responsableFilter));
-        const matchesDateFrom = !dateFrom || v.fecha >= dateFrom;
-        const matchesDateTo = !dateTo || v.fecha <= dateTo;
+          responsableFilter === 'TODOS' || (v.responsable && v.responsable.split(' Y ').includes(responsableFilter));
 
-        return matchesSearch && matchesResponsable && matchesDateFrom && matchesDateTo;
-      }).sort((a, b) => {
-        if (sortBy === 'fecha_desc') return b.fecha.localeCompare(a.fecha);
-        if (sortBy === 'fecha_asc') return a.fecha.localeCompare(b.fecha);
-        if (sortBy === 'titulo_az') return a.origen.localeCompare(b.origen, 'es');
-        if (sortBy === 'titulo_za') return b.origen.localeCompare(a.origen, 'es');
-        return 0;
+        return matchesSearch && matchesResponsable;
       }),
-    [visitas, responsableFilter, searchQuery, dateFrom, dateTo, sortBy],
+    [visitas, responsableFilter, searchQuery],
   );
 
   const totalPages = Math.max(1, Math.ceil(filteredVisitas.length / itemsPerPage));
@@ -459,7 +448,7 @@ export default function Visitas() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, dateFrom, dateTo, responsableFilter, sortBy]);
+  }, [searchQuery, responsableFilter]);
 
 
   return (
@@ -483,44 +472,12 @@ export default function Visitas() {
             </div>
           </div>
 
-          <FilterBar
-            search={{
-              value: searchQuery,
-              onChange: setSearchQuery,
-              placeholder: 'BUSCAR EN VISITAS...'
-            }}
-            filters={[
-              {
-                value: responsableFilter,
-                onChange: setResponsableFilter,
-                type: 'select',
-                label: 'RESPONSABLE',
-                placeholder: 'Todos los responsables',
-                options: Array.from(new Set(visitas.flatMap((v) => (v.responsable ? v.responsable.split(' Y ') : []))))
-              }
-            ]}
-            dateRange={{
-              from: { value: dateFrom, onChange: setDateFrom, label: 'VISITA DESDE' },
-              to: { value: dateTo, onChange: setDateTo, label: 'VISITA HASTA' }
-            }}
-            sort={{
-              value: sortBy,
-              onChange: setSortBy,
-              label: 'ORDENAR POR',
-              options: [
-                { label: 'Fecha (Más reciente)', value: 'fecha_desc' },
-                { label: 'Fecha (Más antiguo)', value: 'fecha_asc' },
-                { label: 'Origen (A-Z)', value: 'titulo_az' },
-                { label: 'Origen (Z-A)', value: 'titulo_za' },
-              ]
-            }}
-            onClear={() => {
-              setSearchQuery('');
-              setResponsableFilter('todos');
-              setDateFrom('');
-              setDateTo('');
-              setSortBy('fecha_desc');
-            }}
+          <UniversalFilter
+            searchQuery={searchQuery}
+            onSearchChange={setSearchQuery}
+            selectedCategory={responsableFilter}
+            onCategoryChange={setResponsableFilter}
+            categories={['TODOS', ...Array.from(new Set(visitas.flatMap((v) => (v.responsable ? v.responsable.split(' Y ') : []))))]}
           />
 
           <div className="flex border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] mb-6 w-full sm:w-64">
