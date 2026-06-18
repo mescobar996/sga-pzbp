@@ -40,11 +40,22 @@ export const Timeline: React.FC<TimelineProps> = ({ items, locationName }) => {
           ? dateObj.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' })
           : 'Fecha no disponible';
 
-        // Evitar redundancia visual de forma segura
-        const isRedundantTitle = locationName && item.title && 
-                                 item.title.toLowerCase() === locationName.toLowerCase();
-        
-        const displayTitle = isRedundantTitle ? 'Registro general' : item.title;
+        // Título dinámico profesional por tipo — elimina el genérico "Registro general"
+        const TYPE_LABELS: Record<string, string> = {
+          VISITA:      'INFORME DE VISITA',
+          TAREA:       'TAREA ASIGNADA',
+          NOVEDAD:     'REPORTE DE NOVEDAD',
+          DILIGENCIA:  'ACTA DE DILIGENCIA',
+        };
+
+        const isRedundantTitle =
+          locationName &&
+          item.title &&
+          item.title.trim().toLowerCase() === locationName.trim().toLowerCase();
+
+        const displayTitle = isRedundantTitle
+          ? (TYPE_LABELS[item.type] ?? item.type)
+          : item.title;
 
         return (
           <div key={item.id} className="relative pl-6">

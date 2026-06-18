@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getConsolidatedHistory } from '../db/historial';
 import { getLocations } from '../db/locations';
@@ -7,34 +7,54 @@ import { UniversalFilter } from '../components/UniversalFilter';
 import type { Location } from '../types';
 
 export default function Historial() {
-  const { locationId } = useParams();
+  const { locationId: locationParam } = useParams();
   const navigate = useNavigate();
   const [history, setHistory] = useState<any[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedLocation, setSelectedLocation] = useState(locationId || '');
+  const [selectedLocation, setSelectedLocation] = useState('');
   const [activeFilter, setActiveFilter] = useState('TODOS');
   const [searchQuery, setSearchQuery] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  // Carga de ubicaciones: resuelve el param del URL contra los nombres reales
   useEffect(() => {
     getLocations().then(data => {
       setLocations(data);
-      if (!selectedLocation && data.length > 0) setSelectedLocation(data[0].name);
+      if (data.length === 0) return;
+
+      if (locationParam) {
+        // El param puede ser un nombre (ASEC, CORO…) — buscarlo case-insensitive
+        const matched = data.find(
+          l => l.name.toLowerCase() === locationParam.toLowerCase()
+        );
+        setSelectedLocation(matched ? matched.name : data[0].name);
+      } else {
+        setSelectedLocation(data[0].name);
+      }
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // solo en mount
+
+  // Fetch del historial cada vez que cambia la ubicación seleccionada
+  const fetchHistory = useCallback(async (locationName: string) => {
+    setLoading(true);
+    try {
+      const data = await getConsolidatedHistory(locationName);
+      setHistory(data);
+    } catch {
+      setHistory([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    if (selectedLocation) {
-      setLoading(true);
-      getConsolidatedHistory(selectedLocation).then(data => {
-        setHistory(data);
-        setLoading(false);
-      });
-      if (selectedLocation !== locationId) navigate(`/historial/${selectedLocation}`, { replace: true });
-    }
-  }, [selectedLocation, locationId, navigate]);
+    if (!selectedLocation) return;
+    fetchHistory(selectedLocation);
+    navigate(`/historial/${selectedLocation}`, { replace: true });
+  }, [selectedLocation]); // solo depende del nombre de ubicación
 
   const filteredItems = useMemo(() => {
     return history.filter(item => {
