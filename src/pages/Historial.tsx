@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getConsolidatedHistory } from '../db/historial';
 import { getLocations } from '../db/locations';
@@ -58,8 +58,6 @@ async function runDataDiagnostic(locationName: string, renderedCount: number) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-// ─────────────────────────────────────────────────────────────────────────────
-
 export default function Historial() {
   const { locationId: locationParam } = useParams();
   const navigate = useNavigate();
@@ -90,24 +88,25 @@ export default function Historial() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch del historial cada vez que cambia la ubicación seleccionada
-  const fetchHistory = useCallback(async (locationName: string) => {
-    setLoading(true);
-    try {
-      const data = await getConsolidatedHistory(locationName);
-      setHistory(data);
-    } catch {
-      setHistory([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // Fetch del historial: se re-ejecuta SIEMPRE que cambia selectedLocation
   useEffect(() => {
     if (!selectedLocation) return;
-    fetchHistory(selectedLocation);
+
+    let cancelled = false; // evita race conditions si el usuario cambia rápido
+
+    setHistory([]);   // limpia datos anteriores para que el cambio sea visible
+    setLoading(true);
+
+    getConsolidatedHistory(selectedLocation)
+      .then(data => { if (!cancelled) setHistory(data); })
+      .catch(() => { if (!cancelled) setHistory([]); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+
     navigate(`/historial/${selectedLocation}`, { replace: true });
-  }, [selectedLocation]);
+
+    return () => { cancelled = true; }; // cleanup si desmonta o cambia antes de terminar
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLocation]); // navigate es estable, no necesita estar en deps
 
   // Filtrado con fix de timezone: normaliza created_at a YYYY-MM-DD local
   const filteredItems = useMemo(() => {
