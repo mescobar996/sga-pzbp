@@ -548,26 +548,26 @@ export default function Novedades() {
                       </span>
                     </div>
                   </div>
-                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-2 flex-wrap shrink-0">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         handleShareNovedad(novedad);
                       }}
-                      className="min-h-[44px] p-1.5 border-2 border-[#1a1a1a] hover:bg-[#00cc66] hover:text-white transition-colors"
+                      className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#00cc66] hover:text-white transition-colors shrink-0"
                       title="Compartir"
                     >
-                      <Share2 className="w-3.5 h-3.5" />
+                      <Share2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         openEditModal(novedad);
                       }}
-                      className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                      className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors shrink-0"
                       title="Editar"
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
+                      <Edit2 className="w-4 h-4" />
                     </button>
                     {isAdmin && (
                       <button
@@ -575,10 +575,10 @@ export default function Novedades() {
                           e.stopPropagation();
                           triggerDelete(novedad.id);
                         }}
-                        className="p-1.5 border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
+                        className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#e63b2e] hover:text-white transition-colors shrink-0"
                         title="Eliminar"
                       >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     )}
                   </div>

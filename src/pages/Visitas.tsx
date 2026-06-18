@@ -491,7 +491,7 @@ export default function Visitas() {
                 <div
                   key={visita.id}
                   onClick={() => openEditModal(visita)}
-                  className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 cursor-pointer hover:bg-[#f5f0e8] transition-colors shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none flex flex-col justify-between group"
+                  className="bg-white border-2 border-[#1a1a1a] p-3 sm:p-4 cursor-pointer hover:bg-[#f5f0e8] transition-colors shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none flex flex-col justify-between group"
                 >
                   <div>
                     <div className="flex justify-between items-start mb-1.5 sm:mb-2">
@@ -514,13 +514,13 @@ export default function Visitas() {
                     </p>
                   </div>
                   <div className="mt-3 sm:mt-4 flex justify-between items-center">
-                    <div className="flex gap-1.5 sm:gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1.5 sm:gap-2 flex-wrap">
                       <label
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#f5f0e8] transition-colors cursor-pointer"
+                        className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#f5f0e8] transition-colors cursor-pointer shrink-0"
                         title="Subir archivo rápido"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <Upload className="w-5 h-5 sm:w-4 sm:h-4" />
+                        <Upload className="w-4 h-4" />
                         <input
                           type="file"
                           className="hidden"
@@ -538,20 +538,20 @@ export default function Visitas() {
                           e.stopPropagation();
                           handleShareVisita(visita);
                         }}
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#00cc66] hover:text-white transition-colors"
+                        className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#00cc66] hover:text-white transition-colors shrink-0"
                         title="Compartir"
                       >
-                        <Share2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                        <Share2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           openEditModal(visita);
                         }}
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                        className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors shrink-0"
                         title="Editar"
                       >
-                        <Edit2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                        <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={(e) => {
@@ -560,10 +560,10 @@ export default function Visitas() {
                           openEditModal(duplicatedVisita as any);
                           setIsEditingVisita(false); // force create new
                         }}
-                        className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                        className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#1a1a1a] hover:text-white transition-colors shrink-0"
                         title="Duplicar"
                       >
-                        <svg className="w-5 h-5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" d="M8 7h12v14H8z"></path><path strokeLinecap="square" strokeLinejoin="miter" d="M16 7V3H4v14h4"></path></svg>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" d="M8 7h12v14H8z"></path><path strokeLinecap="square" strokeLinejoin="miter" d="M16 7V3H4v14h4"></path></svg>
                       </button>
                       {isAdmin && (
                         <button
@@ -571,10 +571,10 @@ export default function Visitas() {
                             e.stopPropagation();
                             triggerDelete(visita.id);
                           }}
-                          className="min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] hover:bg-[#e63b2e] hover:text-white transition-colors"
+                          className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-white hover:bg-[#e63b2e] hover:text-white transition-colors shrink-0"
                           title="Eliminar"
                         >
-                          <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       )}
                     </div>

@@ -1107,7 +1107,7 @@ export default function Tareas() {
                     exit={{ opacity: 0, x: 20 }}
                     whileHover={task.status !== 'completado' && !isSelected ? { x: 4 } : {}}
                     transition={{ duration: 0.2 }}
-                    className={`p-3 sm:p-4 border-2 ${isSelected ? 'border-[#0055ff]' : 'border-[#1a1a1a]'} shadow-[3px_3px_0px_0px_rgba(26,26,26,1)] sm:shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4 min-h-[80px]`}
+                    className={`p-3 sm:p-4 border-2 ${isSelected ? 'border-[#0055ff]' : 'border-[#1a1a1a]'} shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] flex flex-col md:flex-row items-start md:items-center justify-between group relative gap-3 sm:gap-4 min-h-[80px]`}
                   >
                     <div className="flex flex-1 items-start md:items-center gap-3 sm:gap-4 w-full min-w-0">
                       <input 
@@ -1198,13 +1198,13 @@ export default function Tareas() {
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-4 sm:flex items-center gap-2 shrink-0 w-full md:w-auto mt-3 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-[#1a1a1a]/10">
+                    <div className="grid grid-cols-5 sm:flex items-center gap-2 shrink-0 w-full md:w-auto mt-3 md:mt-0 pt-3 md:pt-0 border-t md:border-t-0 border-[#1a1a1a]/10">
                       <select
                         value={task.status}
                         onChange={(e) =>
                           handleUpdateStatus(task.id, e.target.value as 'pendiente' | 'en_proceso' | 'completado')
                         }
-                        className="col-span-2 sm:col-auto px-2 py-1.5 h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-wider cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
+                        className="col-span-5 sm:col-auto px-2 py-1.5 h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] font-black uppercase text-[10px] tracking-wider cursor-pointer focus:outline-none bg-white text-[#1a1a1a]"
                       >
                         <option value="pendiente">PENDIENTE</option>
                         <option value="en_proceso">PROCESO</option>
@@ -1213,14 +1213,14 @@ export default function Tareas() {
 
                       <button
                         onClick={() => openEditTaskModal(task)}
-                        className="flex items-center justify-center h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                        className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors shrink-0"
                         title="Editar tarea"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
 
                       <label
-                        className="flex items-center justify-center h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer"
+                        className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors cursor-pointer shrink-0"
                         title="Subir archivo rápido"
                       >
                         <Upload className="w-4 h-4" />
@@ -1239,7 +1239,7 @@ export default function Tareas() {
 
                       <button
                         onClick={() => handleShareTask(task)}
-                        className="flex items-center justify-center h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#00cc66] hover:text-white transition-colors"
+                        className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#00cc66] hover:text-white transition-colors shrink-0"
                         title="Compartir tarea"
                       >
                         <Share2 className="w-4 h-4" />
@@ -1251,7 +1251,7 @@ export default function Tareas() {
                             openEditTaskModal(duplicate as Task);
                             setIsEditing(false); // Force to create new
                           }}
-                          className="flex items-center justify-center h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors"
+                          className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors shrink-0"
                           title="Duplicar tarea"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="square" strokeLinejoin="miter" d="M8 7h12v14H8z"></path><path strokeLinecap="square" strokeLinejoin="miter" d="M16 7V3H4v14h4"></path></svg>
@@ -1260,7 +1260,7 @@ export default function Tareas() {
                       {isAdmin && (
                         <button
                           onClick={() => triggerDeleteTask(task.id)}
-                          className="flex items-center justify-center h-[44px] sm:h-[36px] border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors"
+                          className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#e63b2e] hover:text-white transition-colors shrink-0"
                           title="Eliminar tarea"
                         >
                           <Trash2 className="w-4 h-4" />
