@@ -54,3 +54,96 @@ export async function upsertRelevamientoBateriasP25(
 
   if (error) throw error;
 }
+
+export interface RelevamientoEquipamientoRadioelectrico {
+  id: string;
+  location_id: string | null;
+  destinatario_sigla: string;
+  ubicacion_interna: string | null;
+  id_p25: string | null;
+  id_gebipa: string | null;
+  inventario_gebipa: string | null;
+  nro_serie: string;
+  modelo: string;
+  caracteristica_equipo: string | null;
+  accesorios: string | null;
+  estado: string;
+  observaciones: string | null;
+  created_at: string;
+  updated_at: string;
+  author_name: string;
+  locations?: {
+    name: string;
+  } | null;
+}
+
+export type RelevamientoEquipamientoRadioelectricoPayload = {
+  id?: string;
+  location_id?: string | null;
+  destinatario_sigla: string;
+  ubicacion_interna?: string | null;
+  id_p25?: string | null;
+  id_gebipa?: string | null;
+  inventario_gebipa?: string | null;
+  nro_serie: string;
+  modelo: string;
+  caracteristica_equipo?: string | null;
+  accesorios?: string | null;
+  estado: string;
+  observaciones?: string | null;
+  author_name: string;
+};
+
+export async function getRelevamientoEquipamientoRadioelectrico(): Promise<RelevamientoEquipamientoRadioelectrico[]> {
+  const { data, error } = await supabase
+    .from('relevamiento_equipamiento_radioelectrico')
+    .select(`
+      *,
+      locations:location_id (
+        name
+      )
+    `)
+    .order('destinatario_sigla', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as RelevamientoEquipamientoRadioelectrico[];
+}
+
+export async function upsertRelevamientoEquipamientoRadioelectrico(
+  payload: RelevamientoEquipamientoRadioelectricoPayload
+): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error('NO HAY SESIÓN ACTIVA. POR FAVOR, INICIÁ SESIÓN NUEVAMENTE.');
+  }
+
+  const { error } = await supabase
+    .from('relevamiento_equipamiento_radioelectrico')
+    .upsert(payload, { onConflict: 'id' });
+
+  if (error) throw error;
+}
+
+export async function insertRelevamientoEquipamientoRadioelectricoBatch(
+  records: RelevamientoEquipamientoRadioelectricoPayload[]
+): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error('NO HAY SESIÓN ACTIVA. POR FAVOR, INICIÁ SESIÓN NUEVAMENTE.');
+  }
+
+  // Segment insertion in chunks of 100 to avoid request body size or DB limits
+  const chunkSize = 100;
+  for (let i = 0; i < records.length; i += chunkSize) {
+    const chunk = records.slice(i, i + chunkSize);
+    const { error } = await supabase
+      .from('relevamiento_equipamiento_radioelectrico')
+      .insert(chunk);
+
+    if (error) {
+      console.error('Error inserting batch chunk:', error);
+      throw error;
+    }
+  }
+}
+
