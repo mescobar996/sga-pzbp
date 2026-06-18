@@ -43,6 +43,11 @@ export async function getRelevamientoBateriasP25(): Promise<RelevamientoBaterias
 export async function upsertRelevamientoBateriasP25(
   payload: RelevamientoBateriasP25Payload
 ): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error('NO HAY SESIÓN ACTIVA. POR FAVOR, INICIÁ SESIÓN NUEVAMENTE.');
+  }
+
   const { error } = await supabase
     .from('relevamiento_baterias_p25')
     .upsert(payload, { onConflict: 'location_id' });

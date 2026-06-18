@@ -115,7 +115,8 @@ export default function BateriasP25Form({
       onClose();
     } catch (err: any) {
       console.error('Error in upsert:', err);
-      toast.error(`ERROR AL GUARDAR EL REGISTRO: ${err.message || 'ERROR DESCONOCIDO'}`);
+      const errMsg = (err.message || 'ERROR DESCONOCIDO').toUpperCase();
+      toast.error(`ERROR AL GUARDAR EL REGISTRO: ${errMsg}`);
     } finally {
       setIsSubmitting(false);
     }
