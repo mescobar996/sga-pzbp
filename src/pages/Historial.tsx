@@ -4,59 +4,7 @@ import { getConsolidatedHistory } from '../db/historial';
 import { getLocations } from '../db/locations';
 import { Timeline } from '../components/Timeline';
 import { UniversalFilter } from '../components/UniversalFilter';
-import { supabase } from '../db/client';
 import type { Location } from '../types';
-
-// ─── Diagnóstico de datos (ajustado al esquema real) ─────────────────────────
-async function runDataDiagnostic(locationName: string, renderedCount: number) {
-  const name = locationName.trim();
-  console.group(`%c[SGA DIAGNÓSTICO] Ubicación: ${name}`, 'color:#0055ff;font-weight:bold;font-size:14px');
-
-  // VISITAS: filtradas por origen/destino (no tienen location_id)
-  // TAREAS / NOVEDADES / DILIGENCIAMIENTOS: globales (no tienen campo de ubicación)
-  const [
-    { count: visitasCount,  error: e1 },
-    { count: tareasCount,   error: e2 },
-    { count: novedadesCount,error: e3 },
-    { count: diligCount,    error: e4 },
-  ] = await Promise.all([
-    supabase.from('visitas')
-      .select('*', { count: 'exact', head: true })
-      .or(`origen.ilike.%${name}%,destino.ilike.%${name}%`),
-    supabase.from('tasks')
-      .select('*', { count: 'exact', head: true }),
-    supabase.from('novedades')
-      .select('*', { count: 'exact', head: true }),
-    supabase.from('diligenciamientos')
-      .select('*', { count: 'exact', head: true }),
-  ]);
-
-  [e1, e2, e3, e4].forEach((e, i) => {
-    if (e) console.error(`Error en fuente ${i + 1}:`, e);
-  });
-
-  const totalEsperado = (visitasCount ?? 0) + (tareasCount ?? 0) + (novedadesCount ?? 0) + (diligCount ?? 0);
-
-  console.table({
-    'VISITAS  (filtradas por ubicación)': { count: visitasCount  ?? '❌ error', filtro: `origen/destino ilike %${name}%` },
-    'TAREAS   (globales)':                { count: tareasCount   ?? '❌ error', filtro: 'todas' },
-    'NOVEDADES (globales)':               { count: novedadesCount?? '❌ error', filtro: 'todas' },
-    'DILIGENCIAS (globales)':             { count: diligCount    ?? '❌ error', filtro: 'todas' },
-    '──────────────────────────────────': { count: '──────',                    filtro: '' },
-    'TOTAL ESPERADO':                     { count: totalEsperado,               filtro: '' },
-    'TOTAL RENDERIZADO EN PANTALLA':      { count: renderedCount,               filtro: '' },
-    'PÉRDIDA (esperado - render)':        { count: totalEsperado - renderedCount, filtro: '' },
-  });
-
-  if (totalEsperado === renderedCount) {
-    console.info('✅ Sin pérdida de datos. Todo está renderizado.');
-  } else {
-    console.warn(`⚠️  Se esperaban ${totalEsperado} registros pero se renderizan ${renderedCount}. Diferencia: ${totalEsperado - renderedCount}`);
-  }
-
-  console.groupEnd();
-}
-// ─────────────────────────────────────────────────────────────────────────────
 
 export default function Historial() {
   const { locationId: locationParam } = useParams();
@@ -137,14 +85,6 @@ export default function Historial() {
     });
   }, [history, activeFilter, searchQuery, startDate, endDate]);
 
-  // Diagnóstico: se ejecuta una vez al cargar el historial completo (sin filtros)
-  useEffect(() => {
-    if (!selectedLocation || loading || history.length === 0) return;
-    // Pasa el conteo SIN filtros activos para medir pérdida real de la vista/render
-    runDataDiagnostic(selectedLocation, history.length);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLocation, loading]); // solo cuando termina el fetch inicial
-
   const categories = ['TODOS', 'VISITA', 'TAREA', 'NOVEDAD', 'DILIGENCIA'];
 
   if (loading && history.length === 0) return <div className="p-8">Cargando...</div>;
@@ -170,4 +110,3 @@ export default function Historial() {
     </div>
   );
 }
-

@@ -11,81 +11,137 @@ export type HistorialItem = {
 
 /**
  * Resuelve el location_id a partir del nombre de la ubicación.
- * Solo se usa para el script de diagnóstico (el historial real no depende de él).
  */
 export async function resolveLocationId(locationName: string): Promise<string | null> {
-  const { data: exact, error: exactError } = await supabase
+  const { data, error } = await supabase
     .from('locations')
     .select('id')
     .eq('name', locationName.trim())
     .maybeSingle();
 
-  if (!exactError && exact?.id) return exact.id;
-
-  const { data: fuzzy, error: fuzzyError } = await supabase
-    .from('locations')
-    .select('id')
-    .ilike('name', locationName.trim())
-    .limit(1);
-
-  if (fuzzyError || !fuzzy?.length) {
-    console.warn('[historial] resolveLocationId: no encontrado para', locationName);
+  if (error || !data?.id) {
     return null;
   }
-  return fuzzy[0].id;
+  return data.id;
 }
 
 /**
  * Consolida el historial de los 4 sectores operativos para una ubicación.
  *
- * ESTRATEGIA REAL (basada en el esquema de DB):
- *  - VISITAS:          filtradas donde origen OR destino coincide con locationName (ilike)
- *  - TAREAS:           globales (la tabla tasks no tiene campo de ubicación en el esquema)
- *  - NOVEDADES:        globales (la tabla novedades no tiene location_id)
- *  - DILIGENCIAMIENTOS: globales (la tabla diligenciamientos no tiene location_id)
- *
- * Las 4 consultas corren en paralelo y el resultado se ordena por created_at desc.
+ * LÓGICA:
+ * - Si locationName es 'TODOS' o no existe: Trae TODO de vw_location_history y TODO de visitas.
+ * - Si locationName es específico (ej. 'ROSA'):
+ *   1. Busca el id (UUID) en la tabla locations donde name === locationName.
+ *   2. Si existe, hace fetch a vw_location_history filtrando por location_id.
+ *   3. Hace fetch a visitas donde origen o destino contienen locationName (ilike).
+ *   4. Combina, formatea a HistorialItem, ordena desc.
  */
 export async function getConsolidatedHistory(locationName: string): Promise<HistorialItem[]> {
-  if (!locationName?.trim()) return [];
+  const name = locationName?.trim() || '';
 
-  const name = locationName.trim();
+  if (name === 'TODOS' || !name) {
+    const [vistaRes, visitasRes] = await Promise.all([
+      supabase
+        .from('vw_location_history')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(2000),
+      supabase
+        .from('visitas')
+        .select('id, origen, destino, observaciones, responsable, created_at')
+        .order('created_at', { ascending: false })
+        .limit(2000),
+    ]);
 
-  const [visitasRes, tareasRes, novedadesRes, diligRes] = await Promise.all([
-    // VISITAS: origen o destino contiene el nombre de la ubicación
+    if (vistaRes.error) console.error('[historial] vw_location_history error:', vistaRes.error);
+    if (visitasRes.error) console.error('[historial] visitas error:', visitasRes.error);
+
+    const vistaItems: HistorialItem[] = (vistaRes.data ?? []).map(item => ({
+      id:          item.id,
+      type:        item.type,
+      title:       item.title || '',
+      description: item.description || '',
+      author_name: item.author_name || '',
+      created_at:  item.created_at,
+    }));
+
+    const visitas: HistorialItem[] = (visitasRes.data ?? []).map(v => ({
+      id:          v.id,
+      type:        'VISITA',
+      title:       `${v.origen} → ${v.destino}`,
+      description: v.observaciones || `Responsable: ${v.responsable || '—'}`,
+      author_name: v.responsable || '',
+      created_at:  v.created_at,
+    }));
+
+    const all = [...vistaItems, ...visitas];
+    all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return all;
+  }
+
+  // Busca el id (UUID) en la tabla locations donde name === locationName.
+  const { data: location, error: locError } = await supabase
+    .from('locations')
+    .select('id')
+    .eq('name', name)
+    .maybeSingle();
+
+  if (locError) {
+    console.error('[historial] locations fetch error:', locError);
+  }
+
+  if (!location?.id) {
+    console.warn(`[historial] no location found for name: ${name}`);
+    const { data: visitasRes, error: visitasError } = await supabase
+      .from('visitas')
+      .select('id, origen, destino, observaciones, responsable, created_at')
+      .or(`origen.ilike.%${name}%,destino.ilike.%${name}%`)
+      .order('created_at', { ascending: false })
+      .limit(2000);
+
+    if (visitasError) console.error('[historial] visitas error:', visitasError);
+
+    const visitas: HistorialItem[] = (visitasRes ?? []).map(v => ({
+      id:          v.id,
+      type:        'VISITA',
+      title:       `${v.origen} → ${v.destino}`,
+      description: v.observaciones || `Responsable: ${v.responsable || '—'}`,
+      author_name: v.responsable || '',
+      created_at:  v.created_at,
+    }));
+
+    visitas.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return visitas;
+  }
+
+  // Haz un fetch a vw_location_history filtrando ESTRICTAMENTE por .eq('location_id', location.id).
+  // Haz un fetch a visitas filtrando donde origen o destino contengan locationName (con ilike).
+  const [vistaRes, visitasRes] = await Promise.all([
+    supabase
+      .from('vw_location_history')
+      .select('*')
+      .eq('location_id', location.id)
+      .order('created_at', { ascending: false })
+      .limit(2000),
     supabase
       .from('visitas')
       .select('id, origen, destino, observaciones, responsable, created_at')
       .or(`origen.ilike.%${name}%,destino.ilike.%${name}%`)
       .order('created_at', { ascending: false })
-      .limit(1000),
-
-    // TAREAS: globales (sin filtro de ubicación — no existe el campo)
-    supabase
-      .from('tasks')
-      .select('id, title, description, created_at')
-      .order('created_at', { ascending: false })
-      .limit(1000),
-
-    // NOVEDADES: globales
-    supabase
-      .from('novedades')
-      .select('id, title, content, author_name, created_at')
-      .order('created_at', { ascending: false })
-      .limit(1000),
-
-    // DILIGENCIAMIENTOS: globales
-    supabase
-      .from('diligenciamientos')
-      .select('id, title, content, author_name, created_at')
-      .order('created_at', { ascending: false })
-      .limit(1000),
+      .limit(2000),
   ]);
 
-  if (visitasRes.error)  console.error('[historial] visitas error:',          visitasRes.error);
-  if (tareasRes.error)   console.error('[historial] tasks error:',             tareasRes.error);
-  if (novedadesRes.error)console.error('[historial] novedades error:',         novedadesRes.error);
-  if (diligRes.error)    console.error('[historial] diligenciamientos error:', diligRes.error);
+  if (vistaRes.error) console.error('[historial] vw_location_history error:', vistaRes.error);
+  if (visitasRes.error) console.error('[historial] visitas error:', visitasRes.error);
+
+  const vistaItems: HistorialItem[] = (vistaRes.data ?? []).map(item => ({
+    id:          item.id,
+    type:        item.type,
+    title:       item.title || '',
+    description: item.description || '',
+    author_name: item.author_name || '',
+    created_at:  item.created_at,
+  }));
 
   const visitas: HistorialItem[] = (visitasRes.data ?? []).map(v => ({
     id:          v.id,
@@ -96,40 +152,7 @@ export async function getConsolidatedHistory(locationName: string): Promise<Hist
     created_at:  v.created_at,
   }));
 
-  const tareas: HistorialItem[] = (tareasRes.data ?? []).map(t => ({
-    id:          t.id,
-    type:        'TAREA',
-    title:       t.title,
-    description: t.description || '',
-    author_name: '',
-    created_at:  t.created_at,
-  }));
-
-  const novedades: HistorialItem[] = (novedadesRes.data ?? []).map(n => ({
-    id:          n.id,
-    type:        'NOVEDAD',
-    title:       n.title,
-    description: n.content || '',
-    author_name: n.author_name || '',
-    created_at:  n.created_at,
-  }));
-
-  const diligencias: HistorialItem[] = (diligRes.data ?? []).map(d => ({
-    id:          d.id,
-    type:        'DILIGENCIA',
-    title:       d.title,
-    description: d.content || '',
-    author_name: d.author_name || '',
-    created_at:  d.created_at,
-  }));
-
-  const all = [...visitas, ...tareas, ...novedades, ...diligencias];
+  const all = [...vistaItems, ...visitas];
   all.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-  console.info(
-    `[historial] ${name} → VISITAS:${visitas.length} TAREAS:${tareas.length} NOVEDADES:${novedades.length} DILIGENCIAS:${diligencias.length} TOTAL:${all.length}`
-  );
-
   return all;
 }
-
