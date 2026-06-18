@@ -25,6 +25,7 @@ import {
   Shield,
   Sun,
   ChevronLeft,
+  FileSpreadsheet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'motion/react';
@@ -382,6 +383,13 @@ export default function Layout({ user }: { user: User }) {
           icon: <Database className="w-4 h-4" />,
           color: 'bg-[#0055ff]',
         },
+        {
+          label: 'planillas',
+          route: '/planillas',
+          title: 'Planillas',
+          icon: <FileSpreadsheet className="w-4 h-4" />,
+          color: 'bg-[#0055ff]',
+        },
       ];
       navItems.forEach((item) => {
         if (item.label.includes(term) || item.title.toLowerCase().includes(term)) {
@@ -456,6 +464,7 @@ export default function Layout({ user }: { user: User }) {
     { to: '/', icon: LayoutDashboard, label: 'ESTADÍSTICAS' },
     { to: '/zona-trabajo', icon: ClipboardList, label: 'Zona de Trabajo' },
     { to: '/historial', icon: Clock, label: 'Historial' },
+    { to: '/planillas', icon: FileSpreadsheet, label: 'PLANILLAS' },
     { to: '/reportes', icon: BarChart3, label: 'Reportes' },
     { to: '/base-datos', icon: Database, label: 'Base de Datos' },
   ];
@@ -948,6 +957,7 @@ export default function Layout({ user }: { user: User }) {
                 '/visitas': 'Visitas Técnicas',
                 '/novedades': 'Novedades',
                 '/diligenciamientos': 'Diligenciamientos',
+                '/planillas': 'PLANILLAS',
                 '/reportes': 'Reportes',
                 '/base-datos': 'Base de Datos',
                 '/configuracion': 'Configuración',

@@ -19,6 +19,7 @@ const Diligenciamientos = lazy(() => import('./pages/Diligenciamientos'));
 const Configuracion = lazy(() => import('./pages/Configuracion'));
 const ZonaTrabajo = lazy(() => import('./pages/ZonaTrabajo'));
 const Historial = lazy(() => import('./pages/Historial'));
+const Planillas = lazy(() => import('./pages/Planillas'));
 const DebugDB = lazy(() => import('./pages/DebugDB'));
 const Login = lazy(() => import('./pages/Login'));
 const Notificaciones = lazy(() => import('./pages/Notificaciones'));
@@ -111,6 +112,14 @@ function AnimatedRoutes({ user }: { user: User | null }) {
             element={
               <PageTransition>
                 <Historial />
+              </PageTransition>
+            }
+          />
+          <Route
+            path="planillas"
+            element={
+              <PageTransition>
+                <Planillas />
               </PageTransition>
             }
           />
