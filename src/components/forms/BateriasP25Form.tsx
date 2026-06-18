@@ -3,9 +3,9 @@ import { motion, AnimatePresence } from 'motion/react';
 import { X, Save } from 'lucide-react';
 import { FormField } from '../FormField';
 import { getLocations } from '../../db/locations';
-import { upsertRelevamientoBateriasP25 } from '../../db/planillas';
+import { upsertRelevamientoBateriasP25 } from '../../db/relevamientos';
 import type { Location } from '../../types';
-import type { RelevamientoBateriasP25 } from '../../db/planillas';
+import type { RelevamientoBateriasP25 } from '../../db/relevamientos';
 import { toast } from 'sonner';
 
 interface BateriasP25FormProps {
