@@ -881,106 +881,109 @@ export default function Relevamiento() {
             ) : (
               <div className="w-full">
                 {/* Headers */}
-                <div className="w-full bg-[#1a1a1a] text-white border-2 border-black font-black uppercase text-xs p-3 hidden md:grid md:grid-cols-12 gap-2 md:gap-4 items-center mb-2">
-                  <div className="col-span-2">DESTINO</div>
-                  <div className="col-span-1 text-center">GRABADORA</div>
-                  <div className="col-span-4">EQUIPO VHF / GRABACIÓN</div>
-                  <div className="col-span-1 text-center">GRABACIÓN 106</div>
-                  <div className="col-span-3">OBSERVACIONES LÍNEA 106</div>
-                  <div className="col-span-1 text-right">ACCIONES</div>
+                <div className="w-full bg-[#1a1a1a] text-white border-2 border-black font-black uppercase text-xs p-3 hidden md:flex items-center gap-4 mb-2">
+                  <div className="w-24 shrink-0">DESTINO</div>
+                  <div className="w-36 shrink-0">GRABADORA</div>
+                  <div className="w-28 shrink-0 text-center">EQUIPO VHF</div>
+                  <div className="w-28 shrink-0 text-center">GRABACIÓN VHF</div>
+                  <div className="w-28 shrink-0 text-center">GRABACIÓN 106</div>
+                  <div className="flex-1 min-w-0">OBSERVACIONES LÍNEA 106</div>
+                  <div className="w-32 shrink-0 text-right">ACCIONES</div>
                 </div>
 
                 {/* Rows */}
                 {paginatedLinea106.map((item) => (
                   <div
                     key={item.id}
-                    className="w-full bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 flex flex-col md:grid md:grid-cols-12 gap-2 md:gap-4 items-center hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all mb-3 text-xs sm:text-sm min-w-0"
+                    className="w-full bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all mb-3 text-xs sm:text-sm"
                   >
-                    {/* Columna 1 y 2 (Destino e Ícono) */}
-                    <div className="col-span-12 md:col-span-2 flex items-center gap-2 min-w-0 w-full">
+                    <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
                       <div className="border-2 border-black p-2 bg-[#ffd700] flex items-center justify-center shrink-0 w-10 h-10 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
                         <Radio className="w-5 h-5 text-black" />
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="font-black uppercase truncate text-black">{item.destinatario_sigla}</h3>
-                        <p className="text-[10px] font-bold text-gray-500 uppercase truncate">
-                          {item.locations?.name || 'SIN ASIGNAR'}
-                        </p>
+
+                      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-5 gap-2 md:gap-4 items-center">
+                        {/* Destinatario */}
+                        <div className="min-w-0">
+                          <h3 className="font-black uppercase truncate text-black">{item.destinatario_sigla}</h3>
+                          <p className="text-[10px] font-bold text-gray-500 uppercase truncate">
+                            {item.locations?.name || 'SIN ASIGNAR'}
+                          </p>
+                        </div>
+
+                        {/* Grabadora */}
+                        <div className="truncate">
+                          <span className="text-[9px] font-black uppercase text-gray-400 block md:hidden">GRABADORA</span>
+                          {(() => {
+                            const cleanText = String(item.grabadora_audio || '').trim().toUpperCase();
+                            if (cleanText === 'TRUE' || cleanText === 'SI') {
+                              return <span className="border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase bg-green-100 text-green-700">SI</span>;
+                            } else if (cleanText === 'FALSE' || cleanText === 'NO') {
+                              return <span className="border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase bg-red-100 text-[#e63b2e]">NO</span>;
+                            } else {
+                              return <span className="font-bold">{item.grabadora_audio || '—'}</span>;
+                            }
+                          })()}
+                        </div>
+
+                        {/* VHF Conectado */}
+                        <div className="flex md:justify-center">
+                          <span className="text-[9px] font-black uppercase text-gray-400 block md:hidden mr-2">EQUIPO VHF:</span>
+                          <span
+                            className={`border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase shrink-0 ${
+                              item.vhf_conectado === 'SI'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-[#e63b2e]'
+                            }`}
+                          >
+                            {item.vhf_conectado || 'NO'}
+                          </span>
+                        </div>
+
+                        {/* Grabación VHF */}
+                        <div className="flex md:justify-center">
+                          <span className="text-[9px] font-black uppercase text-gray-400 block md:hidden mr-2">GRABACIÓN VHF:</span>
+                          <span
+                            className={`border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase shrink-0 ${
+                              item.grabacion_vhf === 'SI'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-[#e63b2e]'
+                            }`}
+                          >
+                            {item.grabacion_vhf || 'NO'}
+                          </span>
+                        </div>
+
+                        {/* Grabación 106 */}
+                        <div className="flex md:justify-center">
+                          <span className="text-[9px] font-black uppercase text-gray-400 block md:hidden mr-2">GRABACIÓN 106:</span>
+                          <span
+                            className={`border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase shrink-0 ${
+                              item.grabacion_106 === 'SI'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-[#e63b2e]'
+                            }`}
+                          >
+                            {item.grabacion_106 || 'NO'}
+                          </span>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Columna 3 (Grabadora de Audio) */}
-                    <div className="col-span-12 md:col-span-1 flex md:justify-center items-center min-w-0 w-full">
-                      <span className="text-[9px] font-black uppercase text-gray-400 block md:hidden mr-2">GRABADORA:</span>
-                      {(() => {
-                        const cleanText = String(item.grabadora_audio || '').trim().toUpperCase();
-                        if (cleanText === 'TRUE' || cleanText === 'SI') {
-                          return <span className="border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase bg-green-100 text-green-700">SI</span>;
-                        } else if (cleanText === 'FALSE' || cleanText === 'NO') {
-                          return <span className="border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase bg-red-100 text-[#e63b2e]">NO</span>;
-                        } else {
-                          return <span className="truncate block max-w-full font-bold uppercase" title={item.grabadora_audio || ''}>{item.grabadora_audio || '—'}</span>;
-                        }
-                      })()}
-                    </div>
-
-                    {/* Columna 4, 5 y 6 (Equipamiento VHF y su Grabación) */}
-                    <div className="col-span-12 md:col-span-4 flex items-center gap-2 min-w-0 w-full">
-                      <span className="text-[9px] font-black uppercase text-gray-400 block md:hidden mr-2">VHF:</span>
-                      <div className="flex-1 min-w-0 flex items-center gap-2">
-                        <span className="font-bold truncate min-w-0 uppercase block text-xs" title={item.observaciones_vhf || 'CONECTADO A GRABADORA'}>
-                          {item.observaciones_vhf || 'CONECTADO A GRABADORA'}
-                        </span>
-                        <span
-                          className={`border-2 border-black px-1.5 py-0.5 text-[9px] font-black uppercase shrink-0 ${
-                            item.vhf_conectado === 'SI'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-[#e63b2e]'
-                          }`}
-                        >
-                          VHF: {item.vhf_conectado || 'NO'}
-                        </span>
-                        <span
-                          className={`border-2 border-black px-1.5 py-0.5 text-[9px] font-black uppercase shrink-0 ${
-                            item.grabacion_vhf === 'SI'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-[#e63b2e]'
-                          }`}
-                        >
-                          GRAB: {item.grabacion_vhf || 'NO'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Columna 7 (Grabación Línea 106) */}
-                    <div className="col-span-12 md:col-span-1 flex md:justify-center items-center min-w-0 w-full">
-                      <span className="text-[9px] font-black uppercase text-gray-400 block md:hidden mr-2">GRABACIÓN 106:</span>
-                      <span
-                        className={`border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase shrink-0 ${
-                          item.grabacion_106 === 'SI'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-[#e63b2e]'
-                        }`}
-                      >
-                        106: {item.grabacion_106 || 'NO'}
-                      </span>
-                    </div>
-
-                    {/* Columna 8, 9 y 10 (Observaciones) */}
-                    <div className="col-span-12 md:col-span-3 text-xs md:text-sm truncate min-w-0 w-full text-gray-600 font-semibold uppercase">
-                      <span className="text-[9px] font-black uppercase text-gray-400 block md:hidden mr-2">OBSERVACIONES:</span>
+                    {/* Observations */}
+                    <div className="flex-1 min-w-0 md:max-w-xs text-xs font-semibold uppercase text-gray-600 break-words md:px-2">
                       {item.observaciones_106 ? (
-                        <span className="truncate block" title={item.observaciones_106}>{item.observaciones_106}</span>
+                        <span>{item.observaciones_106}</span>
                       ) : (
                         <span className="opacity-40 italic">SIN OBSERVACIONES</span>
                       )}
                     </div>
 
-                    {/* Columna 11 y 12 (Botón Modificar) */}
-                    <div className="col-span-12 md:col-span-1 flex md:justify-end items-center min-w-0 w-full">
+                    {/* Actions */}
+                    <div className="flex items-center justify-end shrink-0">
                       <button
                         onClick={() => openEditLinea106Modal(item)}
-                        className="w-full md:w-auto px-4 py-2.5 border-2 border-black bg-[#ffd700] hover:bg-black hover:text-[#ffd700] text-black font-black uppercase tracking-wider text-xs transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer"
+                        className="px-4 py-2.5 border-2 border-black bg-[#ffd700] hover:bg-black hover:text-[#ffd700] text-black font-black uppercase tracking-wider text-xs transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer"
                       >
                         MODIFICAR
                       </button>
