@@ -14,7 +14,6 @@ const Visitas = lazy(() => import('./pages/Visitas'));
 const Tareas = lazy(() => import('./pages/Tareas'));
 const Reportes = lazy(() => import('./pages/Reportes'));
 const BaseDatos = lazy(() => import('./pages/BaseDatos'));
-const BaseDatosV2 = lazy(() => import('./pages/BaseDatosV2'));
 const Novedades = lazy(() => import('./pages/Novedades'));
 const Diligenciamientos = lazy(() => import('./pages/Diligenciamientos'));
 const Configuracion = lazy(() => import('./pages/Configuracion'));
@@ -93,14 +92,7 @@ function AnimatedRoutes({ user }: { user: User | null }) {
               </PageTransition>
             }
           />
-          <Route
-            path="base-datos-v2"
-            element={
-              <PageTransition>
-                <BaseDatosV2 />
-              </PageTransition>
-            }
-          />
+
           <Route path="zona-trabajo" element={<PageTransition><ZonaTrabajo /></PageTransition>}>
             <Route index element={<Navigate to="visitas" replace />} />
             <Route path="visitas" element={<Visitas />} />

@@ -63,6 +63,7 @@ const COLOR_OPTIONS = [
 
 export default function BaseDatos() {
   const { isAdmin } = useOutletContext<{ isAdmin: boolean }>();
+  const [activeTab, setActiveTab] = useState<'usuarios' | 'ubicaciones' | 'modulos'>('usuarios');
   const [isDeleting, setIsDeleting] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [isExporting, setIsExporting] = useState(false);
@@ -857,257 +858,298 @@ export default function BaseDatos() {
             Administración de Datos
           </h1>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
-            <DataTable<Personal>
-              data={personnel}
-              columns={[
-                { key: 'name', label: 'Nombre' },
-                { key: 'role', label: 'Rol' },
-                {
-                  key: 'status',
-                  label: 'Estado',
-                  render: (p) => (
-                    <span
-                      className={`px-2 py-0.5 text-[10px] font-black uppercase border-2 border-[#1a1a1a] ${p.status === 'Activo' ? 'bg-[#00cc66] text-white' : 'bg-[#e63b2e] text-white'}`}
-                    >
-                      {p.status}
-                    </span>
-                  ),
-                },
-              ]}
-              filterValue={personalFilter}
-              filterField="status"
-              filterOptions={['Todos', 'Activo', 'Inactivo']}
-              onFilterChange={setPersonalFilter}
-              onAdd={() => {
-                setEditingPersonal(null);
-                setPersonalForm({ name: '', role: '', status: 'Activo' });
-                setIsPersonalModalOpen(true);
-              }}
-              onEdit={(p) => {
-                setEditingPersonal(p);
-                setPersonalForm({ name: p.name, role: p.role, status: p.status });
-                setIsPersonalModalOpen(true);
-              }}
-              onDelete={(p) => handleDeletePersonal(p.id)}
-              addLabel="Añadir"
-              accentColor="#0055ff"
-            />
-
-            <DataTable<Location>
-            data={locations}
-            columns={[
-              { key: 'name', label: 'Ubicación' },
-              { key: 'type', label: 'Tipo' },
-              {
-                key: 'status',
-                label: 'Estado',
-                render: (l) => (
-                  <span
-                    className={`px-2 py-0.5 text-[10px] font-black uppercase border-2 border-[#1a1a1a] ${l.status === 'Operativo' ? 'bg-[#00cc66] text-white' : l.status === 'Mantenimiento' ? 'bg-[#0055ff] text-white' : 'bg-[#e63b2e] text-white'}`}
-                  >
-                    {l.status}
-                  </span>
-                ),
-              },
-            ]}
-              filterValue={locationFilter}
-              filterField="status"
-              filterOptions={['Todos', 'Operativo', 'Mantenimiento', 'Inactivo']}
-              onFilterChange={setLocationFilter}
-              onAdd={() => {
-                setEditingLocation(null);
-                setLocationForm({
-                  name: '',
-                  type: 'Origen',
-                  status: 'Operativo',
-                  latitude: undefined,
-                  longitude: undefined,
-                });
-                setIsLocationModalOpen(true);
-              }}
-              onEdit={(l) => {
-                setEditingLocation(l);
-                setLocationForm({
-                  name: l.name,
-                  type: l.type,
-                  status: l.status,
-                  latitude: l.latitude ?? undefined,
-                  longitude: l.longitude ?? undefined,
-                });
-                setIsLocationModalOpen(true);
-              }}
-              onDelete={(l) => handleDeleteLocation(l.id)}
-              addLabel="Añadir"
-              accentColor="#0055ff"
-            />
-
-            <div className="relative group">
-              <DataTable<DiligenciamientoCategory>
-                data={categories}
-                columns={[
-                  {
-                    key: 'name',
-                    label: 'Módulo',
-                    render: (c) => (
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-8 h-8 ${c.color} border-2 border-[#1a1a1a] flex items-center justify-center text-white`}
-                        >
-                          {(() => {
-                            const IconComp = (LucideIcons as any)[c.icon] || Layout;
-                            return <IconComp className="w-4 h-4" />;
-                          })()}
-                        </div>
-                        <span className="font-bold">{c.name}</span>
-                      </div>
-                    ),
-                  },
-                  {
-                    key: 'icon',
-                    label: 'Icono',
-                    render: (c) => <span className="text-[10px] font-black opacity-40">{c.icon}</span>,
-                  },
-                ]}
-                onAdd={() => {
-                  setEditingCategory(null);
-                  setCategoryForm({ name: '', icon: 'Layout', color: 'bg-[#1a1a1a]' });
-                  setIsCategoryModalOpen(true);
-                }}
-                onEdit={(c) => {
-                  setEditingCategory(c);
-                  setCategoryForm({ name: c.name, icon: c.icon, color: c.color });
-                  setIsCategoryModalOpen(true);
-                }}
-                onDelete={(c) => handleDeleteCategory(c.id)}
-                addLabel="Módulo"
-                accentColor="#ff9900"
-              />
-              {isAdmin && categories.length > 0 && (
+          {/* System Status & Actions (HUD promoted to the top) */}
+          <div className="bg-[#1a1a1a] text-white border-2 border-[#1a1a1a] p-6 shadow-[8px_8px_0px_0px_rgba(0,85,255,1)] mb-6 sm:mb-8">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b-2 border-white pb-3">
+              <h2 className="text-xl font-black uppercase font-['Space_Grotesk'] flex items-center gap-2">
+                <Server className="w-5 h-5" /> Estado y Mantenimiento
+              </h2>
+              <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={handleDeleteAllCategories}
-                  className="absolute top-2 right-44 z-10 px-3 py-1.5 border-2 border-[#e63b2e] bg-white text-[#e63b2e] font-black uppercase text-[10px] tracking-widest hover:bg-[#e63b2e] hover:text-white transition-colors flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(230,59,46,0.3)]"
+                  onClick={() => setIsImportModalOpen(true)}
+                  className="px-3 py-1.5 border-2 border-white bg-[#0055ff] text-white font-black uppercase text-xs tracking-widest hover:bg-white hover:text-[#0055ff] transition-colors flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none cursor-pointer"
                 >
-                  <Trash2 className="w-3 h-3" /> Borrar Todo
+                  <Upload className="w-3.5 h-3.5" /> Importar Datos
                 </button>
-              )}
+                <button
+                  onClick={handleExportExcel}
+                  disabled={isExporting}
+                  className="px-3 py-1.5 border-2 border-white bg-[#00cc66] text-[#1a1a1a] font-black uppercase text-xs tracking-widest hover:bg-white transition-colors flex items-center gap-2 disabled:opacity-50 shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" /> {isExporting ? 'Exportando...' : 'Exportar Excel'}
+                </button>
+                <button
+                  onClick={handleExportJSON}
+                  disabled={isExporting}
+                  className="px-3 py-1.5 border-2 border-white bg-[#e63b2e] text-white font-black uppercase text-xs tracking-widest hover:bg-[#1a1a1a] hover:text-[#e63b2e] transition-colors flex items-center gap-2 disabled:opacity-50 shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none cursor-pointer"
+                >
+                  <FileJson className="w-3.5 h-3.5" /> FULL BACKUP JSON
+                </button>
+              </div>
             </div>
 
-            {/* System Status & Actions */}
-            <div className="lg:col-span-2 bg-[#1a1a1a] text-white border-2 border-[#1a1a1a] p-6 shadow-[8px_8px_0px_0px_rgba(0,85,255,1)]">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 border-b-2 border-white pb-3">
-                <h2 className="text-xl font-black uppercase font-['Space_Grotesk'] flex items-center gap-2">
-                  <Server className="w-5 h-5" /> Estado y Mantenimiento
-                </h2>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setIsImportModalOpen(true)}
-                    className="px-3 py-1.5 border-2 border-white bg-[#0055ff] text-white font-black uppercase text-xs tracking-widest hover:bg-white hover:text-[#0055ff] transition-colors flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
-                  >
-                    <Upload className="w-3.5 h-3.5" /> Importar Datos
-                  </button>
-                  <button
-                    onClick={handleExportExcel}
-                    disabled={isExporting}
-                    className="px-3 py-1.5 border-2 border-white bg-[#00cc66] text-[#1a1a1a] font-black uppercase text-xs tracking-widest hover:bg-white transition-colors flex items-center gap-2 disabled:opacity-50 shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
-                  >
-                    <Download className="w-3.5 h-3.5" /> {isExporting ? 'Exportando...' : 'Exportar Excel'}
-                  </button>
-                  <button
-                    onClick={handleExportJSON}
-                    disabled={isExporting}
-                    className="px-3 py-1.5 border-2 border-white bg-[#e63b2e] text-white font-black uppercase text-xs tracking-widest hover:bg-[#1a1a1a] hover:text-[#e63b2e] transition-colors flex items-center gap-2 disabled:opacity-50 shadow-[2px_2px_0px_0px_rgba(255,255,255,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
-                  >
-                    <FileJson className="w-3.5 h-3.5" /> FULL BACKUP JSON
-                  </button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                <div className="p-4 border-2 border-white bg-[#1a1a1a] hover:bg-white hover:text-[#1a1a1a] transition-colors group cursor-pointer">
-                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 mb-1">
-                    Total Registros
-                  </p>
-                  <p className="text-2xl font-black font-['Space_Grotesk'] flex items-center gap-2">
-                    <span className="w-3 h-3 bg-[#00cc66] rounded-full inline-block border-2 border-current"></span>
-                    {systemStats.totalRecords}
-                  </p>
-                </div>
-                <div className="p-4 border-2 border-white bg-[#1a1a1a] hover:bg-white hover:text-[#1a1a1a] transition-colors group cursor-pointer">
-                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 mb-1">
-                    Última Actividad
-                  </p>
-                  <p className="text-2xl font-black font-['Space_Grotesk']">{systemStats.lastBackup}</p>
-                </div>
-                <div className="p-4 border-2 border-white bg-[#1a1a1a] hover:bg-white hover:text-[#1a1a1a] transition-colors group cursor-pointer">
-                  <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 mb-1">
-                    Colecciones Activas
-                  </p>
-                  <p className="text-2xl font-black font-['Space_Grotesk']">
-                    {Object.values(systemStats.collections || {}).filter((c) => c > 0).length}/9
-                  </p>
-                </div>
-              </div>
-
-              {/* Collection Breakdown */}
-              <div className="mb-6 p-4 border-2 border-white/20 bg-[#1a1a1a]">
-                <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-3">
-                  Desglose por Colección
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="p-4 border-2 border-white bg-[#1a1a1a] hover:bg-white hover:text-[#1a1a1a] transition-colors group cursor-pointer">
+                <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 mb-1">
+                  Total Registros
                 </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {[
-                    { label: 'Tareas', key: 'tasks', color: '#3b82f6' },
-                    { label: 'Visitas', key: 'visitas', color: '#10b981' },
-                    { label: 'Novedades', key: 'novedades', color: '#f59e0b' },
-                    { label: 'Personal', key: 'personal', color: '#8b5cf6' },
-                    { label: 'Ubicaciones', key: 'locations', color: '#06b6d4' },
-                    { label: 'Historial', key: 'task_history', color: '#ec4899' },
-                    { label: 'Notificaciones', key: 'notifications', color: '#f43f5e' },
-                    { label: 'Diligenciamientos', key: 'diligenciamientos', color: '#0055ff' },
-                    { label: 'Módulos', key: 'diligenciamiento_categories', color: '#ff9900' },
-                  ].map((item) => (
-                    <div key={item.key} className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></div>
-                      <span className="text-[10px] font-bold uppercase opacity-60">{item.label}:</span>
-                      <span className="text-sm font-black">{(systemStats.collections || {})[item.key] || 0}</span>
-                    </div>
-                  ))}
-                </div>
+                <p className="text-2xl font-black font-['Space_Grotesk'] flex items-center gap-2">
+                  <span className="w-3 h-3 bg-[#00cc66] rounded-full inline-block border-2 border-current"></span>
+                  {systemStats.totalRecords}
+                </p>
               </div>
+              <div className="p-4 border-2 border-white bg-[#1a1a1a] hover:bg-white hover:text-[#1a1a1a] transition-colors group cursor-pointer">
+                <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 mb-1">
+                  Última Actividad
+                </p>
+                <p className="text-2xl font-black font-['Space_Grotesk']">{systemStats.lastBackup}</p>
+              </div>
+              <div className="p-4 border-2 border-white bg-[#1a1a1a] hover:bg-white hover:text-[#1a1a1a] transition-colors group cursor-pointer">
+                <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 group-hover:opacity-100 mb-1">
+                  Colecciones Activas
+                </p>
+                <p className="text-2xl font-black font-['Space_Grotesk']">
+                  {Object.values(systemStats.collections || {}).filter((c) => c > 0).length}/9
+                </p>
+              </div>
+            </div>
 
-              {/* Danger Zone */}
-              {isAdmin && (
-                <div className="border-2 border-[#e63b2e] p-5 bg-[#1a1a1a] relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-10">
-                    <AlertTriangle className="w-24 h-24 text-[#e63b2e]" />
+            {/* Collection Breakdown */}
+            <div className="p-4 border-2 border-white/20 bg-[#1a1a1a]">
+              <p className="text-[10px] font-bold uppercase tracking-widest opacity-60 mb-3">
+                Desglose por Colección
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+                {[
+                  { label: 'Tareas', key: 'tasks', color: '#3b82f6' },
+                  { label: 'Visitas', key: 'visitas', color: '#10b981' },
+                  { label: 'Novedades', key: 'novedades', color: '#f59e0b' },
+                  { label: 'Personal', key: 'personal', color: '#8b5cf6' },
+                  { label: 'Ubicaciones', key: 'locations', color: '#06b6d4' },
+                  { label: 'Historial', key: 'task_history', color: '#ec4899' },
+                  { label: 'Notificaciones', key: 'notifications', color: '#f43f5e' },
+                  { label: 'Diligenciamientos', key: 'diligenciamientos', color: '#0055ff' },
+                  { label: 'Módulos', key: 'diligenciamiento_categories', color: '#ff9900' },
+                ].map((item) => (
+                  <div key={item.key} className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: item.color }}></div>
+                    <span className="text-[10px] font-bold uppercase opacity-60">{item.label}:</span>
+                    <span className="text-sm font-black">{(systemStats.collections || {})[item.key] || 0}</span>
                   </div>
-                  <h3 className="text-lg font-black uppercase text-[#e63b2e] mb-2 flex items-center gap-2 relative z-10">
-                    <AlertTriangle className="w-4 h-4" /> Zona de Peligro
-                  </h3>
-                  <p className="text-xs font-bold opacity-80 mb-3 relative z-10 max-w-2xl">
-                    El borrado masivo eliminará permanentemente todas las tareas, visitas, novedades y notificaciones.
-                    Esta acción no se puede deshacer. Por favor, exporta un respaldo antes de proceder.
-                  </p>
-                  <div className="flex flex-col sm:flex-row gap-3 relative z-10">
-                    <input
-                      type="text"
-                      value={deleteConfirmation}
-                      onChange={(e) => setDeleteConfirmation(e.target.value)}
-                      placeholder="Escribe CONFIRMAR"
-                      className="p-2 border-2 border-[#e63b2e] bg-[#1a1a1a] text-white focus:outline-none focus:bg-[#e63b2e]/10 font-bold uppercase text-sm w-full sm:w-64"
-                    />
-                    <button
-                      onClick={handleMassDelete}
-                      disabled={isDeleting || deleteConfirmation !== 'CONFIRMAR'}
-                      className="px-4 py-2 border-2 border-[#e63b2e] bg-[#e63b2e] text-white font-black uppercase text-xs tracking-widest hover:bg-[#1a1a1a] hover:text-[#e63b2e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[2px_2px_0px_0px_rgba(230,59,46,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none flex items-center justify-center gap-2 whitespace-nowrap"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" /> {isDeleting ? 'Borrando...' : 'Borrado Masivo'}
-                    </button>
-                  </div>
-                </div>
-              )}
+                ))}
+              </div>
             </div>
           </div>
+
+          {/* Navigation Tabs Menu */}
+          <div className="flex border-b-4 border-black mb-6 overflow-x-auto scrollbar-none gap-2">
+            <button
+              onClick={() => setActiveTab('usuarios')}
+              className={`px-4 sm:px-6 py-3 border-4 border-black font-black uppercase text-xs sm:text-sm tracking-wider transition-all duration-150 cursor-pointer shrink-0 ${
+                activeTab === 'usuarios'
+                  ? 'bg-[#0055ff] text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+                  : 'bg-white text-black hover:bg-[#f5f0e8]'
+              }`}
+            >
+              🧑‍💻 USUARIOS
+            </button>
+            <button
+              onClick={() => setActiveTab('ubicaciones')}
+              className={`px-4 sm:px-6 py-3 border-4 border-black font-black uppercase text-xs sm:text-sm tracking-wider transition-all duration-150 cursor-pointer shrink-0 ${
+                activeTab === 'ubicaciones'
+                  ? 'bg-[#0055ff] text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+                  : 'bg-white text-black hover:bg-[#f5f0e8]'
+              }`}
+            >
+              📍 UBICACIONES
+            </button>
+            <button
+              onClick={() => setActiveTab('modulos')}
+              className={`px-4 sm:px-6 py-3 border-4 border-black font-black uppercase text-xs sm:text-sm tracking-wider transition-all duration-150 cursor-pointer shrink-0 ${
+                activeTab === 'modulos'
+                  ? 'bg-[#0055ff] text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]'
+                  : 'bg-white text-black hover:bg-[#f5f0e8]'
+              }`}
+            >
+              📦 MÓDULOS
+            </button>
+          </div>
+
+          {/* Active Tab Panel Container */}
+          <div className="w-full mb-6 sm:mb-8">
+            {activeTab === 'usuarios' && (
+              <DataTable<Personal>
+                data={personnel}
+                columns={[
+                  { key: 'name', label: 'Nombre' },
+                  { key: 'role', label: 'Rol' },
+                  {
+                    key: 'status',
+                    label: 'Estado',
+                    render: (p) => (
+                      <span
+                        className={`px-2 py-0.5 text-[10px] font-black uppercase border-2 border-[#1a1a1a] ${p.status === 'Activo' ? 'bg-[#00cc66] text-white' : 'bg-[#e63b2e] text-white'}`}
+                      >
+                        {p.status}
+                      </span>
+                    ),
+                  },
+                ]}
+                filterValue={personalFilter}
+                filterField="status"
+                filterOptions={['Todos', 'Activo', 'Inactivo']}
+                onFilterChange={setPersonalFilter}
+                onAdd={() => {
+                  setEditingPersonal(null);
+                  setPersonalForm({ name: '', role: '', status: 'Activo' });
+                  setIsPersonalModalOpen(true);
+                }}
+                onEdit={(p) => {
+                  setEditingPersonal(p);
+                  setPersonalForm({ name: p.name, role: p.role, status: p.status });
+                  setIsPersonalModalOpen(true);
+                }}
+                onDelete={(p) => handleDeletePersonal(p.id)}
+                addLabel="Añadir"
+                accentColor="#0055ff"
+              />
+            )}
+
+            {activeTab === 'ubicaciones' && (
+              <DataTable<Location>
+                data={locations}
+                columns={[
+                  { key: 'name', label: 'Ubicación' },
+                  { key: 'type', label: 'Tipo' },
+                  {
+                    key: 'status',
+                    label: 'Estado',
+                    render: (l) => (
+                      <span
+                        className={`px-2 py-0.5 text-[10px] font-black uppercase border-2 border-[#1a1a1a] ${l.status === 'Operativo' ? 'bg-[#00cc66] text-white' : l.status === 'Mantenimiento' ? 'bg-[#0055ff] text-white' : 'bg-[#e63b2e] text-white'}`}
+                      >
+                        {l.status}
+                      </span>
+                    ),
+                  },
+                ]}
+                filterValue={locationFilter}
+                filterField="status"
+                filterOptions={['Todos', 'Operativo', 'Mantenimiento', 'Inactivo']}
+                onFilterChange={setLocationFilter}
+                onAdd={() => {
+                  setEditingLocation(null);
+                  setLocationForm({
+                    name: '',
+                    type: 'Origen',
+                    status: 'Operativo',
+                    latitude: undefined,
+                    longitude: undefined,
+                  });
+                  setIsLocationModalOpen(true);
+                }}
+                onEdit={(l) => {
+                  setEditingLocation(l);
+                  setLocationForm({
+                    name: l.name,
+                    type: l.type,
+                    status: l.status,
+                    latitude: l.latitude ?? undefined,
+                    longitude: l.longitude ?? undefined,
+                  });
+                  setIsLocationModalOpen(true);
+                }}
+                onDelete={(l) => handleDeleteLocation(l.id)}
+                addLabel="Añadir"
+                accentColor="#0055ff"
+              />
+            )}
+
+            {activeTab === 'modulos' && (
+              <div className="relative group">
+                <DataTable<DiligenciamientoCategory>
+                  data={categories}
+                  columns={[
+                    {
+                      key: 'name',
+                      label: 'Módulo',
+                      render: (c) => (
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-8 h-8 ${c.color} border-2 border-[#1a1a1a] flex items-center justify-center text-white`}
+                          >
+                            {(() => {
+                              const IconComp = (LucideIcons as any)[c.icon] || Layout;
+                              return <IconComp className="w-4 h-4" />;
+                            })()}
+                          </div>
+                          <span className="font-bold">{c.name}</span>
+                        </div>
+                      ),
+                    },
+                    {
+                      key: 'icon',
+                      label: 'Icono',
+                      render: (c) => <span className="text-[10px] font-black opacity-40">{c.icon}</span>,
+                    },
+                  ]}
+                  onAdd={() => {
+                    setEditingCategory(null);
+                    setCategoryForm({ name: '', icon: 'Layout', color: 'bg-[#1a1a1a]' });
+                    setIsCategoryModalOpen(true);
+                  }}
+                  onEdit={(c) => {
+                    setEditingCategory(c);
+                    setCategoryForm({ name: c.name, icon: c.icon, color: c.color });
+                    setIsCategoryModalOpen(true);
+                  }}
+                  onDelete={(c) => handleDeleteCategory(c.id)}
+                  addLabel="Módulo"
+                  accentColor="#ff9900"
+                />
+                {isAdmin && categories.length > 0 && (
+                  <button
+                    onClick={handleDeleteAllCategories}
+                    className="absolute top-2 right-44 z-10 px-3 py-1.5 border-2 border-[#e63b2e] bg-white text-[#e63b2e] font-black uppercase text-[10px] tracking-widest hover:bg-[#e63b2e] hover:text-white transition-colors flex items-center gap-2 shadow-[2px_2px_0px_0px_rgba(230,59,46,0.3)] cursor-pointer"
+                  >
+                    <Trash2 className="w-3 h-3" /> Borrar Todo
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Danger Zone at the bottom */}
+          {isAdmin && (
+            <div className="border-2 border-[#e63b2e] p-5 bg-[#1a1a1a] relative overflow-hidden mb-6 sm:mb-8">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                <AlertTriangle className="w-24 h-24 text-[#e63b2e]" />
+              </div>
+              <h3 className="text-lg font-black uppercase text-[#e63b2e] mb-2 flex items-center gap-2 relative z-10 font-['Space_Grotesk']">
+                <AlertTriangle className="w-4 h-4" /> Zona de Peligro
+              </h3>
+              <p className="text-xs font-bold opacity-80 mb-3 relative z-10 max-w-2xl text-white">
+                El borrado masivo eliminará permanentemente todas las tareas, visitas, novedades y notificaciones.
+                Esta acción no se puede deshacer. Por favor, exporta un respaldo antes de proceder.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3 relative z-10">
+                <input
+                  type="text"
+                  value={deleteConfirmation}
+                  onChange={(e) => setDeleteConfirmation(e.target.value)}
+                  placeholder="Escribe CONFIRMAR"
+                  className="p-2 border-2 border-[#e63b2e] bg-[#1a1a1a] text-white focus:outline-none focus:bg-[#e63b2e]/10 font-bold uppercase text-sm w-full sm:w-64"
+                />
+                <button
+                  onClick={handleMassDelete}
+                  disabled={isDeleting || deleteConfirmation !== 'CONFIRMAR'}
+                  className="px-4 py-2 border-2 border-[#e63b2e] bg-[#e63b2e] text-white font-black uppercase text-xs tracking-widest hover:bg-[#1a1a1a] hover:text-[#e63b2e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-[2px_2px_0px_0px_rgba(230,59,46,1)] hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> {isDeleting ? 'Borrando...' : 'Borrado Masivo'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Personal Modal */}
           {isPersonalModalOpen && (
