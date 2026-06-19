@@ -207,7 +207,8 @@ export function parseLinea106Excel(
       const row = rows[i];
       if (Array.isArray(row)) {
         const hasDpcia = row.some((cell) => {
-          const str = String(cell || '').toLowerCase();
+          if (cell === undefined || cell === null) return false;
+          const str = String(cell).toLowerCase();
           return str.includes('dpcia') || str.includes('destino') || str.includes('depend');
         });
         if (hasDpcia) {
@@ -221,52 +222,86 @@ export function parseLinea106Excel(
       headerIdx = 5; // default fallback (row 6)
     }
 
-    const headers = (rows[headerIdx] || []).map((h: any) => String(h || '').trim().toUpperCase());
+    const headerRow = rows[headerIdx];
+    if (!Array.isArray(headerRow)) continue;
 
-    const getColIndex = (keywords: string[]) => {
-      return headers.findIndex((h) => keywords.some((keyword) => h.includes(keyword)));
-    };
-
-    const dpciaIdx = getColIndex(['DPCIA', 'DESTINO', 'DEPENDENCIA', 'UNIDAD']);
-    const grabadoraIdx = getColIndex(['GRABADORA DE AUDIO', 'GRABADORA', 'AUDIO']);
-    const vhfConectadoIdx = getColIndex(['VHF CONECTADO', 'VHF CONECTA', 'EQUIPO VHF', 'CONECTADO VHF']);
-    const grabacionVhfIdx = getColIndex(['GRABACION VHF', 'GRABACIÓN VHF', 'GRAB. VHF']);
-    const obsVhfIdx = getColIndex(['OBSERVACIONES VHF', 'OBS. VHF']);
-    const telAnalogicoIdx = getColIndex(['TELEFONO ANALOGICO', 'TELÉFONO ANALÓGICO', 'TELEFONO', 'TEL. ANALOGICO']);
-    const grabacion106Idx = getColIndex(['GRABACION 106', 'GRABACIÓN 106', '106']);
-    const divisorIdx = getColIndex(['ADAPTADOR DIVISOR', 'DIVISOR', 'ADAP. DIVISOR']);
-    const machoHembraIdx = getColIndex(['MACHO/HEMBRA', 'MACHO HEMBRA', 'CONECTOR MACHO', 'CONECTOR HEMBRA']);
-    const obs106Idx = getColIndex(['OBSERVACIONES LINEA 106', 'OBSERVACIONES LÍNEA 106', 'OBS. 106', 'OBSERVACIONES 106']);
+    const headers = headerRow.map((h: any) => String(h || '').trim());
 
     let currentSigla = '';
 
     for (let i = headerIdx + 1; i < rows.length; i++) {
       const row = rows[i];
-      if (!Array.isArray(row) || row.length === 0) continue;
+      if (!row || !Array.isArray(row) || row.length === 0) continue;
 
-      // Check if DPCIA cell is valid
-      const rawDpcia = dpciaIdx !== -1 ? row[dpciaIdx] : null;
-      const dpciaVal = cleanCellString(rawDpcia);
+      // Construct object mapping header to cell value safely
+      const rowObj: Record<string, any> = {};
+      headers.forEach((header, colIdx) => {
+        if (header) {
+          rowObj[header] = row[colIdx];
+        }
+      });
 
-      if (dpciaVal) {
-        currentSigla = dpciaVal;
+      // Helper function to search keys dynamically and insensitively
+      const getCellValue = (keySnippet: string) => {
+        const foundKey = Object.keys(rowObj).find(
+          (k) => k && String(k).toUpperCase().includes(keySnippet.toUpperCase())
+        );
+        return foundKey ? String(rowObj[foundKey] || '').trim() : '';
+      };
+
+      const dpciaRaw = getCellValue('DPCIA') || getCellValue('DESTINO') || getCellValue('DEPENDENCIA') || getCellValue('UNIDAD');
+      if (dpciaRaw) {
+        currentSigla = dpciaRaw;
       }
 
-      // If sigla is still empty, fallback to currentSigla or sheetName
-      const finalSiglaStr = currentSigla || sheetName || 'N/A';
+      // If we don't have a sigla yet, we cannot process this row
+      if (!currentSigla) continue;
 
-      // Parse other fields
-      const grabadoraVal = cleanCellString(grabadoraIdx !== -1 ? row[grabadoraIdx] : '');
-      const vhfConectadoVal = cleanBooleanString(vhfConectadoIdx !== -1 ? row[vhfConectadoIdx] : '');
-      const grabacionVhfVal = cleanBooleanString(grabacionVhfIdx !== -1 ? row[grabacionVhfIdx] : '');
-      const obsVhfVal = cleanCellString(obsVhfIdx !== -1 ? row[obsVhfIdx] : '');
-      const telAnalogicoVal = cleanBooleanString(telAnalogicoIdx !== -1 ? row[telAnalogicoIdx] : '');
-      const grabacion106Val = cleanBooleanString(grabacion106Idx !== -1 ? row[grabacion106Idx] : '');
-      const divisorVal = cleanBooleanString(divisorIdx !== -1 ? row[divisorIdx] : '');
-      const machoHembraVal = cleanBooleanString(machoHembraIdx !== -1 ? row[machoHembraIdx] : '');
-      const obs106Val = cleanCellString(obs106Idx !== -1 ? row[obs106Idx] : '');
+      const grabadoraVal = getCellValue('GRABADORA');
+      const vhfConectadoVal = cleanBooleanString(
+        getCellValue('CONECTADO A GRABADORA') ||
+        getCellValue('VHF CONECTADO') ||
+        getCellValue('EQUIPO VHF') ||
+        getCellValue('CONECTADO VHF')
+      );
+      const grabacionVhfVal = cleanBooleanString(
+        getCellValue('GRABACIÓN VHF') ||
+        getCellValue('GRABACION VHF') ||
+        getCellValue('GRAB. VHF')
+      );
+      const obsVhfVal = getCellValue('OBSERVACIONES VHF') || getCellValue('OBS. VHF');
+      const telAnalogicoVal = cleanBooleanString(
+        getCellValue('TELEFÓNO ANALÓGICO') ||
+        getCellValue('TELEFONO ANALOGICO') ||
+        getCellValue('TELEFONO') ||
+        getCellValue('TEL. ANALOGICO')
+      );
+      const grabacion106Val = cleanBooleanString(
+        getCellValue('LINEA 106 (SI/NO)') ||
+        getCellValue('LÍNEA 106') ||
+        getCellValue('GRABACION 106') ||
+        getCellValue('GRABACIÓN 106') ||
+        getCellValue('106')
+      );
+      const divisorVal = cleanBooleanString(
+        getCellValue('ADAPTADOR/DIVISOR') ||
+        getCellValue('ADAPTADOR DIVISOR') ||
+        getCellValue('DIVISOR') ||
+        getCellValue('ADAP. DIVISOR')
+      );
+      const machoHembraVal = cleanBooleanString(
+        getCellValue('1 MACHO 2 HEMBRAS') ||
+        getCellValue('MACHO/HEMBRA') ||
+        getCellValue('MACHO HEMBRA') ||
+        getCellValue('1 M 2 H')
+      );
+      const obs106Val =
+        getCellValue('OBSERVACIONES LINEA 106') ||
+        getCellValue('OBSERVACIONES LÍNEA 106') ||
+        getCellValue('OBSERVACIONES 106') ||
+        getCellValue('OBS. 106');
 
-      // Skip rows that are completely empty
+      // Skip rows that are completely empty/NO
       if (
         !grabadoraVal &&
         !obsVhfVal &&
@@ -282,12 +317,12 @@ export function parseLinea106Excel(
       }
 
       // Resolve location
-      let resolvedLoc = nameMap.get(finalSiglaStr.toLowerCase()) || codeMap.get(finalSiglaStr.toLowerCase());
+      let resolvedLoc = nameMap.get(currentSigla.toLowerCase()) || codeMap.get(currentSigla.toLowerCase());
       if (!resolvedLoc) {
         resolvedLoc = nameMap.get(sheetName.toLowerCase()) || codeMap.get(sheetName.toLowerCase());
       }
 
-      const sigla = resolvedLoc?.code || finalSiglaStr;
+      const sigla = resolvedLoc?.code || currentSigla;
 
       records.push({
         location_id: resolvedLoc?.id || undefined,
