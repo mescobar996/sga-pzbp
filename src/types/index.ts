@@ -137,6 +137,7 @@ export interface Diligenciamiento {
   content: string;
   locationId?: string;
   category?: string;
+  icon_name?: string;
   fecha?: string;
   createdAt: string;
   authorId: string;

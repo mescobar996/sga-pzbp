@@ -88,6 +88,7 @@ function mapDiligenciamiento(row: Record<string, any>): Diligenciamiento {
     title: row.title,
     content: row.content || '',
     category: row.category || '',
+    icon_name: row.icon_name || '',
     fecha: row.fecha || '',
     createdAt: row.created_at || '',
     authorId: row.author_id || '',
@@ -122,6 +123,7 @@ export async function addDiligenciamiento(diligenciamiento: {
   title: string;
   content: string;
   category?: string;
+  icon_name?: string;
   fecha?: string;
   attachments?: DiligenciamientoAttachment[];
 }): Promise<void> {
@@ -133,6 +135,7 @@ export async function addDiligenciamiento(diligenciamiento: {
     title: diligenciamiento.title,
     content: diligenciamiento.content,
     category: diligenciamiento.category || 'OTROS',
+    icon_name: diligenciamiento.icon_name || null,
     fecha: diligenciamiento.fecha || null,
     author_id: userId,
     author_name: authorName,
@@ -146,6 +149,7 @@ export async function updateDiligenciamiento(id: string, updates: Partial<Dilige
   if (updates.title !== undefined) mapped.title = updates.title;
   if (updates.content !== undefined) mapped.content = updates.content;
   if (updates.category !== undefined) mapped.category = updates.category;
+  if (updates.icon_name !== undefined) mapped.icon_name = updates.icon_name || null;
   if (updates.fecha !== undefined) mapped.fecha = updates.fecha || null;
   if (updates.attachments !== undefined) mapped.attachments = updates.attachments;
 

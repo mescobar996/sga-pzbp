@@ -55,6 +55,37 @@ const DEFAULT_CATEGORIES = [
   { id: 'OTROS', label: 'OTROS', icon: 'MoreHorizontal', color: 'bg-gray-500' },
 ];
 
+const DILIGENCIA_ICON_OPTIONS = [
+  { name: 'Monitor', label: 'Monitor' },
+  { name: 'Laptop', label: 'Laptop' },
+  { name: 'Wrench', label: 'Reparación / Herramientas' },
+  { name: 'Settings', label: 'Soporte / Config' },
+  { name: 'FileText', label: 'Expediente' },
+  { name: 'Folder', label: 'Carpeta' },
+  { name: 'Radio', label: 'Comunicaciones' },
+  { name: 'Globe', label: 'Redes' },
+  { name: 'ShieldCheck', label: 'Seguridad' },
+  { name: 'Layout', label: 'Módulo' },
+  { name: 'MoreHorizontal', label: 'Otros' },
+];
+
+function getDefaultIcon(title: string = '', category: string = ''): string {
+  const text = `${title} ${category}`.toUpperCase();
+  if (text.includes('SOPORTE') || text.includes('REPARACION') || text.includes('PC') || text.includes('NOTEBOOK') || text.includes('COMPUTADORA') || text.includes('LAPTOP')) {
+    return 'Monitor';
+  }
+  if (text.includes('MANTENIMIENTO') || text.includes('TECNICO') || text.includes('SERVICE') || text.includes('REPARAR') || text.includes('HERRAMIENTA') || text.includes('WRENCH')) {
+    return 'Wrench';
+  }
+  if (text.includes('EXPEDIENTE') || text.includes('ADMINISTRATIVO') || text.includes('DOCUMENTO') || text.includes('INFORME') || text.includes('DILIGENCIA') || text.includes('FORMULARIO') || text.includes('CARPETA') || text.includes('TEXTO')) {
+    return 'FileText';
+  }
+  if (text.includes('RED') || text.includes('REDE') || text.includes('COMUNICACION') || text.includes('WIFI') || text.includes('INTERNET') || text.includes('RADIO') || text.includes('ENLACE') || text.includes('P25') || text.includes('GLOBE')) {
+    return 'Radio';
+  }
+  return 'FileText';
+}
+
 function handleError(error: unknown) {
   console.error('Error:', error);
   toast.error('Error al procesar la solicitud');
@@ -224,6 +255,7 @@ export default function Diligenciamientos() {
       content: '', 
       fecha: '', 
       category: selectedCategory || 'REPARACIONES PC / NOTEBOOK',
+      icon_name: '',
       attachments: [] 
     });
     setPendingFiles([]);
@@ -236,7 +268,8 @@ export default function Diligenciamientos() {
   const openEditModal = (diligenciamiento: Diligenciamiento) => {
     setCurrentDiligenciamiento({
       ...diligenciamiento,
-      category: diligenciamiento.category || 'OTROS'
+      category: diligenciamiento.category || 'OTROS',
+      icon_name: diligenciamiento.icon_name || ''
     });
     setPendingFiles([]);
     setAttachmentsToDelete([]);
@@ -306,6 +339,7 @@ export default function Diligenciamientos() {
           content: currentDiligenciamiento.content,
           category: currentDiligenciamiento.category,
           fecha: currentDiligenciamiento.fecha,
+          icon_name: currentDiligenciamiento.icon_name || '',
           attachments: finalAttachments as any,
         });
         toast.success('Diligenciamiento actualizado');
@@ -315,6 +349,7 @@ export default function Diligenciamientos() {
           content: currentDiligenciamiento.content,
           category: currentDiligenciamiento.category,
           fecha: currentDiligenciamiento.fecha,
+          icon_name: currentDiligenciamiento.icon_name || '',
           attachments: finalAttachments,
         });
 
@@ -408,7 +443,7 @@ export default function Diligenciamientos() {
   return (
     <div className="font-['Inter'] max-w-6xl mx-auto px-3 sm:px-4 pb-24 lg:pb-8 relative">
       {/* Header - Sticky for better PWA navigation */}
-      <div className="sticky top-0 z-40 bg-[#f5f0e8]/95 backdrop-blur-md pt-4 pb-2 mb-4 -mx-3 px-3 sm:mx-0 sm:px-0">
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md pt-4 pb-2 mb-4 -mx-3 px-3 sm:mx-0 sm:px-0">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
             {selectedCategory && (
@@ -527,20 +562,29 @@ export default function Diligenciamientos() {
                     className="bg-white border-2 border-[#1a1a1a] shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] p-5 group cursor-pointer hover:bg-[#f5f0e8] transition-colors"
                   >
                     <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <h3 className="text-xl font-black uppercase tracking-tight font-['Space_Grotesk'] mb-1">
-                          {d.title}
-                        </h3>
-                        <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest opacity-60">
-                          <span>{d.fecha ? new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-ES') : new Date(d.createdAt).toLocaleString()}</span>
-                          <span>•</span>
-                          <span>Por: {d.authorName}</span>
-                          {d.category && (
-                            <>
-                              <span>•</span>
-                              <span className="text-[#0055ff]">{d.category}</span>
-                            </>
-                          )}
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-[#f5f0e8] border-2 border-[#1a1a1a] flex items-center justify-center text-[#1a1a1a] shrink-0 shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]">
+                          {(() => {
+                            const iconName = d.icon_name || getDefaultIcon(d.title, d.category);
+                            const IconComponent = (LucideIcons as any)[iconName] || LucideIcons.FileText;
+                            return <IconComponent className="w-5 h-5" />;
+                          })()}
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-black uppercase tracking-tight font-['Space_Grotesk'] mb-1">
+                            {d.title}
+                          </h3>
+                          <div className="flex items-center gap-3 text-[10px] font-bold uppercase tracking-widest opacity-60">
+                            <span>{d.fecha ? new Date(d.fecha + 'T00:00:00').toLocaleDateString('es-ES') : new Date(d.createdAt).toLocaleString()}</span>
+                            <span>•</span>
+                            <span>Por: {d.authorName}</span>
+                            {d.category && (
+                              <>
+                                <span>•</span>
+                                <span className="text-[#0055ff]">{d.category}</span>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </div>
                       <div className="flex gap-2 flex-wrap shrink-0">
@@ -731,6 +775,27 @@ export default function Diligenciamientos() {
                     required
                     autoFocus
                   />
+                </FormField>
+
+                <FormField label="Icono Preferido" error={formErrors.icon_name}>
+                  <div className="grid grid-cols-6 sm:grid-cols-11 gap-2">
+                    {DILIGENCIA_ICON_OPTIONS.map((opt) => {
+                      const IconComp = (LucideIcons as any)[opt.name];
+                      const isSelected = currentDiligenciamiento.icon_name === opt.name ||
+                        (!currentDiligenciamiento.icon_name && getDefaultIcon(currentDiligenciamiento.title, currentDiligenciamiento.category) === opt.name);
+                      return (
+                        <button
+                          key={opt.name}
+                          type="button"
+                          onClick={() => handleFieldChange({ icon_name: opt.name })}
+                          className={`p-2 border-2 transition-all ${isSelected ? 'border-[#0055ff] bg-[#0055ff]/10 scale-105 shadow-[2px_2px_0px_0px_rgba(0,85,255,1)]' : 'border-[#1a1a1a] bg-[#f5f0e8] opacity-50 hover:opacity-100'}`}
+                          title={opt.label}
+                        >
+                          {IconComp && <IconComp className="w-5 h-5 mx-auto" />}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </FormField>
 
                 <FormField label="Fecha" error={formErrors.fecha}>

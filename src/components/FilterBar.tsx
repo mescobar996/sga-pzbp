@@ -168,7 +168,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
   const renderQuickFilters = quickFilters || defaultQuickFilters;
 
   return (
-    <div className="mb-6 sm:mb-8 flex flex-col gap-3 sm:gap-4 sticky top-0 z-30 bg-[#f5f0e8]/80 backdrop-blur-md pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
+    <div className="mb-6 sm:mb-8 flex flex-col gap-3 sm:gap-4 sticky top-0 z-30 bg-white/95 backdrop-blur-md pb-2 -mx-3 px-3 sm:mx-0 sm:px-0">
       {/* Search Header Row */}
       <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
         <div className="relative flex-1 group">
