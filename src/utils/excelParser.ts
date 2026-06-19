@@ -29,6 +29,7 @@ export function parseRadioExcel(
   // Create lookups to match against locations
   const nameMap = new Map(locations.map((l) => [l.name.toLowerCase().trim(), l]));
   const codeMap = new Map(locations.map((l) => [l.code?.toLowerCase().trim() || '', l]));
+  const seenSerialNumbers = new Set<string>();
 
   for (const sheetName of workbook.SheetNames) {
     const sheet = workbook.Sheets[sheetName];
@@ -97,7 +98,22 @@ export function parseRadioExcel(
       const idP25Val = String(idP25Idx !== -1 && row[idP25Idx] !== undefined ? row[idP25Idx] : '').trim();
       const idGebipaVal = String(idGebipaIdx !== -1 && row[idGebipaIdx] !== undefined ? row[idGebipaIdx] : '').trim();
       const inventarioVal = String(inventarioIdx !== -1 && row[inventarioIdx] !== undefined ? row[inventarioIdx] : '').trim();
-      const nroSerieVal = String(nroSerieIdx !== -1 && row[nroSerieIdx] !== undefined ? row[nroSerieIdx] : '').trim();
+      
+      let nroSerie = String(nroSerieIdx !== -1 && row[nroSerieIdx] !== undefined ? row[nroSerieIdx] : '').trim();
+      const upperSerie = nroSerie.toUpperCase();
+      const isMissing = !nroSerie || upperSerie === 'NIL' || upperSerie === 'S/N' || upperSerie === 'SN' || upperSerie === 'SIN SERIE' || upperSerie === '—' || upperSerie === '-';
+      
+      if (isMissing) {
+        // Generate a unique fallback to satisfy SQL UNIQUE constraint
+        nroSerie = `S/N-${Math.random().toString(36).substring(2, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`;
+      } else {
+        const normalized = nroSerie.toLowerCase();
+        if (seenSerialNumbers.has(normalized)) {
+          continue; // skip duplicate row to prevent Supabase SQL UNIQUE constraint crash
+        }
+        seenSerialNumbers.add(normalized);
+      }
+
       const modeloVal = String(modeloIdx !== -1 && row[modeloIdx] !== undefined ? row[modeloIdx] : '').trim();
       const caracteristicaVal = String(caracteristicaIdx !== -1 && row[caracteristicaIdx] !== undefined ? row[caracteristicaIdx] : '').trim();
       const accesoriosVal = String(accesoriosIdx !== -1 && row[accesoriosIdx] !== undefined ? row[accesoriosIdx] : '').trim();
@@ -105,7 +121,7 @@ export function parseRadioExcel(
       const observacionesVal = String(observacionesIdx !== -1 && row[observacionesIdx] !== undefined ? row[observacionesIdx] : '').trim();
 
       // Skip rows that lack actual device info
-      if (!modeloVal && !nroSerieVal) continue;
+      if (!modeloVal && isMissing) continue;
 
       // Resolve location match
       let resolvedLoc = nameMap.get(destinoVal.toLowerCase()) || codeMap.get(destinoVal.toLowerCase());
@@ -122,7 +138,7 @@ export function parseRadioExcel(
         id_p25: idP25Val || null,
         id_gebipa: idGebipaVal || null,
         inventario_gebipa: inventarioVal || null,
-        nro_serie: nroSerieVal || 'NIL',
+        nro_serie: nroSerie,
         modelo: modeloVal || 'DESCONOCIDO',
         caracteristica_equipo: caracteristicaVal || null,
         accesorios: accesoriosVal || null,
