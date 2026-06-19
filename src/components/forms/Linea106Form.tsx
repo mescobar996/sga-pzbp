@@ -141,7 +141,7 @@ export default function Linea106Form({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/40 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex justify-center md:justify-end bg-black/40 backdrop-blur-sm">
           <div className="absolute inset-0 -z-10" onClick={onClose} />
 
           <motion.div
@@ -149,7 +149,7 @@ export default function Linea106Form({
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: 400 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="bg-white border-l-4 border-black shadow-[-6px_0px_0px_0px_rgba(0,0,0,1)] w-full max-w-lg h-full flex flex-col overflow-y-auto"
+            className="bg-white border-4 md:border-0 md:border-l-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] md:shadow-[-6px_0px_0px_0px_rgba(0,0,0,1)] w-[95%] md:w-full max-w-2xl md:max-w-lg h-[95%] md:h-full my-auto md:my-0 flex flex-col overflow-y-auto"
           >
             {/* Header */}
             <div className="bg-[#1a1a1a] text-white p-5 flex justify-between items-center border-b-4 border-black shrink-0">

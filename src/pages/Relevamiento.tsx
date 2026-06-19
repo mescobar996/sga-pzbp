@@ -532,7 +532,7 @@ export default function Relevamiento() {
                         </div>
                       </div>
 
-                      <div className="flex-1 min-w-0 md:max-w-xs text-xs font-semibold uppercase text-gray-600 break-words md:px-2">
+                      <div className="w-full md:flex-1 min-w-0 md:max-w-xs text-xs font-semibold uppercase text-gray-600 break-words md:px-2">
                         {item.observaciones ? (
                           <span className="block">{item.observaciones}</span>
                         ) : (
@@ -540,10 +540,10 @@ export default function Relevamiento() {
                         )}
                       </div>
 
-                      <div className="flex items-center justify-end shrink-0">
+                      <div className="w-full md:w-auto flex items-center md:justify-end shrink-0">
                         <button
                           onClick={() => openEditBateriaModal(item)}
-                          className="px-4 py-2.5 border-2 border-black bg-[#ffd700] hover:bg-black hover:text-[#ffd700] text-black font-black uppercase tracking-wider text-xs transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer"
+                          className="w-full md:w-auto text-center px-4 py-2.5 border-2 border-black bg-[#ffd700] hover:bg-black hover:text-[#ffd700] text-black font-black uppercase tracking-wider text-xs transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer"
                         >
                           MODIFICAR
                         </button>
@@ -579,8 +579,8 @@ export default function Relevamiento() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <label className="p-2.5 border-2 border-black bg-[#00cc66] hover:bg-black hover:text-[#00cc66] text-white font-black uppercase transition-all flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer text-xs">
+            <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3">
+              <label className="w-full md:w-auto p-2.5 border-2 border-black bg-[#00cc66] hover:bg-black hover:text-[#00cc66] text-white font-black uppercase transition-all flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer text-xs">
                 <Upload className="w-4 h-4" />
                 {isUploading ? 'PROCESANDO...' : 'IMPORTAR EXCEL DE EQUIPAMIENTO'}
                 <input
@@ -594,7 +594,7 @@ export default function Relevamiento() {
 
               <button
                 onClick={loadRadio}
-                className="p-2.5 border-2 border-black bg-white hover:bg-[#f5f0e8] text-black font-black uppercase transition-colors flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer text-xs"
+                className="w-full md:w-auto p-2.5 border-2 border-black bg-white hover:bg-[#f5f0e8] text-black font-black uppercase transition-colors flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer text-xs"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> REFRESCAR
               </button>
@@ -730,7 +730,7 @@ export default function Relevamiento() {
                     </div>
 
                     {/* Observations */}
-                    <div className="flex-1 min-w-0 md:max-w-xs text-xs font-semibold uppercase text-gray-600 break-words md:px-2">
+                    <div className="w-full md:flex-1 min-w-0 md:max-w-xs text-xs font-semibold uppercase text-gray-600 break-words md:px-2">
                       {item.observaciones ? (
                         <span>{item.observaciones}</span>
                       ) : (
@@ -739,10 +739,10 @@ export default function Relevamiento() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center justify-end shrink-0">
+                    <div className="w-full md:w-auto flex items-center md:justify-end shrink-0">
                       <button
                         onClick={() => openEditRadioModal(item)}
-                        className="px-4 py-2.5 border-2 border-black bg-[#ffd700] hover:bg-black hover:text-[#ffd700] text-black font-black uppercase tracking-wider text-xs transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer"
+                        className="w-full md:w-auto text-center px-4 py-2.5 border-2 border-black bg-[#ffd700] hover:bg-black hover:text-[#ffd700] text-black font-black uppercase tracking-wider text-xs transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer"
                       >
                         MODIFICAR
                       </button>
@@ -800,8 +800,8 @@ export default function Relevamiento() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-3">
-              <label className="p-2.5 border-2 border-black bg-[#ffd700] hover:bg-black hover:text-[#ffd700] text-black font-black uppercase transition-all flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer text-xs">
+            <div className="w-full md:w-auto flex flex-col sm:flex-row gap-3">
+              <label className="w-full md:w-auto p-2.5 border-2 border-black bg-[#ffd700] hover:bg-black hover:text-[#ffd700] text-black font-black uppercase transition-all flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer text-xs">
                 <Upload className="w-4 h-4" />
                 {isUploading106 ? 'PROCESANDO...' : 'IMPORTAR EXCEL LÍNEA 106'}
                 <input
@@ -815,7 +815,7 @@ export default function Relevamiento() {
 
               <button
                 onClick={loadLinea106}
-                className="p-2.5 border-2 border-black bg-white hover:bg-[#f5f0e8] text-black font-black uppercase transition-colors flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer text-xs"
+                className="w-full md:w-auto p-2.5 border-2 border-black bg-white hover:bg-[#f5f0e8] text-black font-black uppercase transition-colors flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer text-xs"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> REFRESCAR
               </button>
@@ -971,7 +971,7 @@ export default function Relevamiento() {
                     </div>
 
                     {/* Observations */}
-                    <div className="flex-1 min-w-0 md:max-w-xs text-xs font-semibold uppercase text-gray-600 break-words md:px-2">
+                    <div className="w-full md:flex-1 min-w-0 md:max-w-xs text-xs font-semibold uppercase text-gray-600 break-words md:px-2">
                       {item.observaciones_106 ? (
                         <span>{item.observaciones_106}</span>
                       ) : (
@@ -980,10 +980,10 @@ export default function Relevamiento() {
                     </div>
 
                     {/* Actions */}
-                    <div className="flex items-center justify-end shrink-0">
+                    <div className="w-full md:w-auto flex items-center md:justify-end shrink-0">
                       <button
                         onClick={() => openEditLinea106Modal(item)}
-                        className="px-4 py-2.5 border-2 border-black bg-[#ffd700] hover:bg-black hover:text-[#ffd700] text-black font-black uppercase tracking-wider text-xs transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer"
+                        className="w-full md:w-auto text-center px-4 py-2.5 border-2 border-black bg-[#ffd700] hover:bg-black hover:text-[#ffd700] text-black font-black uppercase tracking-wider text-xs transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer"
                       >
                         MODIFICAR
                       </button>
