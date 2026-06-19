@@ -169,9 +169,9 @@ export interface ExcelLinea106Row {
   observaciones_vhf?: string | null;
   telefono_analogico?: string | null;
   grabacion_106?: string | null;
-  adaptador_divisor?: string | null;
-  adaptador_macho_hembra?: string | null;
-  observaciones_linea_106?: string | null;
+  adaptador_rj11_divisor?: string | null;
+  adaptador_rj11_macho_hembra?: string | null;
+  observaciones_106?: string | null;
 }
 
 function cleanBooleanString(val: any): string {
@@ -298,9 +298,9 @@ export function parseLinea106Excel(
         observaciones_vhf: obsVhfVal || null,
         telefono_analogico: telAnalogicoVal,
         grabacion_106: grabacion106Val,
-        adaptador_divisor: divisorVal,
-        adaptador_macho_hembra: machoHembraVal,
-        observaciones_linea_106: obs106Val || null,
+        adaptador_rj11_divisor: divisorVal,
+        adaptador_rj11_macho_hembra: machoHembraVal,
+        observaciones_106: obs106Val || null,
       });
     }
   }

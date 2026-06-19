@@ -157,9 +157,9 @@ export interface RelevamientoLinea106 {
   observaciones_vhf: string | null;
   telefono_analogico: string | null;
   grabacion_106: string | null;
-  adaptador_divisor: string | null;
-  adaptador_macho_hembra: string | null;
-  observaciones_linea_106: string | null;
+  adaptador_rj11_divisor: string | null;
+  adaptador_rj11_macho_hembra: string | null;
+  observaciones_106: string | null;
   created_at: string;
   updated_at: string;
   author_name: string;
@@ -178,9 +178,9 @@ export type RelevamientoLinea106Payload = {
   observaciones_vhf?: string | null;
   telefono_analogico?: string | null;
   grabacion_106?: string | null;
-  adaptador_divisor?: string | null;
-  adaptador_macho_hembra?: string | null;
-  observaciones_linea_106?: string | null;
+  adaptador_rj11_divisor?: string | null;
+  adaptador_rj11_macho_hembra?: string | null;
+  observaciones_106?: string | null;
   author_name: string;
 };
 

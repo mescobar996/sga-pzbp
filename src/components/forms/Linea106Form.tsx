@@ -71,9 +71,9 @@ export default function Linea106Form({
         setObservacionesVhf(registro.observaciones_vhf || '');
         setTelefonoAnalogico(registro.telefono_analogico || 'NO');
         setGrabacion106(registro.grabacion_106 || 'NO');
-        setAdaptadorDivisor(registro.adaptador_divisor || 'NO');
-        setAdaptadorMachoHembra(registro.adaptador_macho_hembra || 'NO');
-        setObservacionesLinea106(registro.observaciones_linea_106 || '');
+        setAdaptadorDivisor(registro.adaptador_rj11_divisor || 'NO');
+        setAdaptadorMachoHembra(registro.adaptador_rj11_macho_hembra || 'NO');
+        setObservacionesLinea106(registro.observaciones_106 || '');
       } else {
         setLocationId('');
         setGrabadoraAudio('');
@@ -119,9 +119,9 @@ export default function Linea106Form({
         observaciones_vhf: observacionesVhf.trim() || null,
         telefono_analogico: telefonoAnalogico,
         grabacion_106: grabacion106,
-        adaptador_divisor: adaptadorDivisor,
-        adaptador_macho_hembra: adaptadorMachoHembra,
-        observaciones_linea_106: observacionesLinea106.trim() || null,
+        adaptador_rj11_divisor: adaptadorDivisor,
+        adaptador_rj11_macho_hembra: adaptadorMachoHembra,
+        observaciones_106: observacionesLinea106.trim() || null,
         author_name: authorName.toUpperCase(),
       };
 

@@ -279,7 +279,7 @@ export default function Relevamiento() {
       const matchesLocationName = (item.locations?.name || '').toLowerCase().includes(query);
       const matchesGrabadora = (item.grabadora_audio || '').toLowerCase().includes(query);
       const matchesObsVhf = (item.observaciones_vhf || '').toLowerCase().includes(query);
-      const matchesObs106 = (item.observaciones_linea_106 || '').toLowerCase().includes(query);
+      const matchesObs106 = (item.observaciones_106 || '').toLowerCase().includes(query);
       return matchesSigla || matchesLocationName || matchesGrabadora || matchesObsVhf || matchesObs106;
     });
   }, [linea106Data, searchQueryLinea106]);
@@ -963,8 +963,8 @@ export default function Relevamiento() {
 
                     {/* Observations */}
                     <div className="flex-1 min-w-0 md:max-w-xs text-xs font-semibold uppercase text-gray-600 break-words md:px-2">
-                      {item.observaciones_linea_106 ? (
-                        <span>{item.observaciones_linea_106}</span>
+                      {item.observaciones_106 ? (
+                        <span>{item.observaciones_106}</span>
                       ) : (
                         <span className="opacity-40 italic">SIN OBSERVACIONES</span>
                       )}
