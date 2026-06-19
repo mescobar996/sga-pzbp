@@ -147,3 +147,93 @@ export async function insertRelevamientoEquipamientoRadioelectricoBatch(
   }
 }
 
+export interface RelevamientoLinea106 {
+  id: string;
+  location_id: string | null;
+  destinatario_sigla: string;
+  grabadora_audio: string | null;
+  vhf_conectado: string | null;
+  grabacion_vhf: string | null;
+  observaciones_vhf: string | null;
+  telefono_analogico: string | null;
+  grabacion_106: string | null;
+  adaptador_divisor: string | null;
+  adaptador_macho_hembra: string | null;
+  observaciones_linea_106: string | null;
+  created_at: string;
+  updated_at: string;
+  author_name: string;
+  locations?: {
+    name: string;
+  } | null;
+}
+
+export type RelevamientoLinea106Payload = {
+  id?: string;
+  location_id?: string | null;
+  destinatario_sigla: string;
+  grabadora_audio?: string | null;
+  vhf_conectado?: string | null;
+  grabacion_vhf?: string | null;
+  observaciones_vhf?: string | null;
+  telefono_analogico?: string | null;
+  grabacion_106?: string | null;
+  adaptador_divisor?: string | null;
+  adaptador_macho_hembra?: string | null;
+  observaciones_linea_106?: string | null;
+  author_name: string;
+};
+
+export async function getRelevamientoLinea106(): Promise<RelevamientoLinea106[]> {
+  const { data, error } = await supabase
+    .from('relevamiento_linea_106')
+    .select(`
+      *,
+      locations:location_id (
+        name
+      )
+    `)
+    .order('destinatario_sigla', { ascending: true });
+
+  if (error) throw error;
+  return (data || []) as RelevamientoLinea106[];
+}
+
+export async function upsertRelevamientoLinea106(
+  payload: RelevamientoLinea106Payload
+): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error('NO HAY SESIÓN ACTIVA. POR FAVOR, INICIÁ SESIÓN NUEVAMENTE.');
+  }
+
+  const { error } = await supabase
+    .from('relevamiento_linea_106')
+    .upsert(payload, { onConflict: 'id' });
+
+  if (error) throw error;
+}
+
+export async function insertRelevamientoLinea106Batch(
+  records: RelevamientoLinea106Payload[]
+): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) {
+    throw new Error('NO HAY SESIÓN ACTIVA. POR FAVOR, INICIÁ SESIÓN NUEVAMENTE.');
+  }
+
+  const chunkSize = 100;
+  for (let i = 0; i < records.length; i += chunkSize) {
+    const chunk = records.slice(i, i + chunkSize);
+    const { error } = await supabase
+      .from('relevamiento_linea_106')
+      .insert(chunk);
+
+    if (error) {
+      console.error('Error inserting Linea 106 batch:', error);
+      throw error;
+    }
+  }
+}
+
+

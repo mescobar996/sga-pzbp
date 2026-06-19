@@ -1,21 +1,28 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Plus, Search, Battery, RefreshCw, Upload, Radio, ChevronLeft, ChevronRight, Settings } from 'lucide-react';
+import { Plus, Search, Battery, RefreshCw, Upload, Radio, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   getRelevamientoBateriasP25,
   getRelevamientoEquipamientoRadioelectrico,
   insertRelevamientoEquipamientoRadioelectricoBatch,
+  getRelevamientoLinea106,
+  insertRelevamientoLinea106Batch,
 } from '../db/relevamientos';
-import type { RelevamientoBateriasP25, RelevamientoEquipamientoRadioelectrico } from '../db/relevamientos';
+import type {
+  RelevamientoBateriasP25,
+  RelevamientoEquipamientoRadioelectrico,
+  RelevamientoLinea106,
+} from '../db/relevamientos';
 import { getLocations } from '../db/locations';
 import type { Location } from '../types';
 import BateriasP25Form from '../components/forms/BateriasP25Form';
 import EquipamientoRadioForm from '../components/forms/EquipamientoRadioForm';
-import { parseRadioExcel } from '../utils/excelParser';
+import Linea106Form from '../components/forms/Linea106Form';
+import { parseRadioExcel, parseLinea106Excel } from '../utils/excelParser';
 import { toast } from 'sonner';
 import type { User } from '@supabase/supabase-js';
 
-type TabId = 'baterias_p25' | 'equip_radio';
+type TabId = 'baterias_p25' | 'equip_radio' | 'linea_106';
 
 export default function Relevamiento() {
   const { user } = useOutletContext<{ user: User }>();
@@ -36,8 +43,16 @@ export default function Relevamiento() {
   const [selectedRadio, setSelectedRadio] = useState<RelevamientoEquipamientoRadioelectrico | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Pagination for Radio Equipment (since it can have hundreds of records)
+  // Línea 106 y Grabadoras state
+  const [linea106Data, setLinea106Data] = useState<RelevamientoLinea106[]>([]);
+  const [searchQueryLinea106, setSearchQueryLinea106] = useState('');
+  const [isLinea106ModalOpen, setIsLinea106ModalOpen] = useState(false);
+  const [selectedLinea106, setSelectedLinea106] = useState<RelevamientoLinea106 | null>(null);
+  const [isUploading106, setIsUploading106] = useState(false);
+
+  // Pagination
   const [currentPage, setCurrentPage] = useState(1);
+  const [currentPage106, setCurrentPage106] = useState(1);
   const itemsPerPage = 25;
 
   const authorName = (user?.user_metadata?.name as string) || user?.email?.split('@')[0] || 'USUARIO';
@@ -75,16 +90,32 @@ export default function Relevamiento() {
     }
   };
 
+  const loadLinea106 = async () => {
+    setLoading(true);
+    try {
+      const data = await getRelevamientoLinea106();
+      setLinea106Data(data);
+    } catch (err) {
+      console.error('Error loading Linea 106 data:', err);
+      toast.error('ERROR AL CARGAR EL RELEVAMIENTO DE LÍNEA 106 Y GRABADORAS');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (activeTab === 'baterias_p25') {
       loadBaterias();
     } else if (activeTab === 'equip_radio') {
       loadRadio();
       setCurrentPage(1);
+    } else if (activeTab === 'linea_106') {
+      loadLinea106();
+      setCurrentPage106(1);
     }
   }, [activeTab]);
 
-  // Excel Upload Handler
+  // Excel Upload Handler for Radio
   const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -98,7 +129,6 @@ export default function Relevamiento() {
         const buffer = event.target?.result as ArrayBuffer;
         if (!buffer) throw new Error('NO SE PUDO LEER EL BUFFER DEL ARCHIVO');
 
-        // Parse using XLSX multi-sheet utility
         const parsedRows = parseRadioExcel(buffer, locations);
         if (parsedRows.length === 0) {
           throw new Error('NO SE ENCONTRARON REGISTROS VÁLIDOS EN EL EXCEL. VERIFICAR FORMATO Y N° DE ORDEN.');
@@ -106,13 +136,11 @@ export default function Relevamiento() {
 
         toast.loading(`CARGANDO ${parsedRows.length} REGISTROS EN SUPABASE...`, { id: toastId });
 
-        // Map and append author details
         const payloads = parsedRows.map((row) => ({
           ...row,
           author_name: authorName.toUpperCase(),
         }));
 
-        // Insert in segments of 100
         await insertRelevamientoEquipamientoRadioelectricoBatch(payloads);
 
         toast.success(`IMPORTACIÓN EXITOSA: ${payloads.length} REGISTROS CARGADOS`, { id: toastId });
@@ -123,7 +151,6 @@ export default function Relevamiento() {
         toast.error(`ERROR AL IMPORTAR: ${errMsg}`, { id: toastId });
       } finally {
         setIsUploading(false);
-        // Clear file input
         e.target.value = '';
       }
     };
@@ -131,6 +158,54 @@ export default function Relevamiento() {
     reader.onerror = () => {
       toast.error('ERROR AL LEER EL ARCHIVO', { id: toastId });
       setIsUploading(false);
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
+
+  // Excel Upload Handler for Linea 106
+  const handleExcelUploadLinea106 = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading106(true);
+    const toastId = toast.loading('PROCESANDO Y VALIDANDO ARCHIVO EXCEL LÍNEA 106...');
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const buffer = event.target?.result as ArrayBuffer;
+        if (!buffer) throw new Error('NO SE PUDO LEER EL BUFFER DEL ARCHIVO');
+
+        const parsedRows = parseLinea106Excel(buffer, locations);
+        if (parsedRows.length === 0) {
+          throw new Error('NO SE ENCONTRARON REGISTROS VÁLIDOS EN EL EXCEL. VERIFICAR FORMATO.');
+        }
+
+        toast.loading(`CARGANDO ${parsedRows.length} REGISTROS EN SUPABASE...`, { id: toastId });
+
+        const payloads = parsedRows.map((row) => ({
+          ...row,
+          author_name: authorName.toUpperCase(),
+        }));
+
+        await insertRelevamientoLinea106Batch(payloads);
+
+        toast.success(`IMPORTACIÓN EXITOSA: ${payloads.length} REGISTROS CARGADOS`, { id: toastId });
+        loadLinea106();
+      } catch (err: any) {
+        console.error('Error importing Linea 106 Excel:', err);
+        const errMsg = (err.message || 'ERROR DESCONOCIDO').toUpperCase();
+        toast.error(`ERROR AL IMPORTAR: ${errMsg}`, { id: toastId });
+      } finally {
+        setIsUploading106(false);
+        e.target.value = '';
+      }
+    };
+
+    reader.onerror = () => {
+      toast.error('ERROR AL LEER EL ARCHIVO', { id: toastId });
+      setIsUploading106(false);
     };
 
     reader.readAsArrayBuffer(file);
@@ -196,11 +271,54 @@ export default function Relevamiento() {
     };
   }, [filteredRadio]);
 
+  // Filters for Linea 106
+  const filteredLinea106 = useMemo(() => {
+    return linea106Data.filter((item) => {
+      const query = searchQueryLinea106.toLowerCase();
+      const matchesSigla = item.destinatario_sigla.toLowerCase().includes(query);
+      const matchesLocationName = (item.locations?.name || '').toLowerCase().includes(query);
+      const matchesGrabadora = (item.grabadora_audio || '').toLowerCase().includes(query);
+      const matchesObsVhf = (item.observaciones_vhf || '').toLowerCase().includes(query);
+      const matchesObs106 = (item.observaciones_linea_106 || '').toLowerCase().includes(query);
+      return matchesSigla || matchesLocationName || matchesGrabadora || matchesObsVhf || matchesObs106;
+    });
+  }, [linea106Data, searchQueryLinea106]);
+
+  // Aggregate totals for Linea 106
+  const linea106Totals = useMemo(() => {
+    let grabadorasCount = 0;
+    let grabacion106Count = 0;
+    let grabacionVhfCount = 0;
+    filteredLinea106.forEach((item) => {
+      if (item.grabadora_audio && item.grabadora_audio.trim() !== '') {
+        grabadorasCount++;
+      }
+      if (item.grabacion_106 === 'SI') {
+        grabacion106Count++;
+      }
+      if (item.grabacion_vhf === 'SI') {
+        grabacionVhfCount++;
+      }
+    });
+    return {
+      total: filteredLinea106.length,
+      grabadorasCount,
+      grabacion106Count,
+      grabacionVhfCount,
+    };
+  }, [filteredLinea106]);
+
   // Paginated Radio Equipment list
   const totalPagesRadio = Math.max(1, Math.ceil(filteredRadio.length / itemsPerPage));
   const paginatedRadio = useMemo(() => {
     return filteredRadio.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
   }, [filteredRadio, currentPage]);
+
+  // Paginated Linea 106 list
+  const totalPages106 = Math.max(1, Math.ceil(filteredLinea106.length / itemsPerPage));
+  const paginatedLinea106 = useMemo(() => {
+    return filteredLinea106.slice((currentPage106 - 1) * itemsPerPage, currentPage106 * itemsPerPage);
+  }, [filteredLinea106, currentPage106]);
 
   const openNewBateriaModal = () => {
     setSelectedBateria(null);
@@ -222,10 +340,24 @@ export default function Relevamiento() {
     setIsRadioModalOpen(true);
   };
 
+  const openNewLinea106Modal = () => {
+    setSelectedLinea106(null);
+    setIsLinea106ModalOpen(true);
+  };
+
+  const openEditLinea106Modal = (registro: RelevamientoLinea106) => {
+    setSelectedLinea106(registro);
+    setIsLinea106ModalOpen(true);
+  };
+
   // Reset pagination when searching
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQueryRadio]);
+
+  useEffect(() => {
+    setCurrentPage106(1);
+  }, [searchQueryLinea106]);
 
   return (
     <div className="font-['Inter'] max-w-6xl mx-auto px-3 sm:px-4 pb-24 lg:pb-8">
@@ -260,6 +392,16 @@ export default function Relevamiento() {
           }`}
         >
           EQUIPAMIENTO RADIOELÉCTRICO
+        </button>
+        <button
+          onClick={() => setActiveTab('linea_106')}
+          className={`px-4 sm:px-6 py-3 border-2 border-black font-black uppercase text-xs sm:text-sm tracking-wider transition-all duration-150 cursor-pointer shrink-0 ${
+            activeTab === 'linea_106'
+              ? 'bg-white border-b-0 translate-y-[4px] shadow-[4px_-4px_0px_0px_rgba(0,0,0,1)] text-[#0055ff]'
+              : 'bg-gray-100 hover:bg-[#f5f0e8] border-b-2 opacity-70 hover:opacity-100 text-black'
+          }`}
+        >
+          LÍNEA 106 Y GRABADORAS
         </button>
       </div>
 
@@ -438,7 +580,6 @@ export default function Relevamiento() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              {/* File Input hidden and styled */}
               <label className="p-2.5 border-2 border-black bg-[#00cc66] hover:bg-black hover:text-[#00cc66] text-white font-black uppercase transition-all flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer text-xs">
                 <Upload className="w-4 h-4" />
                 {isUploading ? 'PROCESANDO...' : 'IMPORTAR EXCEL DE EQUIPAMIENTO'}
@@ -640,6 +781,238 @@ export default function Relevamiento() {
             onClose={() => setIsRadioModalOpen(false)}
             onSaveSuccess={loadRadio}
             registro={selectedRadio}
+            authorName={authorName}
+          />
+        </div>
+      )}
+
+      {/* PANEL 3: LÍNEA 106 Y GRABADORAS */}
+      {activeTab === 'linea_106' && (
+        <div className="space-y-6 animate-fadeIn">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 className="text-xl font-black uppercase text-black font-['Space_Grotesk']">
+                RELEVAMIENTO LÍNEA 106 Y GRABADORAS
+              </h2>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+                CONTROL DE LÍNEA DE EMERGENCIAS 106 Y SISTEMAS DE GRABACIÓN DE AUDIO
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <label className="p-2.5 border-2 border-black bg-[#ffd700] hover:bg-black hover:text-[#ffd700] text-black font-black uppercase transition-all flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer text-xs">
+                <Upload className="w-4 h-4" />
+                {isUploading106 ? 'PROCESANDO...' : 'IMPORTAR EXCEL LÍNEA 106'}
+                <input
+                  type="file"
+                  accept=".xlsx, .xls"
+                  onChange={handleExcelUploadLinea106}
+                  disabled={isUploading106}
+                  className="hidden"
+                />
+              </label>
+
+              <button
+                onClick={loadLinea106}
+                className="p-2.5 border-2 border-black bg-white hover:bg-[#f5f0e8] text-black font-black uppercase transition-colors flex items-center justify-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer text-xs"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} /> REFRESCAR
+              </button>
+            </div>
+          </div>
+
+          {/* Totals */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider">TOTAL REGISTROS</span>
+              <p className="text-2xl sm:text-3xl font-black text-black mt-1">{linea106Totals.total}</p>
+            </div>
+            <div className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider">CON GRABADORA DE AUDIO</span>
+              <p className="text-2xl sm:text-3xl font-black text-green-600 mt-1">{linea106Totals.grabadorasCount}</p>
+            </div>
+            <div className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider">GRABACIÓN 106 ACTIVA</span>
+              <p className="text-2xl sm:text-3xl font-black text-[#0055ff] mt-1">{linea106Totals.grabacion106Count}</p>
+            </div>
+            <div className="bg-white border-2 border-black p-4 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+              <span className="text-[10px] font-black uppercase text-gray-400 tracking-wider">GRABACIÓN VHF ACTIVA</span>
+              <p className="text-2xl sm:text-3xl font-black text-[#e63b2e] mt-1">{linea106Totals.grabacionVhfCount}</p>
+            </div>
+          </div>
+
+          {/* Filter Bar */}
+          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="w-full md:w-96 relative">
+              <div className="flex items-center bg-white border-2 border-black px-3 py-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                <Search className="text-black mr-2 w-4 h-4 shrink-0" />
+                <input
+                  className="bg-transparent border-none focus:outline-none text-xs font-bold uppercase tracking-wider outline-none w-full text-black placeholder:text-black/40"
+                  placeholder="BUSCAR DESTINO, GRABADORA, OBSERVACIONES..."
+                  type="text"
+                  value={searchQueryLinea106}
+                  onChange={(e) => setSearchQueryLinea106(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={openNewLinea106Modal}
+              className="w-full md:w-auto px-6 py-3 border-2 border-black bg-[#0055ff] text-white font-black uppercase tracking-widest hover:bg-black hover:text-[#0055ff] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer text-sm"
+            >
+              <Plus className="w-5 h-5 shrink-0" /> NUEVA LÍNEA 106 / GRABADORA
+            </button>
+          </div>
+
+          {/* List Data Grid */}
+          <div className="space-y-3">
+            {loading && linea106Data.length === 0 ? (
+              <div className="flex items-center justify-center py-20 bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-8 h-8 border-4 border-black border-t-[#0055ff] animate-spin"></div>
+                  <span className="text-xs font-black uppercase tracking-widest opacity-50">Cargando datos...</span>
+                </div>
+              </div>
+            ) : filteredLinea106.length === 0 ? (
+              <div className="text-center p-12 bg-white border-2 border-black font-black uppercase text-base opacity-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+                No se encontraron registros de Línea 106.
+              </div>
+            ) : (
+              <div className="w-full">
+                {/* Headers */}
+                <div className="w-full bg-[#1a1a1a] text-white border-2 border-black font-black uppercase text-xs p-3 hidden md:flex items-center gap-4 mb-2">
+                  <div className="w-24 shrink-0">DESTINO</div>
+                  <div className="w-36 shrink-0">GRABADORA</div>
+                  <div className="w-28 shrink-0 text-center">EQUIPO VHF</div>
+                  <div className="w-28 shrink-0 text-center">GRABACIÓN VHF</div>
+                  <div className="w-28 shrink-0 text-center">GRABACIÓN 106</div>
+                  <div className="flex-1 min-w-0">OBSERVACIONES LÍNEA 106</div>
+                  <div className="w-32 shrink-0 text-right">ACCIONES</div>
+                </div>
+
+                {/* Rows */}
+                {paginatedLinea106.map((item) => (
+                  <div
+                    key={item.id}
+                    className="w-full bg-white border-2 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all mb-3 text-xs sm:text-sm"
+                  >
+                    <div className="flex items-start sm:items-center gap-4 flex-1 min-w-0">
+                      <div className="border-2 border-black p-2 bg-[#ffd700] flex items-center justify-center shrink-0 w-10 h-10 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+                        <Radio className="w-5 h-5 text-black" />
+                      </div>
+
+                      <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-5 gap-2 md:gap-4 items-center">
+                        {/* Destinatario */}
+                        <div className="min-w-0">
+                          <h3 className="font-black uppercase truncate text-black">{item.destinatario_sigla}</h3>
+                          <p className="text-[10px] font-bold text-gray-500 uppercase truncate">
+                            {item.locations?.name || 'SIN ASIGNAR'}
+                          </p>
+                        </div>
+
+                        {/* Grabadora */}
+                        <div className="truncate">
+                          <span className="text-[9px] font-black uppercase text-gray-400 block md:hidden">GRABADORA</span>
+                          <span className="font-bold">{item.grabadora_audio || '—'}</span>
+                        </div>
+
+                        {/* VHF Conectado */}
+                        <div className="flex md:justify-center">
+                          <span className="text-[9px] font-black uppercase text-gray-400 block md:hidden mr-2">EQUIPO VHF:</span>
+                          <span
+                            className={`border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase shrink-0 ${
+                              item.vhf_conectado === 'SI'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-[#e63b2e]'
+                            }`}
+                          >
+                            {item.vhf_conectado || 'NO'}
+                          </span>
+                        </div>
+
+                        {/* Grabación VHF */}
+                        <div className="flex md:justify-center">
+                          <span className="text-[9px] font-black uppercase text-gray-400 block md:hidden mr-2">GRABACIÓN VHF:</span>
+                          <span
+                            className={`border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase shrink-0 ${
+                              item.grabacion_vhf === 'SI'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-[#e63b2e]'
+                            }`}
+                          >
+                            {item.grabacion_vhf || 'NO'}
+                          </span>
+                        </div>
+
+                        {/* Grabación 106 */}
+                        <div className="flex md:justify-center">
+                          <span className="text-[9px] font-black uppercase text-gray-400 block md:hidden mr-2">GRABACIÓN 106:</span>
+                          <span
+                            className={`border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase shrink-0 ${
+                              item.grabacion_106 === 'SI'
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-[#e63b2e]'
+                            }`}
+                          >
+                            {item.grabacion_106 || 'NO'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Observations */}
+                    <div className="flex-1 min-w-0 md:max-w-xs text-xs font-semibold uppercase text-gray-600 break-words md:px-2">
+                      {item.observaciones_linea_106 ? (
+                        <span>{item.observaciones_linea_106}</span>
+                      ) : (
+                        <span className="opacity-40 italic">SIN OBSERVACIONES</span>
+                      )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex items-center justify-end shrink-0">
+                      <button
+                        onClick={() => openEditLinea106Modal(item)}
+                        className="px-4 py-2.5 border-2 border-black bg-[#ffd700] hover:bg-black hover:text-[#ffd700] text-black font-black uppercase tracking-wider text-xs transition-colors shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none cursor-pointer"
+                      >
+                        MODIFICAR
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Pagination Controls */}
+                {totalPages106 > 1 && (
+                  <div className="flex justify-center items-center gap-3 sm:gap-4 mt-8">
+                    <button
+                      onClick={() => setCurrentPage106((p) => Math.max(1, p - 1))}
+                      disabled={currentPage106 === 1}
+                      className="p-1.5 border-2 border-black bg-white hover:bg-black hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <span className="font-black uppercase tracking-widest text-xs sm:text-sm">
+                      PÁGINA {currentPage106} DE {totalPages106} ({filteredLinea106.length} TOTAL)
+                    </span>
+                    <button
+                      onClick={() => setCurrentPage106((p) => Math.min(totalPages106, p + 1))}
+                      disabled={currentPage106 === totalPages106}
+                      className="p-1.5 border-2 border-black bg-white hover:bg-black hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <Linea106Form
+            isOpen={isLinea106ModalOpen}
+            onClose={() => setIsLinea106ModalOpen(false)}
+            onSaveSuccess={loadLinea106}
+            registro={selectedLinea106}
             authorName={authorName}
           />
         </div>
