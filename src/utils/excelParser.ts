@@ -15,6 +15,15 @@ export interface ExcelRadioRow {
   observaciones?: string | null;
 }
 
+function cleanCellString(val: any): string {
+  if (val === undefined || val === null) return '';
+  if (typeof val === 'number' && isNaN(val)) return '';
+  const str = String(val).trim();
+  const lower = str.toLowerCase();
+  if (lower === 'nan' || lower === 'undefined' || lower === 'null') return '';
+  return str;
+}
+
 /**
  * Parses all sheets of a radio equipment Excel file.
  * Skips the first 6 metadata/header lines and finds the column headers.
@@ -93,13 +102,13 @@ export function parseRadioExcel(
       }
 
       // Extract values safely
-      const destinoVal = String(destinoIdx !== -1 && row[destinoIdx] !== undefined ? row[destinoIdx] : '').trim();
-      const ubicacionVal = String(ubicacionIdx !== -1 && row[ubicacionIdx] !== undefined ? row[ubicacionIdx] : '').trim();
-      const idP25Val = String(idP25Idx !== -1 && row[idP25Idx] !== undefined ? row[idP25Idx] : '').trim();
-      const idGebipaVal = String(idGebipaIdx !== -1 && row[idGebipaIdx] !== undefined ? row[idGebipaIdx] : '').trim();
-      const inventarioVal = String(inventarioIdx !== -1 && row[inventarioIdx] !== undefined ? row[inventarioIdx] : '').trim();
+      const destinoVal = cleanCellString(destinoIdx !== -1 ? row[destinoIdx] : '');
+      const ubicacionVal = cleanCellString(ubicacionIdx !== -1 ? row[ubicacionIdx] : '');
+      const idP25Val = cleanCellString(idP25Idx !== -1 ? row[idP25Idx] : '');
+      const idGebipaVal = cleanCellString(idGebipaIdx !== -1 ? row[idGebipaIdx] : '');
+      const inventarioVal = cleanCellString(inventarioIdx !== -1 ? row[inventarioIdx] : '');
       
-      let nroSerie = String(nroSerieIdx !== -1 && row[nroSerieIdx] !== undefined ? row[nroSerieIdx] : '').trim();
+      let nroSerie = cleanCellString(nroSerieIdx !== -1 ? row[nroSerieIdx] : '');
       const upperSerie = nroSerie.toUpperCase();
       const isMissing = !nroSerie || upperSerie === 'NIL' || upperSerie === 'S/N' || upperSerie === 'SN' || upperSerie === 'SIN SERIE' || upperSerie === '—' || upperSerie === '-';
       
@@ -114,11 +123,11 @@ export function parseRadioExcel(
         seenSerialNumbers.add(normalized);
       }
 
-      const modeloVal = String(modeloIdx !== -1 && row[modeloIdx] !== undefined ? row[modeloIdx] : '').trim();
-      const caracteristicaVal = String(caracteristicaIdx !== -1 && row[caracteristicaIdx] !== undefined ? row[caracteristicaIdx] : '').trim();
-      const accesoriosVal = String(accesoriosIdx !== -1 && row[accesoriosIdx] !== undefined ? row[accesoriosIdx] : '').trim();
-      const estadoVal = String(estadoIdx !== -1 && row[estadoIdx] !== undefined ? row[estadoIdx] : '').trim();
-      const observacionesVal = String(observacionesIdx !== -1 && row[observacionesIdx] !== undefined ? row[observacionesIdx] : '').trim();
+      const modeloVal = cleanCellString(modeloIdx !== -1 ? row[modeloIdx] : '');
+      const caracteristicaVal = cleanCellString(caracteristicaIdx !== -1 ? row[caracteristicaIdx] : '');
+      const accesoriosVal = cleanCellString(accesoriosIdx !== -1 ? row[accesoriosIdx] : '');
+      const estadoVal = cleanCellString(estadoIdx !== -1 ? row[estadoIdx] : '');
+      const observacionesVal = cleanCellString(observacionesIdx !== -1 ? row[observacionesIdx] : '');
 
       // Skip rows that lack actual device info
       if (!modeloVal && isMissing) continue;
