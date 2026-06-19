@@ -146,3 +146,37 @@ button, a, input, select, textarea {
 .field-ready .leaflet-container {
   filter: contrast(1.2) saturate(0) !important;
 }
+
+/* Animation helper for PWA Install Banner */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 3s ease-in-out infinite;
+}
+
+/* Snappy physical press effect for brutalist buttons */
+.active-brutalist-press:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0px 0px rgba(0, 0, 0, 1) !important;
+}
+
+/* Spin animation for loading icons */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 8s linear infinite;
+}
