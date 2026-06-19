@@ -44,12 +44,17 @@ function handleError(error: unknown) {
 }
 
 const ICON_OPTIONS = [
-  { name: 'Monitor', icon: Monitor },
-  { name: 'Globe', icon: Globe },
-  { name: 'Settings', icon: Settings },
-  { name: 'ShieldCheck', icon: ShieldCheck },
-  { name: 'Layout', icon: Layout },
-  { name: 'MoreHorizontal', icon: MoreHorizontal },
+  { name: 'Layout', label: 'Módulo' },
+  { name: 'Globe', label: 'Redes' },
+  { name: 'Monitor', label: 'Monitor' },
+  { name: 'ShieldCheck', label: 'Seguridad' },
+  { name: 'Settings', label: 'Configuración' },
+  { name: 'Wrench', label: 'Herramientas' },
+  { name: 'Radio', label: 'Comunicaciones' },
+  { name: 'FileText', label: 'Documentos' },
+  { name: 'Cpu', label: 'CPU' },
+  { name: 'Database', label: 'Base de Datos' },
+  { name: 'MoreHorizontal', label: 'Otros' },
 ];
 
 const COLOR_OPTIONS = [
@@ -1090,7 +1095,15 @@ export default function BaseDatos() {
                     {
                       key: 'icon',
                       label: 'Icono',
-                      render: (c) => <span className="text-[10px] font-black opacity-40">{c.icon}</span>,
+                      render: (c) => {
+                        const IconComp = (LucideIcons as any)[c.icon] || Layout;
+                        return (
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border-2 border-[#1a1a1a] shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] text-[10px] font-black uppercase text-[#1a1a1a]">
+                            <IconComp className="w-3.5 h-3.5" />
+                            <span>{c.icon}</span>
+                          </div>
+                        );
+                      },
                     },
                   ]}
                   onAdd={() => {
@@ -1453,16 +1466,20 @@ export default function BaseDatos() {
                       Seleccionar Icono
                     </label>
                     <div className="grid grid-cols-6 gap-2">
-                      {ICON_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.name}
-                          type="button"
-                          onClick={() => setCategoryForm({ ...categoryForm, icon: opt.name })}
-                          className={`p-2 border-2 transition-all ${categoryForm.icon === opt.name ? 'border-[#0055ff] bg-[#0055ff]/10 scale-110' : 'border-[#1a1a1a] bg-[#f5f0e8] opacity-50'}`}
-                        >
-                          <opt.icon className="w-5 h-5 mx-auto" />
-                        </button>
-                      ))}
+                      {ICON_OPTIONS.map((opt) => {
+                        const IconComp = (LucideIcons as any)[opt.name] || Layout;
+                        return (
+                          <button
+                            key={opt.name}
+                            type="button"
+                            onClick={() => setCategoryForm({ ...categoryForm, icon: opt.name })}
+                            className={`p-2 border-2 transition-all ${categoryForm.icon === opt.name ? 'border-[#0055ff] bg-[#0055ff]/10 scale-110 shadow-[2px_2px_0px_0px_rgba(0,85,255,1)]' : 'border-[#1a1a1a] bg-[#f5f0e8] opacity-50 hover:opacity-100'}`}
+                            title={opt.label}
+                          >
+                            <IconComp className="w-5 h-5 mx-auto" />
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
