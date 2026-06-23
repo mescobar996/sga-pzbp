@@ -8,10 +8,11 @@ import {
   ListChecks,
   Newspaper,
   Users,
+  AlertTriangle,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '../db/client';
+import { supabase, getCurrentUserEmail } from '../db/client';
 import ExcelJS from 'exceljs';
 import { motion } from 'motion/react';
 import { DateRangePicker } from '../components/DateRangePicker';
@@ -60,6 +61,7 @@ const REPORT_COLUMNS: Record<string, ReportColumn[]> = {
     { key: 'prioridad', label: 'Prioridad', priority: 'badge' },
     { key: 'estado', label: 'Estado', priority: 'badge' },
     { key: 'vencimiento', label: 'Vencimiento', priority: 'meta' },
+    { key: 'responsable', label: 'Responsable' },
     { key: 'descripcion', label: 'Descripción', priority: 'long' },
     { key: 'etiquetas', label: 'Etiquetas' },
     { key: 'subtareas', label: 'Subtareas', priority: 'count' },
@@ -97,6 +99,14 @@ const SOURCE_COLORS: Record<string, string> = {
   diligenciamientos: 'border-[#e63b2e] bg-[#fff1f2]',
 };
 
+const STATUS_OPTIONS = [
+  { value: 'pendiente', label: 'Pendiente' },
+  { value: 'en_proceso', label: 'En Proceso' },
+  { value: 'completado', label: 'Completado' },
+  { value: 'activo', label: 'Activo' },
+  { value: 'inactivo', label: 'Inactivo' },
+];
+
 function safeText(value: unknown, fallback = '—'): string {
   if (value === null || value === undefined || value === '') return fallback;
   if (Array.isArray(value)) return value.length ? value.join(', ') : fallback;
@@ -109,7 +119,7 @@ function arrayCount(value: unknown): number {
 
 function formatDate(value: unknown, includeTime = false): string {
   const text = safeText(value, '');
-  if (!text) return '—';
+  if (!text || text === '—') return '—';
   const date = new Date(text);
   if (Number.isNaN(date.getTime())) return text;
   return includeTime ? date.toLocaleString('es-ES') : date.toLocaleDateString('es-ES');
@@ -148,6 +158,7 @@ function normalizeRecord(source: string, row: Record<string, any>): ReportRecord
       prioridad: safeText(row.priority),
       estado: safeText(row.status),
       vencimiento: formatDate(row.due_date || row.dueDate),
+      responsable: safeText(row.assigned_to || row.assignedTo),
       descripcion: safeText(row.description),
       etiquetas: Array.isArray(row.tags) && row.tags.length ? row.tags.join(', ') : '—',
       subtareas: subtasks.length ? `${completedSubtasks}/${subtasks.length}` : '0',
@@ -206,6 +217,12 @@ export default function Reportes() {
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
+  // Nuevos estados para multiselectores
+  const [selectedResponsibles, setSelectedResponsibles] = useState<string[]>([]);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [availableResponsibles, setAvailableResponsibles] = useState<string[]>([]);
+  const [responsibleSearch, setResponsibleSearch] = useState('');
+
   const sourceIcons: Record<string, React.ReactNode> = {
     visitas: <HardHat className="w-4 h-4" />,
     tareas: <ListChecks className="w-4 h-4" />,
@@ -216,6 +233,45 @@ export default function Reportes() {
 
   useEffect(() => {
     getCategories().then(setCategories).catch(() => setCategories([]));
+  }, []);
+
+  // Carga unificada de responsables disponibles para filtro
+  useEffect(() => {
+    const loadResponsibles = async () => {
+      try {
+        const namesSet = new Set<string>();
+
+        // 1. Fetch de tabla users
+        const { data: usersData } = await supabase.from('users').select('name');
+        usersData?.forEach((u) => {
+          if (u.name) namesSet.add(u.name.toUpperCase().trim());
+        });
+
+        // 2. Fetch de tabla personal
+        const { data: personalData } = await supabase.from('personal').select('name');
+        personalData?.forEach((p) => {
+          if (p.name) namesSet.add(p.name.toUpperCase().trim());
+        });
+
+        // 3. Fetch de tabla visitas (campo responsable)
+        const { data: visitasData } = await supabase.from('visitas').select('responsable');
+        visitasData?.forEach((v) => {
+          if (v.responsable) {
+            const parts = v.responsable.split(/ Y |, | y /i);
+            parts.forEach((p: string) => {
+              const name = p.trim();
+              if (name) namesSet.add(name.toUpperCase());
+            });
+          }
+        });
+
+        setAvailableResponsibles(Array.from(namesSet).sort());
+      } catch (err) {
+        console.error('Error loading available responsibles list:', err);
+      }
+    };
+
+    loadResponsibles();
   }, []);
 
   const selectedSources = useMemo(
@@ -256,6 +312,7 @@ export default function Reportes() {
 
       let filteredRows = (rows || []) as Record<string, any>[];
 
+      // 1. Filtrado por fecha
       if (dateFrom || dateTo) {
         filteredRows = filteredRows.filter((row) => {
           const recordDate = getRecordDate(row, source);
@@ -266,6 +323,45 @@ export default function Reportes() {
         });
       }
 
+      // 2. Filtrado por multiselect de responsables
+      if (selectedResponsibles.length > 0) {
+        filteredRows = filteredRows.filter((row) => {
+          if (source === 'visitas') {
+            const val = String(row.responsable || '').toUpperCase();
+            return selectedResponsibles.some((r) => val.includes(r.toUpperCase()));
+          }
+          if (source === 'tareas') {
+            const assigned = String(row.assigned_to || row.assignedTo || '').toUpperCase();
+            return selectedResponsibles.some((r) => assigned.includes(r.toUpperCase()));
+          }
+          if (source === 'personal') {
+            const name = String(row.name || '').toUpperCase();
+            return selectedResponsibles.some((r) => name.includes(r.toUpperCase()));
+          }
+          if (source === 'novedades' || source === 'diligenciamientos') {
+            const author = String(row.author_name || row.authorName || '').toUpperCase();
+            return selectedResponsibles.some((r) => author.includes(r.toUpperCase()));
+          }
+          return true;
+        });
+      }
+
+      // 3. Filtrado por multiselect de estados
+      if (selectedStatuses.length > 0) {
+        filteredRows = filteredRows.filter((row) => {
+          if (source === 'tareas') {
+            const val = String(row.status || '').toLowerCase();
+            return selectedStatuses.some((s) => val === s.toLowerCase());
+          }
+          if (source === 'personal') {
+            const val = String(row.status || '').toLowerCase();
+            return selectedStatuses.some((s) => val === s.toLowerCase());
+          }
+          return false; // No aplica filtro y se descarta en otras fuentes si el filtro está activo
+        });
+      }
+
+      // 4. Ordenamiento
       filteredRows.sort((a, b) => {
         if (sortBy.startsWith('titulo')) {
           const valA = String(a.title || a.name || '').toLowerCase();
@@ -284,190 +380,337 @@ export default function Reportes() {
     return reportData;
   };
 
-  const loadPreview = async () => {
-    setIsLoadingPreview(true);
-    try {
-      const data = await fetchData();
-      setDataPreview(data);
-      setShowPreview(true);
-    } catch (error) {
-      console.error(error);
-      toast.error('Error al cargar la vista previa');
-    } finally {
-      setIsLoadingPreview(false);
-    }
-  };
-
-
-  const generateExcel = async (data: ReportData) => {
-    const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'SGA-PZBP';
-    workbook.lastModifiedBy = 'SGA-PZBP';
-    workbook.created = new Date();
-
-    // Función para obtener el logo (convertir a base64)
-    const getLogoBase64 = async () => {
+  // Carga/Filtros automáticos en tiempo real
+  useEffect(() => {
+    let active = true;
+    const loadPreviewData = async () => {
+      setIsLoadingPreview(true);
       try {
-        const response = await fetch('/logo-pna.png');
-        const blob = await response.blob();
-        return new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(blob);
-        });
-      } catch (e) {
-        return null;
+        const data = await fetchData();
+        if (active) {
+          setDataPreview(data);
+          setShowPreview(true);
+        }
+      } catch (error) {
+        console.error('Error fetching preview data:', error);
+        if (active) {
+          toast.error('Error al cargar la vista previa en tiempo real');
+        }
+      } finally {
+        if (active) {
+          setIsLoadingPreview(false);
+        }
       }
     };
 
-    const logoBase64 = await getLogoBase64();
+    loadPreviewData();
 
-    // 2. Procesar los registros para cada hoja
-    for (const [source, records] of Object.entries(data)) {
-      if (!Array.isArray(records) || records.length === 0) continue;
+    return () => {
+      active = false;
+    };
+  }, [dataSource, selectedCategory, dateFrom, dateTo, sortBy, selectedResponsibles, selectedStatuses]);
 
-      const sheet = workbook.addWorksheet(SOURCE_LABELS[source].toUpperCase().slice(0, 31));
-      
-      // Añadir Logo si existe
+  const generateExcel = async (data: ReportData) => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'SGA-PZBP';
+      workbook.lastModifiedBy = 'SGA-PZBP';
+      workbook.created = new Date();
+
+      // Función para obtener el logo (convertir a base64)
+      const getLogoBase64 = async () => {
+        try {
+          const response = await fetch('/logo-pna.png');
+          const blob = await response.blob();
+          return new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(blob);
+          });
+        } catch (e) {
+          return null;
+        }
+      };
+
+      const logoBase64 = await getLogoBase64();
+
+      // 1. Crear Hoja de PORTADA / METADATOS
+      const coverSheet = workbook.addWorksheet('PORTADA');
+      coverSheet.views = [{ showGridLines: true }];
+      coverSheet.getColumn(1).width = 30;
+      coverSheet.getColumn(2).width = 50;
+
+      // Añadir Logo si existe en PORTADA
       if (logoBase64) {
         const logoId = workbook.addImage({
           base64: logoBase64,
           extension: 'png',
         });
-        sheet.addImage(logoId, {
+        coverSheet.addImage(logoId, {
           tl: { col: 0, row: 0 },
-          ext: { width: 60, height: 60 }
+          ext: { width: 60, height: 60 },
         });
       }
 
-      // 3. Encabezado Institucional (Espacio para el logo y títulos)
-      sheet.mergeCells('B1:H1');
-      const titleCell = sheet.getCell('B1');
-      titleCell.value = 'PREFECTURA NAVAL ARGENTINA - ZONA BAJO PARANÁ';
-      titleCell.font = { name: 'Arial Black', size: 14, color: { argb: 'FF1A1A1A' } };
-      titleCell.alignment = { vertical: 'middle', horizontal: 'left' };
-
-      sheet.mergeCells('B2:H2');
-      const subtitleCell = sheet.getCell('B2');
-      subtitleCell.value = `REPORTE OPERATIVO: ${SOURCE_LABELS[source].toUpperCase()}`;
-      subtitleCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FF555555' } };
-
-      sheet.getCell('B3').value = 'GENERADO:';
-      sheet.getCell('C3').value = new Date().toLocaleString('es-ES').toUpperCase();
-      sheet.getCell('B4').value = 'PERÍODO:';
-      sheet.getCell('C4').value = periodLabel.toUpperCase();
-
-      // Dejar espacio para el header (fila 7 empieza la tabla)
-      const startRow = 7;
-      const columns = REPORT_COLUMNS[source] || [];
+      // Títulos institucionales en PORTADA
+      coverSheet.getCell('B1').value = 'SGA PZBP-MS - SISTEMA DE GESTIÓN ADMINISTRATIVA';
+      coverSheet.getCell('B1').font = { name: 'Arial Black', size: 12, color: { argb: 'FF1A1A1A' } };
       
-      // Definir columnas
-      sheet.columns = columns.map(col => ({
-        header: col.label.toUpperCase(),
-        key: col.key,
-        width: col.priority === 'long' ? 50 : col.priority === 'primary' ? 30 : 18
-      }));
+      coverSheet.getCell('B2').value = 'PREFECTURA NAVAL ARGENTINA - ZONA BAJO PARANÁ';
+      coverSheet.getCell('B2').font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF555555' } };
 
-      // Mover los headers a la fila de inicio
-      const headerRow = sheet.getRow(startRow);
-      headerRow.values = columns.map(col => col.label.toUpperCase());
-      
-      // Estilo de los encabezados de tabla
-      headerRow.eachCell((cell) => {
-        cell.fill = {
-          type: 'pattern',
-          pattern: 'solid',
-          fgColor: { argb: 'FF1A1A1A' }
-        };
-        cell.font = {
-          color: { argb: 'FFFFFFFF' },
-          bold: true,
-          size: 10
-        };
-        cell.alignment = { vertical: 'middle', horizontal: 'center' };
-        cell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' }
-        };
-      });
+      coverSheet.getCell('B3').value = 'REPORTE OPERATIVO PREMIUM';
+      coverSheet.getCell('B3').font = { name: 'Arial Black', size: 14, color: { argb: 'FF0055FF' } };
 
-      // Añadir Datos
-      records.forEach((record, idx) => {
-        const rowData = columns.map(col => String(record[col.key] || '—').toUpperCase());
-        const row = sheet.addRow(rowData);
-        
-        // Estilo Zebra y bordes
-        const isEven = idx % 2 === 0;
-        row.eachCell((cell, colNumber) => {
-          if (isEven) {
-            cell.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFF5F0E8' }
-            };
-          }
-          cell.border = {
-            top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
-            left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
-            bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
-            right: { style: 'thin', color: { argb: 'FFCCCCCC' } }
+      // Metadatos
+      coverSheet.getCell('A5').value = 'METADATOS DE EXPORTACIÓN';
+      coverSheet.getCell('A5').font = { name: 'Arial', size: 11, bold: true, underline: true };
+
+      coverSheet.getCell('A7').value = 'FECHA DE GENERACIÓN:';
+      coverSheet.getCell('A7').font = { bold: true, size: 9 };
+      coverSheet.getCell('B7').value = new Date().toLocaleString('es-ES').toUpperCase();
+      coverSheet.getCell('B7').font = { size: 9 };
+
+      coverSheet.getCell('A8').value = 'USUARIO GENERADOR:';
+      coverSheet.getCell('A8').font = { bold: true, size: 9 };
+      coverSheet.getCell('B8').value = (getCurrentUserEmail() || 'SISTEMA SGA').toUpperCase();
+      coverSheet.getCell('B8').font = { size: 9 };
+
+      coverSheet.getCell('A9').value = 'PERÍODO DETALLADO:';
+      coverSheet.getCell('A9').font = { bold: true, size: 9 };
+      coverSheet.getCell('B9').value = periodLabel.toUpperCase();
+      coverSheet.getCell('B9').font = { size: 9 };
+
+      coverSheet.getCell('A10').value = 'ORDENAMIENTO APLICADO:';
+      coverSheet.getCell('A10').font = { bold: true, size: 9 };
+      coverSheet.getCell('B10').value = SORT_LABELS[sortBy].toUpperCase();
+      coverSheet.getCell('B10').font = { size: 9 };
+
+      coverSheet.getCell('A11').value = 'FILTRO DE RESPONSABLES:';
+      coverSheet.getCell('A11').font = { bold: true, size: 9 };
+      coverSheet.getCell('B11').value = selectedResponsibles.length > 0 ? selectedResponsibles.join(', ').toUpperCase() : 'TODOS';
+      coverSheet.getCell('B11').font = { size: 9 };
+
+      coverSheet.getCell('A12').value = 'FILTRO DE ESTADOS:';
+      coverSheet.getCell('A12').font = { bold: true, size: 9 };
+      coverSheet.getCell('B12').value = selectedStatuses.length > 0 ? selectedStatuses.join(', ').toUpperCase() : 'TODOS';
+      coverSheet.getCell('B12').font = { size: 9 };
+
+      // Resumen de registros por hoja
+      coverSheet.getCell('A14').value = 'RESUMEN DE REGISTROS POR HOJA';
+      coverSheet.getCell('A14').font = { name: 'Arial', size: 11, bold: true, underline: true };
+
+      // Cabeceras de tabla de resumen
+      coverSheet.getCell('A16').value = 'HOJA / MÓDULO';
+      coverSheet.getCell('A16').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A1A' } };
+      coverSheet.getCell('A16').font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 9 };
+      coverSheet.getCell('A16').alignment = { horizontal: 'center' };
+
+      coverSheet.getCell('B16').value = 'CANTIDAD DE REGISTROS';
+      coverSheet.getCell('B16').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1A1A1A' } };
+      coverSheet.getCell('B16').font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 9 };
+      coverSheet.getCell('B16').alignment = { horizontal: 'center' };
+
+      let summaryRowIdx = 17;
+      let totalCountAllSheets = 0;
+
+      for (const [source, records] of Object.entries(data)) {
+        if (!Array.isArray(records) || records.length === 0) continue;
+
+        coverSheet.getCell(`A${summaryRowIdx}`).value = SOURCE_LABELS[source].toUpperCase();
+        coverSheet.getCell(`A${summaryRowIdx}`).border = { bottom: { style: 'thin' }, right: { style: 'thin' }, left: { style: 'thin' } };
+        coverSheet.getCell(`A${summaryRowIdx}`).font = { size: 9 };
+
+        coverSheet.getCell(`B${summaryRowIdx}`).value = records.length;
+        coverSheet.getCell(`B${summaryRowIdx}`).alignment = { horizontal: 'right' };
+        coverSheet.getCell(`B${summaryRowIdx}`).border = { bottom: { style: 'thin' }, right: { style: 'thin' }, left: { style: 'thin' } };
+        coverSheet.getCell(`B${summaryRowIdx}`).font = { size: 9 };
+
+        totalCountAllSheets += records.length;
+        summaryRowIdx++;
+      }
+
+      // Fila de Total General en Portada
+      coverSheet.getCell(`A${summaryRowIdx}`).value = 'TOTAL GENERAL';
+      coverSheet.getCell(`A${summaryRowIdx}`).font = { bold: true, size: 9 };
+      coverSheet.getCell(`A${summaryRowIdx}`).border = { top: { style: 'double' }, bottom: { style: 'thin' } };
+
+      coverSheet.getCell(`B${summaryRowIdx}`).value = totalCountAllSheets;
+      coverSheet.getCell(`B${summaryRowIdx}`).font = { bold: true, size: 9 };
+      coverSheet.getCell(`B${summaryRowIdx}`).alignment = { horizontal: 'right' };
+      coverSheet.getCell(`B${summaryRowIdx}`).border = { top: { style: 'double' }, bottom: { style: 'thin' } };
+
+      // Firmas en la Portada
+      const signatureRow = summaryRowIdx + 3;
+      coverSheet.getCell(`A${signatureRow}`).value = '__________________________________';
+      coverSheet.getCell(`A${signatureRow}`).alignment = { horizontal: 'center' };
+      coverSheet.getCell(`A${signatureRow + 1}`).value = 'FIRMA DEL RESPONSABLE';
+      coverSheet.getCell(`A${signatureRow + 1}`).font = { name: 'Arial', size: 9, bold: true };
+      coverSheet.getCell(`A${signatureRow + 1}`).alignment = { horizontal: 'center' };
+
+      coverSheet.getCell(`B${signatureRow}`).value = '__________________________________';
+      coverSheet.getCell(`B${signatureRow}`).alignment = { horizontal: 'center' };
+      coverSheet.getCell(`B${signatureRow + 1}`).value = 'VALIDACIÓN SGA';
+      coverSheet.getCell(`B${signatureRow + 1}`).font = { name: 'Arial', size: 9, bold: true };
+      coverSheet.getCell(`B${signatureRow + 1}`).alignment = { horizontal: 'center' };
+
+      // 2. Procesar los registros para cada hoja temática
+      for (const [source, records] of Object.entries(data)) {
+        if (!Array.isArray(records) || records.length === 0) continue;
+
+        const sheet = workbook.addWorksheet(SOURCE_LABELS[source].toUpperCase().slice(0, 31));
+        sheet.views = [{ showGridLines: true }];
+
+        const columns = REPORT_COLUMNS[source] || [];
+
+        // Definir columnas (headers obligatoriamente en Fila 1)
+        sheet.columns = columns.map((col) => ({
+          header: col.label.toUpperCase(),
+          key: col.key,
+        }));
+
+        // Estilo de los encabezados de tabla (Fila 1)
+        const headerRow = sheet.getRow(1);
+        headerRow.height = 25;
+        headerRow.eachCell((cell) => {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FF1A1A1A' },
           };
-          cell.font = { size: 9 };
-          cell.alignment = { vertical: 'middle' };
-
-          // Color dinámico para estados
-          const val = String(cell.value).toLowerCase();
-          if (['completado', 'activo', 'operativo', 'baja'].includes(val)) {
-            cell.font = { color: { argb: 'FF008000' }, bold: true, size: 9 };
-          } else if (['pendiente', 'inactivo', 'alta'].includes(val)) {
-            cell.font = { color: { argb: 'FFFF0000' }, bold: true, size: 9 };
-          }
+          cell.font = {
+            color: { argb: 'FFFFFFFF' },
+            bold: true,
+            size: 10,
+          };
+          cell.alignment = { vertical: 'middle', horizontal: 'center' };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'medium', color: { argb: 'FF000000' } },
+            right: { style: 'thin' },
+          };
         });
-      });
 
-      // Pie de firma
-      const footerStart = startRow + records.length + 3;
-      sheet.mergeCells(`A${footerStart}:C${footerStart}`);
-      sheet.getCell(`A${footerStart}`).value = '__________________________________';
-      sheet.getCell(`A${footerStart + 1}`).value = 'FIRMA DEL RESPONSABLE';
-      
-      sheet.mergeCells(`E${footerStart}:G${footerStart}`);
-      sheet.getCell(`E${footerStart}`).value = '__________________________________';
-      sheet.getCell(`E${footerStart + 1}`).value = 'VALIDACIÓN SGA';
+        // Añadir Datos (Fila 2 en adelante)
+        records.forEach((record, idx) => {
+          const rowData = columns.map((col) => record[col.key]);
+          const row = sheet.addRow(rowData);
+          row.height = 20;
 
-      // Congelar paneles
-      sheet.views = [
-        { state: 'frozen', xSplit: 0, ySplit: startRow, topLeftCell: 'A8', activePane: 'bottomLeft' }
-      ];
+          // Estilo Zebra y bordes
+          const isEven = idx % 2 === 0;
+          row.eachCell((cell, colIndex) => {
+            const col = columns[colIndex - 1];
+            const val = cell.value;
 
-      // Auto filtros
-      sheet.autoFilter = {
-        from: { row: startRow, column: 1 },
-        to: { row: startRow, column: columns.length }
-      };
+            // Formatear fechas como tipo Date de Excel
+            if (col && (col.key === 'fecha' || col.key === 'vencimiento') && typeof val === 'string' && val !== '—') {
+              const dateParts = val.split('/');
+              if (dateParts.length === 3) {
+                const d = parseInt(dateParts[0], 10);
+                const m = parseInt(dateParts[1], 10) - 1; // Mes 0-indexado
+                const y = parseInt(dateParts[2], 10);
+                const dateObj = new Date(y, m, d);
+                if (!isNaN(dateObj.getTime())) {
+                  cell.value = dateObj;
+                  cell.numFmt = 'dd/mm/yyyy';
+                }
+              } else {
+                const dateObj = new Date(val);
+                if (!isNaN(dateObj.getTime())) {
+                  cell.value = dateObj;
+                  cell.numFmt = 'dd/mm/yyyy';
+                }
+              }
+            }
+
+            if (isEven) {
+              cell.fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFF5F0E8' },
+              };
+            }
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+              left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+              bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+              right: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+            };
+            cell.font = { size: 9 };
+            cell.alignment = { vertical: 'middle' };
+
+            // Color dinámico para estados e indicadores
+            if (col && (col.key === 'estado' || col.key === 'prioridad')) {
+              const lowerVal = String(val).toLowerCase();
+              if (['completado', 'activo', 'operativo', 'baja', 'alta'].includes(lowerVal)) {
+                cell.font = { color: { argb: 'FF008000' }, bold: true, size: 9 };
+              } else if (['pendiente', 'inactivo', 'alta', 'media'].includes(lowerVal)) {
+                cell.font = { color: { argb: 'FFFF0000' }, bold: true, size: 9 };
+              }
+            }
+          });
+        });
+
+        // Congelar primera fila (Headers)
+        sheet.views = [
+          { state: 'frozen', xSplit: 0, ySplit: 1, topLeftCell: 'A2', activePane: 'bottomLeft' } as any,
+        ];
+
+        // Autofiltros en la fila 1
+        sheet.autoFilter = {
+          from: { row: 1, column: 1 },
+          to: { row: 1, column: columns.length },
+        };
+
+        // Formato automático de anchos de columnas
+        sheet.columns.forEach((column) => {
+          let maxLength = 0;
+          column.eachCell?.({ includeEmpty: true }, (cell) => {
+            let colLength = 10;
+            if (cell.value !== null && cell.value !== undefined) {
+              if (cell.value instanceof Date) {
+                colLength = 12;
+              } else {
+                colLength = String(cell.value).length;
+              }
+            }
+            if (colLength > maxLength) {
+              maxLength = colLength;
+            }
+          });
+          column.width = Math.max(12, maxLength + 4);
+        });
+      }
+
+      // Descarga del Archivo
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      const fileName = `REPORTE_SGA_PREMIUM_${dataSource.toUpperCase()}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      anchor.download = fileName;
+      anchor.click();
+      window.URL.revokeObjectURL(url);
+
+      toast.success('EXCEL PREMIUM GENERADO CON ÉXITO', { id: 'report-gen' });
+    } catch (error) {
+      console.error('Error generating Excel:', error);
+      toast.error('Error al estructurar o descargar el archivo Excel');
     }
-
-    // 4. Descarga
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-    const url = window.URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    const fileName = `REPORTE_SGA_PREMIUM_${dataSource.toUpperCase()}_${new Date().toISOString().split('T')[0]}.xlsx`;
-    anchor.download = fileName;
-    anchor.click();
-    window.URL.revokeObjectURL(url);
-    
-    toast.success('EXCEL PREMIUM GENERADO CON ÉXITO', { id: 'report-gen' });
   };
 
   const handleGenerateReport = async () => {
+    if (totalRecords === 0) {
+      toast.error('No hay datos disponibles en el período y filtros seleccionados');
+      return;
+    }
     setIsGenerating(true);
     try {
       const data = await fetchData();
-      generateExcel(data);
+      await generateExcel(data);
     } catch (error) {
       console.error(error);
       toast.error('Error al generar el reporte');
@@ -484,20 +727,27 @@ export default function Reportes() {
     return 'bg-[#1a1a1a] text-white';
   };
 
+  const filteredResponsibles = useMemo(() => {
+    return availableResponsibles.filter((name) =>
+      name.toLowerCase().includes(responsibleSearch.toLowerCase())
+    );
+  }, [availableResponsibles, responsibleSearch]);
+
   return (
     <div className="font-['Inter'] max-w-7xl mx-auto px-3 sm:px-4 pb-24 lg:pb-8">
-      <div className="mb-6 overflow-hidden border-2 border-[#1a1a1a] bg-white shadow-[6px_6px_0px_0px_rgba(26,26,26,1)]">
-        <div className="bg-[#1a1a1a] text-white px-5 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      {/* Header Panel */}
+      <div className="mb-6 overflow-hidden border-4 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+        <div className="bg-black text-white px-5 py-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.35em] text-[#8fb2ff] mb-1">Centro de reportes</p>
             <h1 className="text-2xl sm:text-4xl font-black uppercase font-['Space_Grotesk'] tracking-tighter">Reporte operativo</h1>
           </div>
           <div className="flex items-center gap-3 text-xs font-black uppercase">
             <BarChart3 className="w-5 h-5 text-[#8fb2ff]" />
-            {showPreview ? `${totalRecords} registros listos` : 'Configura y previsualiza'}
+            {totalRecords} registros listos
           </div>
         </div>
-        <div className="px-5 py-4 bg-[#f5f0e8] grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-bold uppercase">
+        <div className="px-5 py-4 bg-[#f5f0e8] grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-bold uppercase border-t-4 border-black">
           <div><span className="opacity-50 block text-[10px] font-black">Fuente</span>{SOURCE_LABELS[dataSource] || dataSource}</div>
           <div><span className="opacity-50 block text-[10px] font-black">Período</span>{periodLabel}</div>
           <div><span className="opacity-50 block text-[10px] font-black">Orden</span>{SORT_LABELS[sortBy]}</div>
@@ -505,8 +755,9 @@ export default function Reportes() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-[360px_1fr] gap-6">
-        <aside className="bg-white border-2 border-[#1a1a1a] p-5 shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] h-fit xl:sticky xl:top-4">
-          <div className="flex items-center gap-2 border-b-2 border-[#1a1a1a] pb-3 mb-5">
+        {/* Filters Sidebar */}
+        <aside className="bg-white border-4 border-black p-5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] h-fit xl:sticky xl:top-4">
+          <div className="flex items-center gap-2 border-b-4 border-black pb-3 mb-5">
             <Filter className="w-5 h-5" />
             <h2 className="text-lg font-black uppercase font-['Space_Grotesk']">Configuración</h2>
           </div>
@@ -518,9 +769,8 @@ export default function Reportes() {
                 value={dataSource}
                 onChange={(event) => {
                   setDataSource(event.target.value);
-                  setShowPreview(false);
                 }}
-                className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:outline-none font-black uppercase text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
+                className="w-full p-3 border-4 border-black bg-[#f5f0e8] focus:outline-none font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
               >
                 <option value="todas">Todas las fuentes</option>
                 <option value="visitas">Visitas técnicas</option>
@@ -538,9 +788,8 @@ export default function Reportes() {
                   value={selectedCategory}
                   onChange={(event) => {
                     setSelectedCategory(event.target.value);
-                    setShowPreview(false);
                   }}
-                  className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:outline-none font-black uppercase text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
+                  className="w-full p-3 border-4 border-black bg-[#f5f0e8] focus:outline-none font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
                 >
                   <option value="todas">Todas las categorías</option>
                   {availableCategories.map((category) => (
@@ -557,12 +806,10 @@ export default function Reportes() {
               dateFrom={dateFrom}
               onDateFromChange={(value: string) => {
                 setDateFrom(value);
-                setShowPreview(false);
               }}
               dateTo={dateTo}
               onDateToChange={(value: string) => {
                 setDateTo(value);
-                setShowPreview(false);
               }}
             />
 
@@ -572,9 +819,8 @@ export default function Reportes() {
                 value={sortBy}
                 onChange={(event) => {
                   setSortBy(event.target.value);
-                  setShowPreview(false);
                 }}
-                className="w-full p-3 border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:outline-none font-black uppercase text-sm shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
+                className="w-full p-3 border-4 border-black bg-[#f5f0e8] focus:outline-none font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
               >
                 <option value="fecha_desc">Fecha (Descendente)</option>
                 <option value="fecha_asc">Fecha (Ascendente)</option>
@@ -583,27 +829,104 @@ export default function Reportes() {
               </select>
             </div>
 
-            <div className="pt-4 space-y-3">
-              <button
-                type="button"
-                onClick={loadPreview}
-                disabled={isLoadingPreview || isGenerating}
-                className="w-full py-4 border-2 border-[#1a1a1a] bg-white text-[#1a1a1a] font-black uppercase tracking-widest hover:bg-[#f5f0e8] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed text-base"
-              >
-                {isLoadingPreview ? (
-                  <div className="w-5 h-5 border-3 border-[#1a1a1a] border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <Eye className="w-5 h-5" /> Vista previa
-                  </>
+            {/* Multiselector de Usuario Responsable */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-[10px] font-black uppercase tracking-widest">Usuario Responsable</label>
+                {selectedResponsibles.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedResponsibles([])}
+                    className="text-[9px] font-black uppercase underline hover:text-[#0055ff]"
+                  >
+                    Limpiar
+                  </button>
                 )}
-              </button>
+              </div>
+              <div className="border-4 border-black bg-white p-2 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] space-y-2">
+                <input
+                  type="text"
+                  value={responsibleSearch}
+                  onChange={(e) => setResponsibleSearch(e.target.value)}
+                  placeholder="Buscar responsable..."
+                  className="w-full p-2 border-2 border-black bg-[#f5f0e8] text-xs font-bold uppercase focus:outline-none"
+                />
+                <div className="max-h-36 overflow-y-auto space-y-1 pr-1">
+                  {filteredResponsibles.length === 0 ? (
+                    <p className="text-[10px] uppercase font-bold text-gray-500 p-1">No se encontraron responsables</p>
+                  ) : (
+                    filteredResponsibles.map((name) => {
+                      const isSelected = selectedResponsibles.includes(name);
+                      return (
+                        <label
+                          key={name}
+                          className={`flex items-center gap-2 p-1 hover:bg-[#f5f0e8] cursor-pointer text-xs font-bold uppercase transition-colors ${
+                            isSelected ? 'bg-blue-50' : ''
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => {
+                              setSelectedResponsibles((prev) =>
+                                prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name]
+                              );
+                            }}
+                            className="w-4 h-4 accent-black border-2 border-black cursor-pointer"
+                          />
+                          <span className="truncate">{name}</span>
+                        </label>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
 
+            {/* Multiselector de Estado */}
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-[10px] font-black uppercase tracking-widest">Estado (Tareas/Personal)</label>
+                {selectedStatuses.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedStatuses([])}
+                    className="text-[9px] font-black uppercase underline hover:text-[#0055ff]"
+                  >
+                    Limpiar
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {STATUS_OPTIONS.map((opt) => {
+                  const isSelected = selectedStatuses.includes(opt.value);
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedStatuses((prev) =>
+                          prev.includes(opt.value) ? prev.filter((s) => s !== opt.value) : [...prev, opt.value]
+                        );
+                      }}
+                      className={`px-2 py-1.5 border-2 border-black text-[10px] font-black uppercase shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all ${
+                        isSelected ? 'bg-[#0055ff] text-white' : 'bg-[#f5f0e8] text-black hover:bg-white'
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Botón Descargar Excel */}
+            <div className="pt-4">
               <button
                 type="button"
                 onClick={handleGenerateReport}
-                disabled={isGenerating || isLoadingPreview}
-                className="w-full py-4 border-2 border-[#1a1a1a] bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-white hover:text-[#00cc66] transition-all flex items-center justify-center gap-2 shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                disabled={totalRecords === 0 || isGenerating || isLoadingPreview}
+                className="w-full py-4 border-4 border-black bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-base"
               >
                 {isGenerating ? (
                   <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
@@ -617,32 +940,59 @@ export default function Reportes() {
           </div>
         </aside>
 
+        {/* Preview Panel */}
         <main className="min-w-0">
-          {showPreview ? (
+          {isLoadingPreview && Object.keys(dataPreview).length === 0 ? (
+            <div className="bg-white border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] p-8 sm:p-16 flex flex-col items-center justify-center text-center min-h-[520px]">
+              <div className="w-16 h-16 border-8 border-black border-t-[#00cc66] rounded-full animate-spin mb-6" />
+              <h3 className="text-2xl font-black uppercase mb-3 font-['Space_Grotesk']">Cargando datos</h3>
+              <p className="text-xs font-bold opacity-60 max-w-md uppercase leading-relaxed">
+                Consultando la base de datos de Supabase y normalizando los registros en tiempo real...
+              </p>
+            </div>
+          ) : (
             <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-              <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                <div className="col-span-2 p-5 border-2 border-[#1a1a1a] bg-[#1a1a1a] text-white shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[#8fb2ff] mb-2">Resumen</p>
-                  <p className="text-4xl font-black font-['Space_Grotesk']">{totalRecords}</p>
-                  <p className="text-xs font-bold uppercase opacity-70">registros normalizados</p>
+              {/* Alerta de no registros */}
+              {totalRecords === 0 && (
+                <div className="bg-[#ffdd00] text-black border-4 border-black p-5 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] font-bold uppercase text-xs flex flex-col sm:flex-row items-center gap-4">
+                  <div className="p-3 border-2 border-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] shrink-0">
+                    <AlertTriangle className="w-8 h-8 text-black" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-black mb-1">Sin registros coincidentes</h4>
+                    <p className="opacity-85 font-bold leading-normal">
+                      La consulta no devolvió ningún registro para el período o filtros seleccionados.
+                      El botón "DESCARGAR EXCEL" se encuentra bloqueado hasta que existan datos.
+                    </p>
+                  </div>
                 </div>
-                <div className="p-5 border-2 border-[#1a1a1a] bg-white shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+              )}
+
+              {/* Estadísticas de Vista Previa */}
+              <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="col-span-2 p-5 border-4 border-black bg-black text-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[#8fb2ff] mb-2">Resumen de Registros</p>
+                  <p className="text-4xl font-black font-['Space_Grotesk']">{totalRecords}</p>
+                  <p className="text-xs font-bold uppercase opacity-70">registros en el período actual</p>
+                </div>
+                <div className="p-5 border-4 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                   <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2">Tareas</p>
                   <p className="text-3xl font-black font-['Space_Grotesk']">{taskCompletion}%</p>
                   <p className="text-xs font-bold uppercase opacity-60">completitud</p>
                 </div>
-                <div className="p-5 border-2 border-[#1a1a1a] bg-white shadow-[4px_4px_0px_0px_rgba(26,26,26,1)]">
+                <div className="p-5 border-4 border-black bg-white shadow-[6px_6px_0px_0px_rgba(0,0,0,1)]">
                   <p className="text-[10px] font-black uppercase tracking-widest opacity-50 mb-2">Estado</p>
-                  <p className="text-3xl font-black font-['Space_Grotesk'] uppercase">LISTO</p>
-                  <p className="text-xs font-bold uppercase opacity-60">Para descarga</p>
+                  <p className="text-3xl font-black font-['Space_Grotesk'] uppercase">{totalRecords > 0 ? 'LISTO' : 'VACÍO'}</p>
+                  <p className="text-xs font-bold uppercase opacity-60">Filtros aplicados</p>
                 </div>
               </section>
 
+              {/* Grid de conteo de fuentes */}
               <section className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-3">
                 {Object.entries(dataCounts).map(([source, count]) => (
-                  <div key={source} className={`p-4 border-2 border-[#1a1a1a] border-l-8 ${SOURCE_COLORS[source] || 'bg-white'} shadow-[3px_3px_0px_0px_rgba(26,26,26,1)]`}>
+                  <div key={source} className={`p-4 border-4 border-black border-l-[12px] ${SOURCE_COLORS[source] || 'bg-white'} shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]`}>
                     <div className="flex items-center justify-between mb-3">
-                      <div className="p-2 bg-white border-2 border-[#1a1a1a]">{sourceIcons[source] || <ClipboardList className="w-4 h-4" />}</div>
+                      <div className="p-2 bg-white border-2 border-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">{sourceIcons[source] || <ClipboardList className="w-4 h-4" />}</div>
                       <span className="text-2xl font-black font-['Space_Grotesk']">{count}</span>
                     </div>
                     <p className="text-[10px] font-black uppercase tracking-widest">{SOURCE_LABELS[source]}</p>
@@ -650,14 +1000,13 @@ export default function Reportes() {
                 ))}
               </section>
 
+              {/* Tablas de Vista Previa Simplificadas */}
               {Object.entries(dataPreview).map(([source, records]) => {
                 const columns = REPORT_COLUMNS[source] || [];
-                const primaryColumns = columns.filter((column) => column.priority === 'primary' || column.priority === 'meta' || column.priority === 'badge').slice(0, 5);
-                const detailColumns = columns.filter((column) => !primaryColumns.includes(column));
 
                 return (
-                  <section key={source} className="bg-white border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] overflow-hidden">
-                    <div className="bg-[#1a1a1a] text-white px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <section key={source} className="bg-white border-4 border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] overflow-hidden">
+                    <div className="bg-black text-white px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b-4 border-black">
                       <h2 className="text-sm sm:text-base font-black uppercase flex items-center gap-2 font-['Space_Grotesk']">
                         {sourceIcons[source] || <ClipboardList className="w-4 h-4" />}
                         {SOURCE_LABELS[source]}
@@ -666,40 +1015,46 @@ export default function Reportes() {
                     </div>
 
                     {records.length > 0 ? (
-                      <div className="divide-y-2 divide-[#1a1a1a]">
-                        {records.slice(0, 8).map((record, index) => (
-                          <article key={`${source}-${index}`} className="p-4 hover:bg-[#f5f0e8] transition-colors">
-                            <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-4">
-                              <div>
-                                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                                  {primaryColumns.map((column) => (
-                                    <div key={column.key}>
-                                      <p className="text-[9px] font-black uppercase tracking-widest opacity-45 mb-1">{column.label}</p>
-                                      {column.priority === 'badge' ? (
-                                        <span className={`inline-flex px-2 py-1 border-2 border-[#1a1a1a] text-[10px] font-black uppercase shadow-[1px_1px_0px_0px_rgba(26,26,26,1)] ${renderBadgeClass(record[column.key])}`}>
-                                          {safeText(record[column.key]).replace('_', ' ')}
-                                        </span>
-                                      ) : (
-                                        <p className="text-sm font-black uppercase leading-tight">{truncate(record[column.key], 70)}</p>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2 content-start">
-                                {detailColumns.map((column) => (
-                                  <div key={column.key} className={`${column.priority === 'long' ? 'col-span-2' : ''} border-2 border-[#1a1a1a]/20 bg-[#f5f0e8] p-2`}>
-                                    <p className="text-[9px] font-black uppercase tracking-widest opacity-45 mb-1">{column.label}</p>
-                                    <p className="text-xs font-bold uppercase leading-snug">{truncate(record[column.key], column.priority === 'long' ? 160 : 36)}</p>
-                                  </div>
+                      <div className="p-4 bg-[#f5f0e8]">
+                        <div className="overflow-x-auto border-4 border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] bg-white">
+                          <table className="w-full text-left border-collapse min-w-[700px]">
+                            <thead>
+                              <tr className="bg-black text-white border-b-4 border-black">
+                                {columns.map((col) => (
+                                  <th key={col.key} className="p-3 text-xs font-black uppercase tracking-wider border-r-2 border-black last:border-r-0">
+                                    {col.label}
+                                  </th>
                                 ))}
-                              </div>
-                            </div>
-                          </article>
-                        ))}
-                        {records.length > 8 && (
-                          <div className="p-3 text-center text-[10px] font-black uppercase tracking-widest opacity-60 bg-[#f5f0e8]">
-                            Mostrando 8 de {records.length}. El archivo descargado incluye todos los registros.
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y-2 divide-black">
+                              {records.slice(0, 5).map((record, index) => (
+                                <tr key={index} className="hover:bg-[#f5f0e8] transition-colors odd:bg-[#faf6f0] even:bg-white">
+                                  {columns.map((col) => {
+                                    const val = record[col.key];
+                                    const isBadge = col.priority === 'badge';
+                                    return (
+                                      <td key={col.key} className="p-3 text-xs font-bold uppercase border-r-2 border-black last:border-r-0 whitespace-nowrap">
+                                        {isBadge ? (
+                                          <span className={`inline-flex px-2 py-1 border-2 border-black text-[9px] font-black uppercase shadow-[1px_1px_0px_0px_rgba(0,0,0,1)] ${renderBadgeClass(val)}`}>
+                                            {safeText(val).replace('_', ' ')}
+                                          </span>
+                                        ) : (
+                                          <span className="truncate block max-w-[200px]" title={safeText(val)}>
+                                            {safeText(val)}
+                                          </span>
+                                        )}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {records.length > 5 && (
+                          <div className="mt-3 text-right text-[10px] font-black uppercase tracking-widest opacity-60">
+                            Mostrando las primeras 5 de {records.length} filas. El reporte descargado incluirá todos los registros.
                           </div>
                         )}
                       </div>
@@ -712,23 +1067,6 @@ export default function Reportes() {
                 );
               })}
             </motion.div>
-          ) : (
-            <div className="bg-[#f5f0e8] border-2 border-[#1a1a1a] shadow-[6px_6px_0px_0px_rgba(26,26,26,1)] p-8 sm:p-16 flex flex-col items-center justify-center text-center min-h-[520px]">
-              <div className="p-5 border-2 border-[#1a1a1a] bg-white shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] mb-6">
-                <FileSpreadsheet className="w-16 h-16 opacity-30 text-[#00cc66]" />
-              </div>
-              <h3 className="text-2xl font-black uppercase mb-3 font-['Space_Grotesk']">Vista previa pendiente</h3>
-              <p className="text-xs font-bold opacity-60 max-w-md mb-8 uppercase leading-relaxed">
-                El reporte ahora ordena los datos por módulo y normaliza nombres, fechas, estados y conteos. Carga la vista previa para revisar cómo quedará antes de descargarlo.
-              </p>
-              <button
-                onClick={loadPreview}
-                disabled={isLoadingPreview}
-                className="px-8 py-4 bg-[#0055ff] text-white border-2 border-[#1a1a1a] font-black uppercase text-sm hover:bg-[#1a1a1a] transition-all shadow-[4px_4px_0px_0px_rgba(26,26,26,1)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none disabled:opacity-50"
-              >
-                {isLoadingPreview ? 'Cargando...' : 'Cargar vista previa'}
-              </button>
-            </div>
           )}
         </main>
       </div>

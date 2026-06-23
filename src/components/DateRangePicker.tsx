@@ -26,7 +26,7 @@ export const DateRangePicker = memo(function DateRangePicker({
             type="date"
             value={dateFrom}
             onChange={(e) => onDateFromChange(e.target.value)}
-            className="w-full pl-9 p-2.5 min-h-[44px] border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
+            className="w-full pl-9 p-2.5 min-h-[44px] border-4 border-black bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
           />
         </div>
       </div>
@@ -40,7 +40,7 @@ export const DateRangePicker = memo(function DateRangePicker({
             type="date"
             value={dateTo}
             onChange={(e) => onDateToChange(e.target.value)}
-            className="w-full pl-9 p-2.5 min-h-[44px] border-2 border-[#1a1a1a] bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
+            className="w-full pl-9 p-2.5 min-h-[44px] border-4 border-black bg-[#f5f0e8] focus:bg-white focus:outline-none focus:ring-0 font-bold uppercase transition-colors text-xs"
           />
         </div>
       </div>
