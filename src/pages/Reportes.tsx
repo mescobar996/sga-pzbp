@@ -205,6 +205,18 @@ function truncate(value: unknown, maxLength = 120): string {
   return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
 }
 
+function uppercaseRecord(record: ReportRecord): ReportRecord {
+  const newRecord: ReportRecord = {};
+  for (const [key, val] of Object.entries(record)) {
+    if (typeof val === 'string') {
+      newRecord[key] = val.toUpperCase();
+    } else {
+      newRecord[key] = val;
+    }
+  }
+  return newRecord;
+}
+
 export default function Reportes() {
   const [dataSource, setDataSource] = useState('todas');
   const [selectedCategory, setSelectedCategory] = useState('todas');
@@ -374,7 +386,7 @@ export default function Reportes() {
         return sortBy === 'fecha_asc' ? timeA - timeB : timeB - timeA;
       });
 
-      reportData[source] = filteredRows.map((row) => normalizeRecord(source, row));
+      reportData[source] = filteredRows.map((row) => uppercaseRecord(normalizeRecord(source, row)));
     }
 
     return reportData;
