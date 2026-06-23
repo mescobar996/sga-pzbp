@@ -40,7 +40,7 @@ interface Attachment {
   name: string;
   url: string;
   type: string;
-  path: string;
+  path?: string;
   size?: number;
 }
 

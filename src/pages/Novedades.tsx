@@ -53,6 +53,7 @@ interface Novedad {
   authorId: string;
   authorName: string;
   attachments?: Attachment[];
+  fecha?: string;
 }
 
 export default function Novedades() {
@@ -255,8 +256,8 @@ export default function Novedades() {
         toast.success('Novedad actualizada');
       } else {
         await addNovedad({
-          title: currentNovedad.title,
-          content: currentNovedad.content,
+          title: currentNovedad.title!,
+          content: currentNovedad.content!,
           fecha: currentNovedad.fecha,
           attachments: finalAttachments,
         });

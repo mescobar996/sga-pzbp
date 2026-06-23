@@ -21,7 +21,7 @@ interface TimelineItem {
 
 interface TimelineProps {
   items: TimelineItem[];
-  locationName: string;
+  locationName?: string;
 }
 
 const getIcon = (type: string) => {
@@ -128,7 +128,7 @@ const TimelineRow: React.FC<{ item: TimelineItem; locationName: string }> = ({ i
   );
 };
 
-export const Timeline: React.FC<TimelineProps> = ({ items, locationName }) => {
+export const Timeline: React.FC<TimelineProps> = ({ items, locationName = '' }) => {
   if (!items || items.length === 0) {
     return <p className="text-center p-4 text-xs italic text-slate-400">Sin historial registrado para esta ubicación.</p>;
   }

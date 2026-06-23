@@ -18,7 +18,7 @@ export async function getCategories(): Promise<DiligenciamientoCategory[]> {
     
     if (error) {
       // 42P01 is PostgreSql error for "relation does not exist"
-      if (error.code === '42P01' || error.status === 404) {
+      if (error.code === '42P01' || (error as any).status === 404) {
         console.warn('[DB] Tabla diligenciamiento_categories no encontrada. Usando valores por defecto.');
         return [];
       }
@@ -135,13 +135,16 @@ export async function addDiligenciamiento(diligenciamiento: {
     title: diligenciamiento.title,
     content: diligenciamiento.content,
     category: diligenciamiento.category || 'OTROS',
-    icon_name: diligenciamiento.icon_name || null,
     fecha: diligenciamiento.fecha || null,
     author_id: userId,
     author_name: authorName,
     attachments: diligenciamiento.attachments || [],
   });
-  if (error) throw error;
+  
+  if (error) {
+    console.error("[DETALLE DB ERROR]:", error.message, error.details, error.hint);
+    throw error;
+  }
 }
 
 export async function updateDiligenciamiento(id: string, updates: Partial<Diligenciamiento>): Promise<void> {
@@ -149,7 +152,6 @@ export async function updateDiligenciamiento(id: string, updates: Partial<Dilige
   if (updates.title !== undefined) mapped.title = updates.title;
   if (updates.content !== undefined) mapped.content = updates.content;
   if (updates.category !== undefined) mapped.category = updates.category;
-  if (updates.icon_name !== undefined) mapped.icon_name = updates.icon_name || null;
   if (updates.fecha !== undefined) mapped.fecha = updates.fecha || null;
   if (updates.attachments !== undefined) mapped.attachments = updates.attachments;
 
@@ -157,6 +159,7 @@ export async function updateDiligenciamiento(id: string, updates: Partial<Dilige
   const { error } = await supabase.from('diligenciamientos').update(mapped).eq('id', id);
   
   if (error) {
+    console.error("[DETALLE DB ERROR]:", error.message, error.details, error.hint);
     console.error('[DB ERROR] Update Diligenciamiento failed:', error);
     throw error;
   }

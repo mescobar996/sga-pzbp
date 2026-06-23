@@ -47,7 +47,7 @@ interface Attachment {
   name: string;
   url: string;
   type: string;
-  path: string;
+  path?: string;
 }
 
 interface TaskHistoryEvent {
@@ -967,7 +967,7 @@ export default function Tareas() {
                       }}
                       onDuplicate={(t) => {
                         const duplicate = { ...t, title: `${t.title} (COPIA)`, id: undefined };
-                        openEditTaskModal(duplicate as Task);
+                        openEditTaskModal(duplicate as unknown as Task);
                         setIsEditing(false);
                       }}
                     />
@@ -1248,7 +1248,7 @@ export default function Tareas() {
                       <button
                           onClick={() => {
                             const duplicate = { ...task, title: `${task.title} (COPIA)`, id: undefined };
-                            openEditTaskModal(duplicate as Task);
+                            openEditTaskModal(duplicate as unknown as Task);
                             setIsEditing(false); // Force to create new
                           }}
                           className="w-[44px] h-[44px] sm:w-[36px] sm:h-[36px] flex items-center justify-center border-2 border-[#1a1a1a] bg-[#f5f0e8] hover:bg-[#1a1a1a] hover:text-white transition-colors shrink-0"

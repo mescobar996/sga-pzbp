@@ -208,7 +208,19 @@ function truncate(value: unknown, maxLength = 120): string {
 function uppercaseRecord(record: ReportRecord): ReportRecord {
   const newRecord: ReportRecord = {};
   for (const [key, val] of Object.entries(record)) {
-    if (typeof val === 'string') {
+    const lowerKey = key.toLowerCase();
+    if (
+      typeof val === 'string' &&
+      lowerKey !== 'id' &&
+      !lowerKey.endsWith('_id') &&
+      lowerKey !== 'uuid' &&
+      lowerKey !== 'estado' &&
+      lowerKey !== 'status' &&
+      lowerKey !== 'priority' &&
+      lowerKey !== 'prioridad' &&
+      lowerKey !== 'recurrence' &&
+      lowerKey !== 'recurrencia'
+    ) {
       newRecord[key] = val.toUpperCase();
     } else {
       newRecord[key] = val;

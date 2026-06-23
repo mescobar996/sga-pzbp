@@ -107,6 +107,7 @@ interface Diligenciamiento {
   authorName: string;
   attachments?: Attachment[];
   fecha?: string;
+  icon_name?: string;
 }
 
 export default function Diligenciamientos() {
@@ -205,12 +206,12 @@ export default function Diligenciamientos() {
       
       // If no categories in DB, show OTROS as fallback
       if (dbCats.length === 0) {
-        setCategories([{ id: 'OTROS', label: 'OTROS', icon: 'MoreHorizontal', color: 'bg-gray-500' }]);
+        setCategories([{ id: 'OTROS', label: 'OTROS', icon: 'MoreHorizontal', color: 'bg-gray-500', isDynamic: false }]);
       } else {
         // Always add OTROS at the end if not present
         const combined = [...dbCats];
         if (!combined.find(c => c.id === 'OTROS')) {
-          combined.push({ id: 'OTROS', label: 'OTROS', icon: 'MoreHorizontal', color: 'bg-gray-500' });
+          combined.push({ id: 'OTROS', label: 'OTROS', icon: 'MoreHorizontal', color: 'bg-gray-500', isDynamic: false });
         }
         setCategories(combined);
       }
@@ -224,7 +225,7 @@ export default function Diligenciamientos() {
         const dbCats = validData.map(c => ({ id: c.name, label: c.name, icon: c.icon, color: c.color, isDynamic: true }));
         const combined = [...dbCats];
         if (!combined.find(c => c.id === 'OTROS')) {
-          combined.push({ id: 'OTROS', label: 'OTROS', icon: 'MoreHorizontal', color: 'bg-gray-500' });
+          combined.push({ id: 'OTROS', label: 'OTROS', icon: 'MoreHorizontal', color: 'bg-gray-500', isDynamic: false });
         }
         setCategories(combined);
       });
@@ -345,8 +346,8 @@ export default function Diligenciamientos() {
         toast.success('Diligenciamiento actualizado');
       } else {
         await addDiligenciamiento({
-          title: currentDiligenciamiento.title,
-          content: currentDiligenciamiento.content,
+          title: currentDiligenciamiento.title!,
+          content: currentDiligenciamiento.content!,
           category: currentDiligenciamiento.category,
           fecha: currentDiligenciamiento.fecha,
           icon_name: currentDiligenciamiento.icon_name || '',

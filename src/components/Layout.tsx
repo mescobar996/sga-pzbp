@@ -824,12 +824,11 @@ export default function Layout({ user }: { user: User }) {
                   className="bg-transparent border-none focus:ring-0 text-xs font-bold uppercase tracking-wider outline-none w-full text-[#1a1a1a] placeholder:text-[#1a1a1a]/40"
                   placeholder="BUSCAR..."
                   type="text"
-                  autocomplete="off"
+                  autoComplete="off"
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onKeyDown={handleSearchKeyDown}
                   aria-label="Buscar en el sistema"
-                  autoComplete="off"
                 />
               </div>
             </div>

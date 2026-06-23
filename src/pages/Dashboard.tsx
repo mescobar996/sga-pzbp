@@ -30,7 +30,7 @@ export default function Dashboard() {
   }, []);
 
   const kpis = useMemo(() => {
-    const counts = { VISITA: 0, TAREA: 0, NOVEDAD: 0, DILIGENCIA: 0 };
+    const counts: Record<string, number> = { VISITA: 0, TAREA: 0, NOVEDAD: 0, DILIGENCIA: 0 };
     data.forEach(item => { if (item.type in counts) counts[item.type]++; });
     return [
       { label: 'Visitas', value: counts.VISITA },
@@ -68,7 +68,7 @@ export default function Dashboard() {
         name: locations.find(l => l.id === id)?.name || 'Sin Zona',
         activity: count
       }))
-      .sort((a, b) => b.activity - a.activity)
+      .sort((a: any, b: any) => b.activity - a.activity)
       .slice(0, 5);
   }, [data, locations]);
 
