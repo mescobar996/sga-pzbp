@@ -23,13 +23,11 @@ import {
   Calendar,
   Clock,
   Shield,
-  Sun,
   ChevronLeft,
   FileSpreadsheet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { AnimatePresence, motion } from 'motion/react';
-import { useFieldReady } from '../context/FieldContext';
 import PWAInstallBanner from './PWAInstallBanner';
 
 interface AppNotification {
@@ -57,7 +55,6 @@ import type { User } from '@supabase/supabase-js';
 
 export default function Layout({ user }: { user: User }) {
   const navigate = useNavigate();
-  const { isFieldReady, toggleFieldReady } = useFieldReady();
   const location = useLocation();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -729,20 +726,6 @@ export default function Layout({ user }: { user: User }) {
                 )}
               </AnimatePresence>
             </div>
-
-            {/* Field-Ready Toggle */}
-            <button
-              onClick={toggleFieldReady}
-              className={`p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center border-2 border-[#1a1a1a] transition-all shadow-[2px_2px_0px_0px_rgba(26,26,26,0.3)] cursor-pointer ${
-                isFieldReady 
-                  ? 'bg-yellow-400 text-black shadow-none translate-x-[1px] translate-y-[1px]' 
-                  : 'bg-white text-[#1a1a1a] hover:bg-[#f5f0e8]'
-              }`}
-              title={isFieldReady ? "Desactivar Alta Visibilidad (Modo Campo)" : "Activar Alta Visibilidad (Modo Campo)"}
-              aria-label="Modo Campo"
-            >
-              <Sun className={`w-5 h-5 ${isFieldReady ? 'animate-pulse' : ''}`} />
-            </button>
 
             {/* Settings */}
             <button

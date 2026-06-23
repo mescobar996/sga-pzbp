@@ -7,7 +7,6 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import { OfflineBanner } from './components/OfflineBanner';
 import { AnimatePresence, motion } from 'motion/react';
-import { FieldReadyProvider } from './context/FieldContext';
 
 // Feature #25 — Lazy loading: pages loaded on demand for faster initial load
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -197,11 +196,9 @@ return (
   <ErrorBoundary>
     <Toaster position="top-right" richColors aria-live="polite" />
     <OfflineBanner />
-    <FieldReadyProvider>
-      <Router>
-        <AnimatedRoutes user={user} />
-      </Router>
-    </FieldReadyProvider>
+    <Router>
+      <AnimatedRoutes user={user} />
+    </Router>
   </ErrorBoundary>
 );
 }
