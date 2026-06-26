@@ -3,6 +3,7 @@ import {
   ClipboardList,
   Eye,
   FileSpreadsheet,
+  FileText,
   Filter,
   HardHat,
   ListChecks,
@@ -14,6 +15,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { supabase, getCurrentUserEmail } from '../db/client';
 import ExcelJS from 'exceljs';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { motion } from 'motion/react';
 import { DateRangePicker } from '../components/DateRangePicker';
 import { getCategories } from '../db/diligenciamientos';
@@ -246,6 +249,8 @@ export default function Reportes() {
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [availableResponsibles, setAvailableResponsibles] = useState<string[]>([]);
   const [responsibleSearch, setResponsibleSearch] = useState('');
+  const [paperSize, setPaperSize] = useState('a4');
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const sourceIcons: Record<string, React.ReactNode> = {
     visitas: <HardHat className="w-4 h-4" />,
@@ -743,6 +748,204 @@ export default function Reportes() {
     }
   };
 
+  const generatePdf = async (data: ReportData) => {
+    try {
+      const doc = new jsPDF({
+        orientation: 'landscape',
+        unit: 'mm',
+        format: paperSize,
+      });
+
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // 1. PORTADA
+      // Fondo y Encabezado institucional
+      doc.setFillColor(26, 26, 26);
+      doc.rect(15, 15, pageWidth - 30, 25, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.text('PREFECTURA NAVAL ARGENTINA - REPORTE OPERATIVO', pageWidth / 2, 25, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text('SGA PZBP - SISTEMA DE GESTIÓN ADMINISTRATIVA', pageWidth / 2, 32, { align: 'center' });
+
+      // Metadatos
+      doc.setTextColor(26, 26, 26);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('METADATOS DE EXPORTACIÓN', 15, 52);
+      
+      // Dibujar una línea sutil
+      doc.setDrawColor(200, 200, 200);
+      doc.setLineWidth(0.5);
+      doc.line(15, 54, pageWidth - 15, 54);
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('FECHA DE GENERACIÓN:', 15, 62);
+      doc.setFont('helvetica', 'normal');
+      doc.text(new Date().toLocaleString('es-ES').toUpperCase(), 65, 62);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('USUARIO GENERADOR:', 15, 68);
+      doc.setFont('helvetica', 'normal');
+      doc.text((getCurrentUserEmail() || 'SISTEMA SGA').toUpperCase(), 65, 68);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('PERÍODO DETALLADO:', 15, 74);
+      doc.setFont('helvetica', 'normal');
+      doc.text(periodLabel.toUpperCase(), 65, 74);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('ORDENAMIENTO APLICADO:', 15, 80);
+      doc.setFont('helvetica', 'normal');
+      doc.text(SORT_LABELS[sortBy].toUpperCase(), 65, 80);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('FILTRO DE RESPONSABLES:', 15, 86);
+      doc.setFont('helvetica', 'normal');
+      doc.text(selectedResponsibles.length > 0 ? selectedResponsibles.join(', ').toUpperCase() : 'TODOS', 65, 86);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('FILTRO DE ESTADOS:', 15, 92);
+      doc.setFont('helvetica', 'normal');
+      doc.text(selectedStatuses.length > 0 ? selectedStatuses.join(', ').toUpperCase() : 'TODOS', 65, 92);
+
+      // Tabla de Resumen en Portada
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text('RESUMEN DE REGISTROS POR HOJA', 15, 105);
+      doc.line(15, 107, pageWidth - 15, 107);
+
+      const summaryHeaders = [['HOJA / MÓDULO', 'CANTIDAD DE REGISTROS']];
+      const summaryRows: any[] = [];
+      let totalCountAllSheets = 0;
+
+      for (const [source, records] of Object.entries(data)) {
+        if (!Array.isArray(records) || records.length === 0) continue;
+        summaryRows.push([
+          SOURCE_LABELS[source].toUpperCase(),
+          records.length.toString()
+        ]);
+        totalCountAllSheets += records.length;
+      }
+      summaryRows.push(['TOTAL GENERAL', totalCountAllSheets.toString()]);
+
+      autoTable(doc, {
+        startY: 112,
+        head: summaryHeaders,
+        body: summaryRows,
+        theme: 'grid',
+        styles: { font: 'helvetica', fontSize: 9, cellPadding: 3 },
+        headStyles: { fillColor: [26, 26, 26], textColor: [255, 255, 255], fontStyle: 'bold' },
+        didParseCell: (dataCell) => {
+          if (dataCell.row.index === summaryRows.length - 1) {
+            dataCell.cell.styles.fontStyle = 'bold';
+          }
+        },
+        margin: { left: 15, right: 15 }
+      });
+
+      // Firmas en la Portada (ubicadas dinámicamente)
+      const finalY = (doc as any).lastAutoTable?.finalY || 112;
+      const signatureY = Math.min(pageHeight - 35, finalY + 25);
+
+      doc.setDrawColor(0, 0, 0);
+      doc.line(30, signatureY, 90, signatureY);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8);
+      doc.text('FIRMA DEL RESPONSABLE', 60, signatureY + 5, { align: 'center' });
+
+      doc.line(pageWidth - 90, signatureY, pageWidth - 30, signatureY);
+      doc.text('VALIDACIÓN SGA', pageWidth - 60, signatureY + 5, { align: 'center' });
+
+      // 2. TABLAS TEMÁTICAS
+      for (const [source, records] of Object.entries(data)) {
+        if (!Array.isArray(records) || records.length === 0) continue;
+
+        doc.addPage();
+
+        // Título de la sección
+        doc.setTextColor(26, 26, 26);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text(SOURCE_LABELS[source].toUpperCase(), 15, 20);
+        
+        doc.setDrawColor(26, 26, 26);
+        doc.setLineWidth(0.8);
+        doc.line(15, 23, pageWidth - 15, 23);
+
+        const columns = REPORT_COLUMNS[source] || [];
+        const tableHeaders = [columns.map(col => col.label.toUpperCase())];
+        
+        // Mapear y sanear datos a UPPERCASE estrictamente
+        const tableRows = records.map(record =>
+          columns.map(col => {
+            const val = record[col.key];
+            if (val === null || val === undefined) return '—';
+            return String(val).toUpperCase();
+          })
+        );
+
+        autoTable(doc, {
+          startY: 28,
+          head: tableHeaders,
+          body: tableRows,
+          theme: 'grid',
+          styles: { overflow: 'linebreak', fontSize: 9, font: 'helvetica', cellPadding: 3 },
+          headStyles: { fillColor: [26, 26, 26], textColor: [255, 255, 255], fontStyle: 'bold' },
+          alternateRowStyles: { fillColor: [245, 240, 232] },
+          margin: { left: 15, right: 15 }
+        });
+      }
+
+      // 3. NUMERACIÓN DINÁMICA DE PÁGINAS
+      const totalPages = doc.internal.getNumberOfPages();
+      for (let i = 1; i <= totalPages; i++) {
+        doc.setPage(i);
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(128, 128, 128);
+        doc.text(
+          `PÁGINA ${i} DE ${totalPages}`.toUpperCase(),
+          pageWidth / 2,
+          pageHeight - 10,
+          { align: 'center' }
+        );
+      }
+
+      // Descargar PDF
+      const fileName = `REPORTE_SGA_PREMIUM_${dataSource.toUpperCase()}_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+
+      toast.success('REPORTE PDF GENERADO CON ÉXITO', { id: 'report-pdf-gen' });
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      toast.error('Error al estructurar o descargar el archivo PDF');
+    }
+  };
+
+  const handleGeneratePdfReport = async () => {
+    if (totalRecords === 0) {
+      toast.error('No hay datos disponibles en el período y filtros seleccionados');
+      return;
+    }
+    setIsGeneratingPdf(true);
+    try {
+      const data = await fetchData();
+      await generatePdf(data);
+    } catch (error) {
+      console.error(error);
+      toast.error('Error al generar el reporte PDF');
+    } finally {
+      setIsGeneratingPdf(false);
+    }
+  };
+
   const renderBadgeClass = (value: unknown) => {
     const normalized = String(value || '').toLowerCase();
     if (['alta', 'inactivo', 'pendiente'].includes(normalized)) return 'bg-[#e63b2e] text-white';
@@ -944,19 +1147,48 @@ export default function Reportes() {
               </div>
             </div>
 
-            {/* Botón Descargar Excel */}
-            <div className="pt-4">
+            {/* Selector Tamaño de Papel */}
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest mb-2">Tamaño de Papel</label>
+              <select
+                value={paperSize}
+                onChange={(event) => setPaperSize(event.target.value)}
+                className="w-full p-3 border-4 border-black bg-[#f5f0e8] focus:outline-none font-black uppercase text-sm shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              >
+                <option value="a4">A4</option>
+                <option value="letter">Carta (Letter)</option>
+                <option value="legal">Oficio (Legal)</option>
+              </select>
+            </div>
+
+            {/* Botones de Descarga */}
+            <div className="grid grid-cols-2 gap-3 pt-4">
               <button
                 type="button"
                 onClick={handleGenerateReport}
-                disabled={totalRecords === 0 || isGenerating || isLoadingPreview}
-                className="w-full py-4 border-4 border-black bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-base"
+                disabled={totalRecords === 0 || isGenerating || isLoadingPreview || isGeneratingPdf}
+                className="py-4 border-4 border-black bg-[#00cc66] text-white font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-xs sm:text-sm cursor-pointer"
               >
                 {isGenerating ? (
                   <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <>
-                    <FileSpreadsheet className="w-5 h-5" /> Descargar Excel
+                    <FileSpreadsheet className="w-5 h-5" /> Excel
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleGeneratePdfReport}
+                disabled={totalRecords === 0 || isGenerating || isLoadingPreview || isGeneratingPdf}
+                className="py-4 border-4 border-black bg-[#ff5500] text-white font-black uppercase tracking-widest hover:bg-white hover:text-black transition-all flex items-center justify-center gap-2 shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] text-xs sm:text-sm cursor-pointer"
+              >
+                {isGeneratingPdf ? (
+                  <div className="w-5 h-5 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <FileText className="w-5 h-5" /> PDF
                   </>
                 )}
               </button>
