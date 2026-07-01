@@ -1645,13 +1645,13 @@ export default function Tareas() {
                       </button>
                     </div>
 
-                    <div className="flex flex-col gap-2 max-h-[240px] overflow-y-auto custom-scrollbar pr-1">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch max-h-[240px] overflow-y-auto custom-scrollbar pr-1 pb-1">
                       {currentTask.subtasks?.map((subtask) => (
                         <div
                           key={subtask.id}
-                          className="flex items-center justify-between p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] group shadow-[2px_2px_0px_0px_rgba(26,26,26,1)]"
+                          className="flex items-center justify-between p-2.5 border-2 border-[#1a1a1a] bg-[#f5f0e8] group shadow-[2px_2px_0px_0px_rgba(26,26,26,1)] h-full"
                         >
-                          <div className="flex items-center gap-3 flex-1 overflow-hidden">
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
                             <button
                               type="button"
                               onClick={() => {
@@ -1669,7 +1669,7 @@ export default function Tareas() {
                               {subtask.completed && <CheckCircle className="w-3 h-3" />}
                             </button>
                             <span
-                              className={`font-bold uppercase text-sm truncate ${
+                              className={`font-bold uppercase text-sm whitespace-normal break-words ${
                                 subtask.completed ? 'line-through opacity-50' : ''
                               }`}
                             >
